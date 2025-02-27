@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
 const BikeModel: React.FC = () => {
-    const { scene, materials, nodes } = useGLTF("/Assembled Bike.gltf");
+    const { scene, materials, nodes } = useGLTF("/Assembled_Bike.gltf");
     const modelRef = useRef<THREE.Group>(null);
-
+    console.log("FILE")
     // Log all nodes for debugging
     useEffect(() => {
         console.log("GLTF Nodes:", nodes);

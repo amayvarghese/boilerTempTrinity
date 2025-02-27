@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
 const BikeModel: React.FC = () => {
-    const { scene, materials } = useGLTF("/Assembled Bike.gltf");
+    const { scene, materials } = useGLTF("/Assembled_Bike.gltf");
     const modelRef = useRef<THREE.Group>(null);
 
     // Extract all parts of the model

@@ -6,8 +6,7 @@ import BikeModel from "../components/Bikemodel";
 const Home = () => {
   return (
     <>
-      {/* <Hero /> */}
-      {/* <Configurator /> */}
+
       <BikeModel />
     </>
   );

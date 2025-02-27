@@ -37,12 +37,17 @@ import "./index.css";
 //   cache: new InMemoryCache(),
 // });
 
+
+console.log("helloo")
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   // <Provider store={store}>
   //   <PersistGate persistor={persistor}>
   //     <Toaster position="bottom-center" gutter={56} />
   //     <ApolloProvider client={client}>
-  <App />
+  <>
+    <App />
+  </>
+
   //     </ApolloProvider>
   //   </PersistGate>
   // </Provider>
