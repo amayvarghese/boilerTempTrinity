@@ -1,15 +1,12 @@
 import React from "react";
-import Hero from "../components/Hero";
-// import Configurator from "../components/Configurator";
-import BikeModel from "../components/Bikemodel";
+import FilterPage from "../components/FilterPage"; // Adjust the path as needed
 
-const Home = () => {
+const NewPage: React.FC = () => {
   return (
     <>
-
-      <BikeModel />
+      <FilterPage />
     </>
   );
 };
 
-export default Home;
+export default NewPage;

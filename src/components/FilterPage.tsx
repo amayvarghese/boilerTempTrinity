@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import * as THREE from "./three.js-r132/build/three.module.js";
+import * as THREE from "./three.js-r132/build/three.module.js"; // Adjust path as needed
 import { GLTFLoader } from "./three.js-r132/examples/jsm/loaders/GLTFLoader.js";
 
 interface ModelData {
@@ -67,36 +67,32 @@ const FilterPage: React.FC = () => {
     };
   }, [capturedImage]);
 
-  // Handle DOM elements and events
+  // Handle DOM elements and events with Tailwind styling
   useEffect(() => {
     // Overlay Image
     overlayImageRef.current = document.createElement("img");
     overlayImageRef.current.src = "images/overlayFilter1.png";
     overlayImageRef.current.id = "overlayImage";
-    styleOverlay(overlayImageRef.current);
+    overlayImageRef.current.className =
+      "fixed inset-0 w-full h-full object-fill z-[1000] hidden opacity-70"; // Added opacity for filter effect
+    overlayImageRef.current.onerror = () => console.error("Failed to load overlay image");
+    overlayImageRef.current.onload = () => console.log("Overlay image loaded successfully");
     document.body.appendChild(overlayImageRef.current);
 
     // Video Element
     videoRef.current = document.createElement("video");
     videoRef.current.setAttribute("playsinline", "");
     videoRef.current.muted = true;
-    Object.assign(videoRef.current.style, {
-      position: "absolute",
-      top: "0",
-      left: "0",
-      width: "100%",
-      height: "100%",
-      zIndex: "999",
-      objectFit: "cover",
-      display: "block",
-    });
+    videoRef.current.className =
+      "absolute inset-0 w-full h-full object-cover z-[999]";
     document.body.appendChild(videoRef.current);
 
     // Control Button
     controlButtonRef.current = document.createElement("button");
     controlButtonRef.current.id = "controlButton";
     controlButtonRef.current.textContent = "Start Camera";
-    styleButton(controlButtonRef.current);
+    controlButtonRef.current.className =
+      "fixed bottom-5 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 z-[1000] transition duration-300";
     controlButtonRef.current.addEventListener("click", handleButtonClick);
     document.body.appendChild(controlButtonRef.current);
 
@@ -127,37 +123,6 @@ const FilterPage: React.FC = () => {
     };
   }, []);
 
-  const styleButton = (button: HTMLButtonElement) => {
-    Object.assign(button.style, {
-      position: "absolute",
-      bottom: "20px",
-      left: "50%",
-      transform: "translateX(-50%)",
-      padding: "15px 30px",
-      fontSize: "18px",
-      backgroundColor: "blue",
-      color: "white",
-      border: "none",
-      borderRadius: "10px",
-      cursor: "pointer",
-      zIndex: "1000",
-      display: "inline-block",
-    });
-  };
-
-  const styleOverlay = (image: HTMLImageElement) => {
-    Object.assign(image.style, {
-      position: "fixed",
-      top: "0",
-      left: "0",
-      width: "100%",
-      height: "100%",
-      objectFit: "fill",
-      zIndex: "1000",
-      display: "none",
-    });
-  };
-
   const handleButtonClick = () => {
     if (!controlButtonRef.current) return;
     console.log("Button Clicked:", controlButtonRef.current.textContent);
@@ -182,7 +147,11 @@ const FilterPage: React.FC = () => {
             .play()
             .then(() => {
               console.log("🎬 Video playing");
-              if (overlayImageRef.current) overlayImageRef.current.style.display = "block";
+              if (overlayImageRef.current) {
+                // Set className explicitly to ensure visibility
+                overlayImageRef.current.className =
+                  "fixed inset-0 w-full h-full object-fill z-[1000] block opacity-70";
+              }
               if (controlButtonRef.current) controlButtonRef.current.textContent = "Capture";
             })
             .catch((error) => console.error("🔴 Video playback error:", error));
@@ -211,8 +180,10 @@ const FilterPage: React.FC = () => {
         if (videoRef.current) videoRef.current.srcObject = null;
       }
 
-      if (videoRef.current) videoRef.current.style.display = "none";
-      if (overlayImageRef.current) overlayImageRef.current.style.display = "none";
+      if (videoRef.current) videoRef.current.className += " hidden";
+      if (overlayImageRef.current)
+        overlayImageRef.current.className =
+          "fixed inset-0 w-full h-full object-fill z-[1000] hidden opacity-70";
       useCapturedImageAsBackground();
       initSelectionBox();
       if (controlButtonRef.current) controlButtonRef.current.textContent = "Submit";
@@ -247,12 +218,8 @@ const FilterPage: React.FC = () => {
     if (selectionBoxRef.current) return;
 
     selectionBoxRef.current = document.createElement("div");
-    Object.assign(selectionBoxRef.current.style, {
-      position: "absolute",
-      border: "2px dashed blue",
-      background: "rgba(0, 0, 255, 0.2)",
-      display: "none",
-    });
+    selectionBoxRef.current.className =
+      "absolute border-2 border-dashed border-blue-500 bg-blue-200 bg-opacity-20 hidden";
     document.body.appendChild(selectionBoxRef.current);
 
     let startX: number, startY: number, isTouch = false;
@@ -261,29 +228,27 @@ const FilterPage: React.FC = () => {
       startX = x;
       startY = y;
       if (selectionBoxRef.current) {
-        Object.assign(selectionBoxRef.current.style, {
-          left: `${startX}px`,
-          top: `${startY}px`,
-          width: "0px",
-          height: "0px",
-          display: "block",
-        });
+        selectionBoxRef.current.style.left = `${startX}px`;
+        selectionBoxRef.current.style.top = `${startY}px`;
+        selectionBoxRef.current.style.width = "0px";
+        selectionBoxRef.current.style.height = "0px";
+        selectionBoxRef.current.className =
+          "absolute border-2 border-dashed border-blue-500 bg-blue-200 bg-opacity-20";
       }
     };
 
     const updateSelection = (x: number, y: number) => {
       if (selectionBoxRef.current) {
-        Object.assign(selectionBoxRef.current.style, {
-          width: `${Math.abs(x - startX)}px`,
-          height: `${Math.abs(y - startY)}px`,
-          left: `${Math.min(startX, x)}px`,
-          top: `${Math.min(startY, y)}px`,
-        });
+        selectionBoxRef.current.style.width = `${Math.abs(x - startX)}px`;
+        selectionBoxRef.current.style.height = `${Math.abs(y - startY)}px`;
+        selectionBoxRef.current.style.left = `${Math.min(startX, x)}px`;
+        selectionBoxRef.current.style.top = `${Math.min(startY, y)}px`;
       }
     };
 
     const endSelection = (x: number, y: number) => {
-      if (selectionBoxRef.current) selectionBoxRef.current.style.display = "none";
+      if (selectionBoxRef.current)
+        selectionBoxRef.current.className += " hidden";
       create3DModelFromSelection(startX, startY, x, y);
     };
 
@@ -393,7 +358,7 @@ const FilterPage: React.FC = () => {
 
         const scaleX = targetWidth / modelSize.x;
         const scaleY = targetHeight / modelSize.y;
-        model.scale.set(scaleX, scaleY, 1);
+        model.scale.set(scaleX, scaleY, 0.3);
 
         box.setFromObject(model);
         const modelCenter = new THREE.Vector3();
@@ -414,13 +379,7 @@ const FilterPage: React.FC = () => {
   };
 
   const submitAndPlayAnimation = () => {
-    if (modelsRef.current.length > 0) {
-      playAllAnimations();
-      if (controlButtonRef.current) controlButtonRef.current.style.display = "none";
-    } else {
-      console.warn("No models available to animate!");
-      alert("Please create at least one 3D model by drawing a selection box.");
-    }
+    console.log("🚀 Submit button pressed!");
   };
 
   const playAllAnimations = () => {
