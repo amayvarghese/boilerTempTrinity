@@ -191,7 +191,7 @@ const BlindCustomizerSection = () => {
         {/* Separate Right Menu for Mobile */}
         <div className="md:hidden w-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col h-[calc(100%)]">
           <div className="options-menu p-2 bg-gray-100 rounded shadow">
-            <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center shadow">Filter Options</h3>
+            <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
             <div className="grid-container grid grid-cols-2 gap-2 mx-5 text-[13px]">
               {['red', 'blue', 'green', 'smooth', 'patterned'].map(filter => (
                 <div key={filter} className="option-row flex items-center gap-2">
