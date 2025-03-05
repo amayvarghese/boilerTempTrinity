@@ -322,20 +322,44 @@ const FilterPage: React.FC = () => {
 
   const create3DModelFromSelection = (startX: number, startY: number, endX: number, endY: number) => {
     if (!sceneRef.current) return;
-
+  
     const worldStart = screenToWorld(startX, startY);
     const worldEnd = screenToWorld(endX, endY);
-
+  
     const targetWidth = Math.abs(worldEnd.x - worldStart.x);
     const targetHeight = Math.abs(worldEnd.y - worldStart.y);
-
+  
+    // Define the prospective model's bounding box before loading
+    const prospectiveMin = new THREE.Vector3(
+      Math.min(worldStart.x, worldEnd.x),
+      Math.min(worldStart.y, worldEnd.y),
+      0
+    );
+    const prospectiveMax = new THREE.Vector3(
+      Math.max(worldStart.x, worldEnd.x),
+      Math.max(worldStart.y, worldEnd.y),
+      0.3 // Assuming model depth
+    );
+    const prospectiveBox = new THREE.Box3(prospectiveMin, prospectiveMax);
+  
+    // Check for overlap with existing models
+    const overlaps = modelsRef.current.some(({ model }) => {
+      const box = new THREE.Box3().setFromObject(model);
+      return prospectiveBox.intersectsBox(box);
+    });
+  
+    if (overlaps) {
+      console.log("🚫 Model creation skipped due to overlap with existing model.");
+      return; // Skip creating the new model if it overlaps
+    }
+  
     new GLTFLoader().load("models/shadeBake.glb", (gltf: THREE.GLTF) => {
       const model = gltf.scene;
-
+  
       new THREE.TextureLoader().load("images/pattern4.jpg", (texture) => {
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
-
+  
         model.traverse((child) => {
           if ((child as THREE.Mesh).isMesh) {
             const mesh = child as THREE.Mesh;
@@ -343,7 +367,7 @@ const FilterPage: React.FC = () => {
             const repeatX = targetWidth / 2;
             const repeatY = targetHeight / 2;
             texture.repeat.set(repeatX, repeatY);
-
+  
             mesh.material = new THREE.MeshStandardMaterial({
               map: texture,
               roughness: 0.5,
@@ -351,28 +375,28 @@ const FilterPage: React.FC = () => {
             });
           }
         });
-
+  
         const box = new THREE.Box3().setFromObject(model);
         const modelSize = new THREE.Vector3();
         box.getSize(modelSize);
-
+  
         const scaleX = targetWidth / modelSize.x;
         const scaleY = targetHeight / modelSize.y;
         model.scale.set(scaleX, scaleY, 0.3);
-
+  
         box.setFromObject(model);
         const modelCenter = new THREE.Vector3();
         box.getCenter(modelCenter);
-
+  
         model.position.set(
           (worldStart.x + worldEnd.x) / 2 - (modelCenter.x - model.position.x),
           (worldStart.y + worldEnd.y) / 2 - (modelCenter.y - model.position.y),
           0.1
         );
-
+  
         sceneRef.current!.add(model);
         console.log("Model added successfully at position:", model.position);
-
+  
         modelsRef.current.push({ model, gltf });
       });
     });
