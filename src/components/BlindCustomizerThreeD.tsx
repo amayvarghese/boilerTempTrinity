@@ -1,14 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import TestImage from '/images/ICONSforMaterial/pattern4.png';
-const BlindCustomizerSection = () => {
+import React, { useState, useEffect, useRef } from 'react';
+import * as THREE from './three.js-r132/build/three.module.js'; // Adjust path as needed
+import { GLTFLoader } from './three.js-r132/examples/jsm/loaders/GLTFLoader.js'; // Adjust path as needed
+
+const BlindCustomizerThreeD = () => {
   const [selectedBlindType, setSelectedBlindType] = useState<string | null>(null);
   const [backgroundColor, setBackgroundColor] = useState<string>('#F5F5DC');
   const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
   const [filters, setFilters] = useState<string[]>([]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const modelRef = useRef<THREE.Object3D | null>(null);
 
   const patterns = [
     { name: 'Semi Transparent', image: '/images/FabricP3.png', price: '200$', filterTags: ['smooth'], patternUrl: '/images/ICONSforMaterial/pattern2.png' },
-    { name: 'Red Pattern', image: '/images/FabricP0.png', price: '200$', filterTags: ['red', 'patterned'], patternUrl: '/images/ICONSforMaterial/red.png' }, // Replaced testPhoto.jpeg
+    { name: 'Red Pattern', image: '/images/FabricP0.png', price: '200$', filterTags: ['red', 'patterned'], patternUrl: '/images/ICONSforMaterial/red.png' },
     { name: 'Stripes Colorful', image: '/images/FabricP1.png', price: '200$', filterTags: ['patterned'], patternUrl: '/images/ICONSforMaterial/pattern3.png' },
     { name: 'Texture 2', image: '/images/FabricP2.png', price: 'Option B', filterTags: ['smooth'], patternUrl: '/images/ICONSforMaterial/pattern4.png' },
     { name: 'Texture 2', image: '/images/FabricP4.png', price: 'Option B', filterTags: ['smooth'], patternUrl: '/images/ICONSforMaterial/pattern5.png' },
@@ -16,65 +23,89 @@ const BlindCustomizerSection = () => {
     { name: 'Texture 2', image: '/images/FabricP6.png', price: 'Option B', filterTags: ['smooth'], patternUrl: '/images/ICONSforMaterial/pattern7.png' },
     { name: 'Texture 2', image: '/images/FabricP7.png', price: 'Option B', filterTags: ['smooth'], patternUrl: '/images/ICONSforMaterial/pattern2.png' },
     { name: 'Semi Transparent', image: '/images/FabricP3.png', price: '200$', filterTags: ['smooth'], patternUrl: '/images/ICONSforMaterial/pattern2.png' },
-    { name: 'Red Pattern', image: '/images/FabricP0.png', price: '200$', filterTags: ['red', 'patterned'], patternUrl: '/images/ICONSforMaterial/redPattern.png' }, // Replaced again
+    { name: 'Red Pattern', image: '/images/FabricP0.png', price: '200$', filterTags: ['red', 'patterned'], patternUrl: '/images/ICONSforMaterial/redPattern.png' },
     { name: 'Stripes Colorful', image: '/images/FabricP1.png', price: '200$', filterTags: ['patterned'], patternUrl: '/images/ICONSforMaterial/pattern3.png' },
   ];
 
   const blindTypes = [
-    { type: 'classicRoman', buttonImage: '/images/windowTypeIcons/image 12.png', overlayImage: '/images/classicRomanBlind.png' },
-    { type: 'roller', buttonImage: '/images/windowTypeIcons/image 11.png', overlayImage: '/images/RollerTemp.png' },
-    { type: 'roman', buttonImage: '/images/windowTypeIcons/image 13.png', overlayImage: '/images/withblind.png' },
-    { type: 'plantationShutter', buttonImage: '/images/windowTypeIcons/image 15.png', overlayImage: '/images/plantationShutter.png' },
-    { type: 'solar', buttonImage: '/images/windowTypeIcons/image 14.png', overlayImage: '/images/solarBlind.png' },
-    { type: 'aluminumSheet', buttonImage: '/images/windowTypeIcons/image 17.png', overlayImage: '/images/aluminiumSheet.png' },
-    { type: 'cellularBlinds', buttonImage: '/images/windowTypeIcons/image 18.png', overlayImage: '/images/cellularBlinds.png' },
+    { 
+      type: 'classicRoman', 
+      buttonImage: '/images/windowTypeIcons/image 12.png', 
+      modelUrl: '/models/shadeBake.glb',
+      scale: { x: 0.145, y: 0.205, z: 0.1 },
+      position: { x: -4.25, y: -2.5, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 }
+    },
+    { 
+      type: 'roller', 
+      buttonImage: '/images/windowTypeIcons/image 11.png', 
+      modelUrl: '/models/shadeBake.glb',
+      scale: { x: 0.1, y: 0.1, z: 0.1 },
+      position: { x: 0, y: 0, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 }
+    },
+    { 
+      type: 'roman', 
+      buttonImage: '/images/windowTypeIcons/image 13.png', 
+      modelUrl: '/models/shadeBake.glb',
+      scale: { x: 0.08, y: 0.08, z: 0.08 },
+      position: { x: -1, y: 0, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 }
+    },
+    { 
+      type: 'plantationShutter', 
+      buttonImage: '/images/windowTypeIcons/image 15.png', 
+      modelUrl: '/models/shadeBake.glb',
+      scale: { x: 0.06, y: 0.06, z: 0.06 },
+      position: { x: 0, y: 0, z: 1 },
+      rotation: { x: 0, y: 0, z: 0 }
+    },
+    { 
+      type: 'solar', 
+      buttonImage: '/images/windowTypeIcons/image 14.png', 
+      modelUrl: '/models/shadeBake.glb',
+      scale: { x: 0.07, y: 0.07, z: 0.07 },
+      position: { x: 0, y: -1, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 }
+    },
+    { 
+      type: 'aluminumSheet', 
+      buttonImage: '/images/windowTypeIcons/image 17.png', 
+      modelUrl: '/models/shadeBake.glb',
+      scale: { x: 0.09, y: 0.09, z: 0.09 },
+      position: { x: 1, y: 0, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 }
+    },
+    { 
+      type: 'cellularBlinds', 
+      buttonImage: '/images/windowTypeIcons/image 18.png', 
+      modelUrl: '/models/shadeBake.glb',
+      scale: { x: 0.04, y: 0.04, z: 0.04 },
+      position: { x: 0, y: 0, z: -1 },
+      rotation: { x: 0, y: 0, z: 0 }
+    },
   ];
 
-  const getBlindOverlaySrc = (type: string | null) => {
-    if (!type) return '';
-    const blind = blindTypes.find(b => b.type === type);
-    return blind ? blind.overlayImage : '/images/withblind.png';
-  };
-
-  const getBlindOverlayStyle = (pattern: string | null) => {
-    if (!pattern) {
-      return {
-        maskImage: 'none',
-        webkitMaskImage: 'none',
-        maskRepeat: 'initial',
-        maskSize: 'initial',
-        maskPosition: 'initial',
-        webkitMaskRepeat: 'initial',
-        webkitMaskSize: 'initial',
-        webkitMaskPosition: 'initial'
-      };
-    }
-    return {
-      maskImage: `url(${pattern})`,
-      maskRepeat: 'repeat',
-      maskSize: '50px 50px',
-      maskPosition: '0 0',
-      webkitMaskImage: `url(${pattern})`,
-      webkitMaskRepeat: 'repeat',
-      webkitMaskSize: '50px 50px',
-      webkitMaskPosition: '0 0'
-    };
-  };
-
   const selectBlindType = (type: string) => {
+    console.log('Selected blind type:', type);
     setSelectedBlindType(type);
+    create3DModel(type);
   };
 
   const handleButtonClick = (patternUrl: string) => {
+    console.log('Selected pattern:', patternUrl);
     setSelectedPattern(patternUrl);
+    applyPatternToModel(patternUrl);
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setFilters(prev => e.target.checked ? [...prev, value] : prev.filter(tag => tag !== value));
+    setFilters((prev) => (e.target.checked ? [...prev, value] : prev.filter((tag) => tag !== value)));
   };
 
-  const filteredPatterns = patterns.filter(pattern => filters.length === 0 || pattern.filterTags.some(tag => filters.includes(tag)));
+  const filteredPatterns = patterns.filter(
+    (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
+  );
 
   useEffect(() => {
     const savedType = localStorage.getItem('selectedBlindType');
@@ -98,6 +129,132 @@ const BlindCustomizerSection = () => {
     localStorage.setItem('backgroundColor', backgroundColor);
   }, [backgroundColor]);
 
+  const applyPatternToModel = (patternUrl: string) => {
+    if (!modelRef.current || !sceneRef.current) return;
+
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load(patternUrl, (texture) => {
+      // Configure texture for tiling
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(8, 8); // Increased from 4, 4 to 8, 8 for more tiling
+
+      // Apply texture to existing materials
+      modelRef.current.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          const material = child.material.clone();
+          material.map = texture;
+          material.needsUpdate = true;
+          child.material = material;
+        }
+      });
+    }, undefined, (error) => {
+      console.error('Error loading texture:', error);
+    });
+  };
+
+  const create3DModel = (type: string) => {
+    if (!canvasRef.current) return;
+
+    // Clean up previous scene if it exists
+    if (sceneRef.current && modelRef.current) {
+      sceneRef.current.remove(modelRef.current);
+    }
+    if (rendererRef.current) {
+      rendererRef.current.dispose();
+    }
+
+    // Initialize Scene
+    const scene = new THREE.Scene();
+    sceneRef.current = scene;
+
+    // Initialize Camera
+    const camera = new THREE.PerspectiveCamera(75, canvasRef.current.clientWidth / canvasRef.current.clientHeight, 0.1, 1000);
+    camera.position.set(0, 0, 10);
+    camera.lookAt(0, 0, 0);
+    cameraRef.current = camera;
+
+    // Initialize Renderer
+    const renderer = new THREE.WebGLRenderer({ canvas: canvasRef.current, alpha: true });
+    renderer.setSize(canvasRef.current.clientWidth, canvasRef.current.clientHeight);
+    renderer.setClearColor(0x000000, 0); // Transparent background
+    rendererRef.current = renderer;
+
+    // Add Lighting (moderate intensity)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
+    directionalLight.position.set(5, 5, 5);
+    scene.add(directionalLight);
+
+    // Add Axes Helper for debugging orientation
+    const axesHelper = new THREE.AxesHelper(5); // Red=X, Green=Y, Blue=Z
+    scene.add(axesHelper);
+
+    // Load the 3D model
+    const loader = new GLTFLoader();
+    const blind = blindTypes.find((b) => b.type === type);
+    if (blind && blind.modelUrl) {
+      loader.load(
+        blind.modelUrl,
+        (gltf) => {
+          console.log('Model loaded:', gltf);
+          if (modelRef.current && sceneRef.current) {
+            sceneRef.current.remove(modelRef.current);
+          }
+          modelRef.current = gltf.scene;
+
+          // Apply specific scale, position, and rotation from blindTypes
+          modelRef.current.scale.set(blind.scale.x, blind.scale.y, blind.scale.z);
+          modelRef.current.position.set(blind.position.x, blind.position.y, blind.position.z);
+          modelRef.current.rotation.set(blind.rotation.x, blind.rotation.y, blind.rotation.z);
+
+          console.log('Applied scale:', modelRef.current.scale);
+          console.log('Applied position:', modelRef.current.position);
+          console.log('Applied rotation:', modelRef.current.rotation);
+
+          sceneRef.current.add(modelRef.current);
+
+          // Apply selected pattern if one is already selected
+          if (selectedPattern) {
+            applyPatternToModel(selectedPattern);
+          }
+        },
+        (progress) => console.log('Loading progress:', (progress.loaded / progress.total) * 100 + '%'),
+        (error) => console.error('Loading error:', error)
+      );
+    }
+
+    // Animation Loop (no rotation)
+    let animationFrameId: number;
+    const animate = () => {
+      if (sceneRef.current && cameraRef.current && rendererRef.current) {
+        rendererRef.current.render(sceneRef.current, cameraRef.current);
+        animationFrameId = requestAnimationFrame(animate);
+      }
+    };
+    animationFrameId = requestAnimationFrame(animate);
+
+    // Handle Resize
+    const handleResize = () => {
+      if (canvasRef.current && cameraRef.current && rendererRef.current) {
+        const width = canvasRef.current.clientWidth;
+        const height = canvasRef.current.clientHeight;
+        rendererRef.current.setSize(width, height);
+        cameraRef.current.aspect = width / height;
+        cameraRef.current.updateProjectionMatrix();
+      }
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (rendererRef.current) rendererRef.current.dispose();
+      window.removeEventListener('resize', handleResize);
+    };
+  };
+
   return (
     <div className="container max-w-7xl mx-auto min-h-screen p-4 md:p-8" style={{ fontFamily: 'Poppins, sans-serif' }}>
       <section className="roman-shades flex flex-col md:flex-row items-start justify-center my-5 bg-gray-100 p-4 rounded gap-4">
@@ -112,7 +269,7 @@ const BlindCustomizerSection = () => {
               >
                 <img
                   src={buttonImage}
-                  alt={type + " Blind"}
+                  alt={type + ' Blind'}
                   className="button-image w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
                 />
                 <div className="button-text flex justify-center w-full mt-1 text-gray-700 text-[11px]">
@@ -126,20 +283,18 @@ const BlindCustomizerSection = () => {
           <div className="backgroundImage relative w-full h-[calc(100%-4rem)]">
             <div className="solid-color-layer absolute inset-0 z-10" style={{ backgroundColor }}></div>
             <img src="/images/RoomElements.png" alt="Room Background" className="main_bg relative w-full h-full object-contain z-20" />
-            <img
-              src={getBlindOverlaySrc(selectedBlindType)}
-              alt="Blind Type"
-              className={`blind_overlay absolute inset-0 w-full h-full object-contain z-30 pointer-events-none ${selectedBlindType ? '' : 'hidden'}`}
-              style={getBlindOverlayStyle(selectedPattern)}
+            <canvas
+              ref={canvasRef}
+              className="blind_overlay absolute inset-0 w-full h-full z-30"
+              style={{ minHeight: '400px' }}
             />
-            {/* Overlay for Filter Options and Available Patterns (Desktop Only) */}
             <div className="hidden md:block viewport absolute top-0 right-0 w-1/3 h-[calc(100%+5rem)] bg-white bg-opacity-90 shadow-lg rounded flex flex-col z-40">
               <div className="options-menu p-2 bg-gray-100 rounded shadow">
                 <h3 className="mb-2 text-sm text-gray-700 text-left h-12">Filter Options</h3>
                 <div className="grid-container grid grid-cols-2 gap-2 mx-5 text-[13px]">
-                  {['red', 'blue', 'green', 'smooth', 'patterned'].map(filter => (
+                  {['red', 'blue', 'green', 'smooth', 'patterned'].map((filter) => (
                     <div key={filter} className="option-row flex items-center gap-2">
-                      <label className="flex items-center gap-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
                           value={filter}
@@ -159,7 +314,7 @@ const BlindCustomizerSection = () => {
                   {filteredPatterns.map((pattern, index) => (
                     <div
                       key={index}
-                      className="button-container flex flex-col items-center text-center cursor-pointer px-[5px]"
+                      className="button-container flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
                       onClick={() => handleButtonClick(pattern.patternUrl)}
                     >
                       <img
@@ -167,7 +322,7 @@ const BlindCustomizerSection = () => {
                         alt={pattern.name}
                         className="button-image w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
                       />
-                      <div className="button-text flex justify-between w-full mt-0.5 text-gray-700 text-[9px]">
+                      <div className="button-text flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
                         <span className="left-text truncate">{pattern.name}</span>
                         <span className="right-text">{pattern.price}</span>
                       </div>
@@ -188,14 +343,13 @@ const BlindCustomizerSection = () => {
             />
           </div>
         </div>
-        {/* Separate Right Menu for Mobile */}
         <div className="md:hidden w-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col h-[calc(100%)]">
           <div className="options-menu p-2 bg-gray-100 rounded shadow">
             <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
             <div className="grid-container grid grid-cols-2 gap-2 mx-5 text-[13px]">
-              {['red', 'blue', 'green', 'smooth', 'patterned'].map(filter => (
+              {['red', 'blue', 'green', 'smooth', 'patterned'].map((filter) => (
                 <div key={filter} className="option-row flex items-center gap-2">
-                  <label className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       value={filter}
@@ -215,7 +369,7 @@ const BlindCustomizerSection = () => {
               {filteredPatterns.map((pattern, index) => (
                 <div
                   key={index}
-                  className="button-container flex flex-col items-center text-center cursor-pointer px-[5px]"
+                  className="button-container flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
                   onClick={() => handleButtonClick(pattern.patternUrl)}
                 >
                   <img
@@ -223,7 +377,7 @@ const BlindCustomizerSection = () => {
                     alt={pattern.name}
                     className="button-image w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
                   />
-                  <div className="button-text flex justify-between w-full mt-0.5 text-gray-700 text-[9px]">
+                  <div className="button-text flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
                     <span className="left-text truncate">{pattern.name}</span>
                     <span className="right-text">{pattern.price}</span>
                   </div>
@@ -237,9 +391,6 @@ const BlindCustomizerSection = () => {
         <div className="productDetail-content pb-20 max-w-3xl mx-auto">
           <h3 className="text-xl">Customize Your Curtain</h3>
           <p className="my-2 text-sm">Choose the perfect style, size, and finish to match your room.</p>
-          <div className="product-options">
-            {/* <h3 className="text-base">Step 1: Select Material</h3> */}
-          </div>
         </div>
         <div className="fixed-bottom-bar fixed bottom-0 left-0 w-full bg-white border-t border-gray-300 flex justify-between items-center p-2 shadow-md">
           <div className="total-container max-w-7xl mx-auto flex-1">
@@ -257,8 +408,8 @@ const BlindCustomizerSection = () => {
   );
 };
 
-const Blindcustomizer: React.FC = () => {
-  return <BlindCustomizerSection />;
+const BlindcustomizerThreeD: React.FC = () => {
+  return <BlindCustomizerThreeD />;
 };
 
-export default Blindcustomizer;
+export default BlindcustomizerThreeD;
