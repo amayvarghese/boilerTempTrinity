@@ -35,7 +35,8 @@ module.exports = {
         'red':'#ED6565',
         'navcls': '#F5F5F5',
         'gray': '#525B7A',
-        'neutral':'#E0E3EB'
+        'neutral':'#E0E3EB',
+        'olive':'##556B2F',
       },
       boxShadow:{
         '2xl': '0px 20px 24px -4px rgba(17, 24, 39, 0.1), 0px 8px 8px -4px rgba(17, 24, 39, 0.04);',
