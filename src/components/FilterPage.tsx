@@ -183,49 +183,78 @@ const FilterPage: React.FC = () => {
   const captureImage = () => {
     console.log("Capturing image at 2012x1132");
     if (!videoRef.current || !videoRef.current.videoWidth) return;
-
+  
     const canvas = document.createElement("canvas");
     const targetWidth = 2012;
     const targetHeight = 1132;
     canvas.width = targetWidth;
     canvas.height = targetHeight;
     const ctx = canvas.getContext("2d");
-
+  
     if (ctx) {
       const videoWidth = videoRef.current.videoWidth;
       const videoHeight = videoRef.current.videoHeight;
       const videoAspect = videoWidth / videoHeight;
       const targetAspect = targetWidth / targetHeight;
-
-      let sx, sy, sWidth, sHeight;
-
-      if (videoAspect > targetAspect) {
-        sHeight = videoHeight;
-        sWidth = videoHeight * targetAspect;
-        sx = (videoWidth - sWidth) / 2;
-        sy = 0;
-      } else {
-        sWidth = videoWidth;
-        sHeight = videoWidth / targetAspect;
+  
+      // Detect if the device is mobile
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  
+      let sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight;
+  
+      if (isMobile) {
+        // For mobile: Preserve the full video feed without cropping, scale to fit
+        if (videoAspect > targetAspect) {
+          // Video is wider than target: fit height, adjust width
+          dHeight = targetHeight;
+          dWidth = targetHeight * videoAspect;
+          dx = (targetWidth - dWidth) / 2; // Center horizontally
+          dy = 0;
+        } else {
+          // Video is taller than target: fit width, adjust height
+          dWidth = targetWidth;
+          dHeight = targetWidth / videoAspect;
+          dx = 0;
+          dy = (targetHeight - dHeight) / 2; // Center vertically
+        }
         sx = 0;
-        sy = (videoHeight - sHeight) / 2;
+        sy = 0;
+        sWidth = videoWidth;
+        sHeight = videoHeight;
+  
+        // Clear canvas and draw the video scaled to fit
+        ctx.fillStyle = "#000000"; // Optional: Fill background to avoid empty areas
+        ctx.fillRect(0, 0, targetWidth, targetHeight);
+        ctx.drawImage(videoRef.current, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
+      } else {
+        // For desktop: Keep the original cropping behavior
+        if (videoAspect > targetAspect) {
+          sHeight = videoHeight;
+          sWidth = videoHeight * targetAspect;
+          sx = (videoWidth - sWidth) / 2;
+          sy = 0;
+        } else {
+          sWidth = videoWidth;
+          sHeight = videoWidth / targetAspect;
+          sx = 0;
+          sy = (videoHeight - sHeight) / 2;
+        }
+        ctx.drawImage(
+          videoRef.current,
+          sx, sy, sWidth, sHeight,
+          0, 0, targetWidth, targetHeight
+        );
       }
-
-      ctx.drawImage(
-        videoRef.current,
-        sx, sy, sWidth, sHeight,
-        0, 0, targetWidth, targetHeight
-      );
-
+  
       const imageData = canvas.toDataURL("image/png");
       localStorage.setItem("capturedImage", imageData);
       setCapturedImage(imageData);
-
+  
       if (cameraStreamRef.current) {
         cameraStreamRef.current.getTracks().forEach((track) => track.stop());
         if (videoRef.current) videoRef.current.srcObject = null;
       }
-
+  
       if (videoRef.current) videoRef.current.className += " hidden";
       if (overlayImageRef.current)
         overlayImageRef.current.className = "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70";
