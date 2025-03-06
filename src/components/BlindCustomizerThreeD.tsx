@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as THREE from './three.js-r132/build/three.module.js'; // Adjust path as needed
 import { GLTFLoader } from './three.js-r132/examples/jsm/loaders/GLTFLoader.js'; // Adjust path as needed
 
-const BlindCustomizerThreeD = () => {
+const BlindCustomizerThreeD: React.FC = () => {
   const [selectedBlindType, setSelectedBlindType] = useState<string | null>(null);
   const [backgroundColor, setBackgroundColor] = useState<string>('#F5F5DC');
   const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
   const [filters, setFilters] = useState<string[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null); // Ref for the background image
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -31,58 +32,58 @@ const BlindCustomizerThreeD = () => {
     { 
       type: 'classicRoman', 
       buttonImage: '/images/windowTypeIcons/image 12.png', 
-      modelUrl: '/models/shadeBake.glb',
-      scale: { x: 0.145, y: 0.205, z: 0.1 },
-      position: { x: -4.25, y: -2.5, z: 0 },
-      rotation: { x: 0, y: 0, z: 0 }
+      modelUrl: '/models/shadeBake.glb', 
+      rotation: { x: 0, y: 0, z: 0 }, 
+      baseScale: { x: 0.5, y: 0.75, z: 0.8 }, 
+      basePosition: { x: -15, y: -7.5, z: 0 } 
     },
     { 
       type: 'roller', 
       buttonImage: '/images/windowTypeIcons/image 11.png', 
-      modelUrl: '/models/shadeBake.glb',
-      scale: { x: 0.1, y: 0.1, z: 0.1 },
-      position: { x: 0, y: 0, z: 0 },
-      rotation: { x: 0, y: 0, z: 0 }
+      modelUrl: '/models/plantationShutter.glb', 
+      rotation: { x: 0, y: 0, z: 0 }, 
+      baseScale: { x: 0.07, y: .1, z: .1 }, 
+      basePosition: { x: -2, y: 1, z: 0 }
     },
     { 
       type: 'roman', 
       buttonImage: '/images/windowTypeIcons/image 13.png', 
-      modelUrl: '/models/shadeBake.glb',
-      scale: { x: 0.08, y: 0.08, z: 0.08 },
-      position: { x: -1, y: 0, z: 0 },
-      rotation: { x: 0, y: 0, z: 0 }
+      modelUrl: '/models/shadeBake.glb', 
+      rotation: { x: 0, y: 0, z: 0 }, 
+      baseScale: { x: 0.5, y: 0.75, z: 0.8 }, 
+      basePosition: { x: -15, y: -7.5, z: 0 } 
     },
     { 
       type: 'plantationShutter', 
       buttonImage: '/images/windowTypeIcons/image 15.png', 
-      modelUrl: '/models/shadeBake.glb',
-      scale: { x: 0.06, y: 0.06, z: 0.06 },
-      position: { x: 0, y: 0, z: 1 },
-      rotation: { x: 0, y: 0, z: 0 }
+      modelUrl: '/models/plantationShutter.glb', 
+      rotation: { x: 0, y: 0, z: 0 }, 
+      baseScale: { x: 0.07, y: .1, z: .1 }, 
+      basePosition: { x: -2, y: 1, z: 0 }
     },
     { 
       type: 'solar', 
       buttonImage: '/images/windowTypeIcons/image 14.png', 
-      modelUrl: '/models/shadeBake.glb',
-      scale: { x: 0.07, y: 0.07, z: 0.07 },
-      position: { x: 0, y: -1, z: 0 },
-      rotation: { x: 0, y: 0, z: 0 }
+      modelUrl: '/models/shadeBake.glb', 
+      rotation: { x: 0, y: 0, z: 0 }, 
+      baseScale: { x: 0.7, y: 0.7, z: 0.7 }, 
+      basePosition: { x: -5, y: 10, z: 0 }
     },
     { 
       type: 'aluminumSheet', 
       buttonImage: '/images/windowTypeIcons/image 17.png', 
-      modelUrl: '/models/shadeBake.glb',
-      scale: { x: 0.09, y: 0.09, z: 0.09 },
-      position: { x: 1, y: 0, z: 0 },
-      rotation: { x: 0, y: 0, z: 0 }
+      modelUrl: '/models/plantationShutter.glb', 
+      rotation: { x: 0, y: 0, z: 0 }, 
+      baseScale: { x: 0.07, y: .1, z: .1 }, 
+      basePosition: { x: -2, y: 1, z: 0 }
     },
     { 
       type: 'cellularBlinds', 
       buttonImage: '/images/windowTypeIcons/image 18.png', 
-      modelUrl: '/models/shadeBake.glb',
-      scale: { x: 0.04, y: 0.04, z: 0.04 },
-      position: { x: 0, y: 0, z: -1 },
-      rotation: { x: 0, y: 0, z: 0 }
+      modelUrl: '/models/shadeBake.glb', 
+      rotation: { x: 0, y: 0, z: 0 }, 
+      baseScale: { x: 0.85, y: 0.85, z: 0.85 }, 
+      basePosition: { x: 5, y: 5, z: 0 }
     },
   ];
 
@@ -134,12 +135,10 @@ const BlindCustomizerThreeD = () => {
 
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(patternUrl, (texture) => {
-      // Configure texture for tiling
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(8, 8); // Increased from 4, 4 to 8, 8 for more tiling
+      texture.repeat.set(8, 8);
 
-      // Apply texture to existing materials
       modelRef.current.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           const material = child.material.clone();
@@ -153,43 +152,111 @@ const BlindCustomizerThreeD = () => {
     });
   };
 
-  const create3DModel = (type: string) => {
-    if (!canvasRef.current) return;
+  const updateModelScaleAndPosition = (blind: any) => {
+    if (!modelRef.current || !cameraRef.current || !imageRef.current) return;
 
-    // Clean up previous scene if it exists
-    if (sceneRef.current && modelRef.current) {
-      sceneRef.current.remove(modelRef.current);
-    }
+    // Use image dimensions for sticking to image
+    const imageWidth = imageRef.current.clientWidth;
+    const imageHeight = imageRef.current.clientHeight;
+
+    // Compute the model's bounding box
+    const box = new THREE.Box3().setFromObject(modelRef.current);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const modelWidth = size.x;
+    const modelHeight = size.y;
+
+    // Calculate scale to fit within image with padding
+    const padding = 0.9; // Adjust this if needed
+    const scaleX = (imageWidth * padding) / modelWidth;
+    const scaleY = (imageHeight * padding) / modelHeight;
+    const scaleFactor = Math.min(scaleX, scaleY);
+
+    // Apply custom baseScale adjusted by image scaleFactor
+    modelRef.current.scale.set(
+      blind.baseScale.x * scaleFactor,
+      blind.baseScale.y * scaleFactor,
+      blind.baseScale.z * scaleFactor
+    );
+
+    // Center the model and apply custom basePosition relative to image
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    modelRef.current.position.set(
+      -center.x + (blind.basePosition.x * scaleFactor),
+      -center.y + (blind.basePosition.y * scaleFactor),
+      blind.basePosition.z * scaleFactor
+    );
+
+    // Adjust camera to fit the scaled model
+    const fov = cameraRef.current.fov * (Math.PI / 180);
+    const scaledWidth = modelWidth * scaleFactor * blind.baseScale.x;
+    const scaledHeight = modelHeight * scaleFactor * blind.baseScale.y;
+    const distance = Math.max(scaledWidth / (2 * Math.tan(fov / 2)), scaledHeight / (2 * Math.tan(fov / 2))) * 1.5;
+    cameraRef.current.position.set(0, 0, distance);
+    cameraRef.current.lookAt(0, 0, 0);
+
+    // Update renderer size to match image
     if (rendererRef.current) {
-      rendererRef.current.dispose();
+      rendererRef.current.setSize(imageWidth, imageHeight);
     }
+
+    // Enhanced debug logging
+    console.group(`Debug for ${blind.type} at Screen Size: ${window.innerWidth}x${window.innerHeight}`);
+    console.log('Image Size:', { width: imageWidth, height: imageHeight });
+    console.log('Model Raw Size:', { width: modelWidth, height: modelHeight });
+    console.log('Scale Factor (min of scaleX, scaleY):', scaleFactor.toFixed(4));
+    console.log('Scale X Factor:', scaleX.toFixed(4), 'Scale Y Factor:', scaleY.toFixed(4));
+    console.log('Base Scale:', blind.baseScale);
+    console.log('Applied Scale:', {
+      x: modelRef.current.scale.x.toFixed(4),
+      y: modelRef.current.scale.y.toFixed(4),
+      z: modelRef.current.scale.z.toFixed(4)
+    });
+    console.log('Base Position:', blind.basePosition);
+    console.log('Applied Position:', {
+      x: modelRef.current.position.x.toFixed(4),
+      y: modelRef.current.position.y.toFixed(4),
+      z: modelRef.current.position.z.toFixed(4)
+    });
+    console.log('Camera Position:', cameraRef.current.position);
+    console.groupEnd();
+  };
+
+  const create3DModel = (type: string) => {
+    if (!canvasRef.current || !imageRef.current) return;
+
+    // Clean up previous scene
+    if (sceneRef.current && modelRef.current) sceneRef.current.remove(modelRef.current);
+    if (rendererRef.current) rendererRef.current.dispose();
 
     // Initialize Scene
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
     // Initialize Camera
-    const camera = new THREE.PerspectiveCamera(75, canvasRef.current.clientWidth / canvasRef.current.clientHeight, 0.1, 1000);
-    camera.position.set(0, 0, 10);
+    const aspect = imageRef.current.clientWidth / imageRef.current.clientHeight;
+    const camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+    camera.position.set(0, 0, 10); // Initial position, adjusted later
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
     // Initialize Renderer
     const renderer = new THREE.WebGLRenderer({ canvas: canvasRef.current, alpha: true });
-    renderer.setSize(canvasRef.current.clientWidth, canvasRef.current.clientHeight);
+    renderer.setSize(imageRef.current.clientWidth, imageRef.current.clientHeight);
     renderer.setClearColor(0x000000, 0); // Transparent background
     rendererRef.current = renderer;
 
-    // Add Lighting (moderate intensity)
+    // Add Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
     directionalLight.position.set(5, 5, 5);
     scene.add(directionalLight);
 
-    // Add Axes Helper for debugging orientation
-    const axesHelper = new THREE.AxesHelper(5); // Red=X, Green=Y, Blue=Z
-    scene.add(axesHelper);
+    // Removed AxesHelper to prevent gizmo display
+    // const axesHelper = new THREE.AxesHelper(5);
+    // scene.add(axesHelper);
 
     // Load the 3D model
     const loader = new GLTFLoader();
@@ -199,33 +266,22 @@ const BlindCustomizerThreeD = () => {
         blind.modelUrl,
         (gltf) => {
           console.log('Model loaded:', gltf);
-          if (modelRef.current && sceneRef.current) {
-            sceneRef.current.remove(modelRef.current);
-          }
+          if (modelRef.current && sceneRef.current) sceneRef.current.remove(modelRef.current);
           modelRef.current = gltf.scene;
-
-          // Apply specific scale, position, and rotation from blindTypes
-          modelRef.current.scale.set(blind.scale.x, blind.scale.y, blind.scale.z);
-          modelRef.current.position.set(blind.position.x, blind.position.y, blind.position.z);
           modelRef.current.rotation.set(blind.rotation.x, blind.rotation.y, blind.rotation.z);
-
-          console.log('Applied scale:', modelRef.current.scale);
-          console.log('Applied position:', modelRef.current.position);
-          console.log('Applied rotation:', modelRef.current.rotation);
-
           sceneRef.current.add(modelRef.current);
 
-          // Apply selected pattern if one is already selected
-          if (selectedPattern) {
-            applyPatternToModel(selectedPattern);
-          }
+          // Apply initial scale and position
+          updateModelScaleAndPosition(blind);
+
+          if (selectedPattern) applyPatternToModel(selectedPattern);
         },
         (progress) => console.log('Loading progress:', (progress.loaded / progress.total) * 100 + '%'),
         (error) => console.error('Loading error:', error)
       );
     }
 
-    // Animation Loop (no rotation)
+    // Animation Loop
     let animationFrameId: number;
     const animate = () => {
       if (sceneRef.current && cameraRef.current && rendererRef.current) {
@@ -237,12 +293,17 @@ const BlindCustomizerThreeD = () => {
 
     // Handle Resize
     const handleResize = () => {
-      if (canvasRef.current && cameraRef.current && rendererRef.current) {
-        const width = canvasRef.current.clientWidth;
-        const height = canvasRef.current.clientHeight;
+      if (canvasRef.current && cameraRef.current && rendererRef.current && modelRef.current && imageRef.current) {
+        const width = imageRef.current.clientWidth;
+        const height = imageRef.current.clientHeight;
+
+        // Update renderer and camera
         rendererRef.current.setSize(width, height);
         cameraRef.current.aspect = width / height;
         cameraRef.current.updateProjectionMatrix();
+
+        // Update model scale and position with debug
+        updateModelScaleAndPosition(blind);
       }
     };
     window.addEventListener('resize', handleResize);
@@ -282,7 +343,12 @@ const BlindCustomizerThreeD = () => {
         <div className="central-content flex flex-col items-center w-full md:w-3/4 relative">
           <div className="backgroundImage relative w-full h-[calc(100%-4rem)]">
             <div className="solid-color-layer absolute inset-0 z-10" style={{ backgroundColor }}></div>
-            <img src="/images/RoomElements.png" alt="Room Background" className="main_bg relative w-full h-full object-contain z-20" />
+            <img 
+              ref={imageRef}
+              src="/images/RoomElements.png" 
+              alt="Room Background" 
+              className="main_bg relative w-full h-full object-contain z-20" 
+            />
             <canvas
               ref={canvasRef}
               className="blind_overlay absolute inset-0 w-full h-full z-30"
@@ -408,8 +474,4 @@ const BlindCustomizerThreeD = () => {
   );
 };
 
-const BlindcustomizerThreeD: React.FC = () => {
-  return <BlindCustomizerThreeD />;
-};
-
-export default BlindcustomizerThreeD;
+export default BlindCustomizerThreeD;

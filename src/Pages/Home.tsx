@@ -1,8 +1,12 @@
-import React from 'react';
-import BlindCustomizerThreeD from '../components/BlindCustomizerThreeD'; // Adjust path as needed
+import React from "react";
+import FilterPage from "../components/FilterPage"; // Adjust the path as needed
 
-const BlindCustomizerThree: React.FC = () => {
-  return <BlindCustomizerThreeD />;
+const NewPage: React.FC = () => {
+  return (
+    <>
+      <FilterPage />
+    </>
+  );
 };
 
-export default BlindCustomizerThree;
+export default NewPage;
