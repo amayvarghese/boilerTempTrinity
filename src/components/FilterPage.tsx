@@ -181,8 +181,8 @@ const FilterPage: React.FC = () => {
   };
 
   const captureImage = () => {
-    console.log("Capturing image at 2012x1132");
-    if (!videoRef.current || !videoRef.current.videoWidth) return;
+    console.log("Capturing image");
+    if (!videoRef.current) return;
   
     const canvas = document.createElement("canvas");
     const targetWidth = 2012;
@@ -191,43 +191,45 @@ const FilterPage: React.FC = () => {
     canvas.height = targetHeight;
     const ctx = canvas.getContext("2d");
   
-    if (ctx) {
-      const videoWidth = videoRef.current.videoWidth;
-      const videoHeight = videoRef.current.videoHeight;
-      const videoAspect = videoWidth / videoHeight;
+    if (ctx && videoRef.current) {
+      // Get the actual displayed dimensions of the video element
+      const displayedWidth = videoRef.current.offsetWidth;
+      const displayedHeight = videoRef.current.offsetHeight;
+      const displayedAspect = displayedWidth / displayedHeight;
       const targetAspect = targetWidth / targetHeight;
   
-      // Detect if the device is mobile
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   
-      let sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight;
+      let dx, dy, dWidth, dHeight;
   
       if (isMobile) {
-        // For mobile: Preserve the full video feed without cropping, scale to fit
-        if (videoAspect > targetAspect) {
-          // Video is wider than target: fit height, adjust width
+        // For mobile: Scale the video to fit the canvas while preserving aspect ratio
+        if (displayedAspect > targetAspect) {
+          // Video is wider than target: fit height, center horizontally
           dHeight = targetHeight;
-          dWidth = targetHeight * videoAspect;
-          dx = (targetWidth - dWidth) / 2; // Center horizontally
+          dWidth = targetHeight * displayedAspect;
+          dx = (targetWidth - dWidth) / 2;
           dy = 0;
         } else {
-          // Video is taller than target: fit width, adjust height
+          // Video is taller than target: fit width, center vertically
           dWidth = targetWidth;
-          dHeight = targetWidth / videoAspect;
+          dHeight = targetWidth / displayedAspect;
           dx = 0;
-          dy = (targetHeight - dHeight) / 2; // Center vertically
+          dy = (targetHeight - dHeight) / 2;
         }
-        sx = 0;
-        sy = 0;
-        sWidth = videoWidth;
-        sHeight = videoHeight;
   
-        // Clear canvas and draw the video scaled to fit
-        ctx.fillStyle = "#000000"; // Optional: Fill background to avoid empty areas
+        // Clear canvas and draw the video as displayed
+        ctx.fillStyle = "#000000"; // Fill background to cover empty areas
         ctx.fillRect(0, 0, targetWidth, targetHeight);
-        ctx.drawImage(videoRef.current, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
+        ctx.drawImage(videoRef.current, 0, 0, displayedWidth, displayedHeight, dx, dy, dWidth, dHeight);
       } else {
-        // For desktop: Keep the original cropping behavior
+        // For desktop: Use the original cropping behavior
+        const videoWidth = videoRef.current.videoWidth;
+        const videoHeight = videoRef.current.videoHeight;
+        const videoAspect = videoWidth / videoHeight;
+  
+        let sx, sy, sWidth, sHeight;
+  
         if (videoAspect > targetAspect) {
           sHeight = videoHeight;
           sWidth = videoHeight * targetAspect;
@@ -239,6 +241,7 @@ const FilterPage: React.FC = () => {
           sx = 0;
           sy = (videoHeight - sHeight) / 2;
         }
+  
         ctx.drawImage(
           videoRef.current,
           sx, sy, sWidth, sHeight,
