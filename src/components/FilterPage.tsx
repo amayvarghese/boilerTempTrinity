@@ -50,6 +50,7 @@ const FilterPage: React.FC = () => {
     (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
   );
 
+  // Keep your existing useEffect hooks for Three.js and DOM setup unchanged
   useEffect(() => {
     console.log("Initializing Three.js scene");
     const scene = new THREE.Scene();
@@ -144,6 +145,7 @@ const FilterPage: React.FC = () => {
     };
   }, []);
 
+  // Keep your existing functions unchanged (handleButtonClick, startCameraStream, etc.)
   const handleButtonClick = () => {
     console.log("Button clicked:", controlButtonRef.current?.textContent);
     if (!controlButtonRef.current) return;
@@ -179,14 +181,42 @@ const FilterPage: React.FC = () => {
   };
 
   const captureImage = () => {
-    console.log("Capturing image");
+    console.log("Capturing image at 2012x1132");
     if (!videoRef.current || !videoRef.current.videoWidth) return;
+
     const canvas = document.createElement("canvas");
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
+    const targetWidth = 2012;
+    const targetHeight = 1132;
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
     const ctx = canvas.getContext("2d");
+
     if (ctx) {
-      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      const videoWidth = videoRef.current.videoWidth;
+      const videoHeight = videoRef.current.videoHeight;
+      const videoAspect = videoWidth / videoHeight;
+      const targetAspect = targetWidth / targetHeight;
+
+      let sx, sy, sWidth, sHeight;
+
+      if (videoAspect > targetAspect) {
+        sHeight = videoHeight;
+        sWidth = videoHeight * targetAspect;
+        sx = (videoWidth - sWidth) / 2;
+        sy = 0;
+      } else {
+        sWidth = videoWidth;
+        sHeight = videoWidth / targetAspect;
+        sx = 0;
+        sy = (videoHeight - sHeight) / 2;
+      }
+
+      ctx.drawImage(
+        videoRef.current,
+        sx, sy, sWidth, sHeight,
+        0, 0, targetWidth, targetHeight
+      );
+
       const imageData = canvas.toDataURL("image/png");
       localStorage.setItem("capturedImage", imageData);
       setCapturedImage(imageData);
@@ -249,7 +279,6 @@ const FilterPage: React.FC = () => {
       hasSelectionBox.current = true;
       isDragging = false;
       create3DModelFromSelection(startX, startY, x, y);
-      if (saveButtonRef.current) saveButtonRef.current.className = saveButtonRef.current.className.replace(" hidden", "");
     };
 
     const handleMouseDown = (event: MouseEvent) => {
@@ -354,7 +383,7 @@ const FilterPage: React.FC = () => {
       new THREE.TextureLoader().load(selectedPattern || "images/pattern4.jpg", (texture) => {
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(targetWidth / 2, targetHeight / 2);
+        texture.repeat.set(8, 8);
 
         model.traverse((child) => {
           if ((child as THREE.Mesh).isMesh) {
@@ -365,6 +394,7 @@ const FilterPage: React.FC = () => {
               roughness: 0.5,
               metalness: 0.3,
             });
+            mesh.material.needsUpdate = true;
           }
         });
 
@@ -388,54 +418,68 @@ const FilterPage: React.FC = () => {
 
         sceneRef.current!.add(model);
         modelsRef.current.push({ model, gltf });
-        console.log("3D model added to scene");
+        console.log("3D model added with texture tiling set to 8x8");
+      }, undefined, (error) => {
+        console.error("Error loading texture:", error);
       });
+    }, undefined, (error) => {
+      console.error("Error loading model:", error);
     });
   };
 
   const saveImage = () => {
     console.log("Saving image");
-    if (!capturedImage || !rendererRef.current || !sceneRef.current || !cameraRef.current) return;
-
+    if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !capturedImage) return;
+  
+    // Hide UI elements before rendering
     setShowBlindMenu(false);
     if (controlButtonRef.current) controlButtonRef.current.style.display = "none";
     if (saveButtonRef.current) saveButtonRef.current.style.display = "none";
-
+  
+    // Use setTimeout to ensure UI updates are applied before capturing
     setTimeout(() => {
+      // Step 1: Create a canvas matching the renderer size
       const canvas = document.createElement("canvas");
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      canvas.width = rendererRef.current.domElement.width;
+      canvas.height = rendererRef.current.domElement.height;
       const ctx = canvas.getContext("2d");
-
+  
       if (ctx) {
-        const img = new Image();
-        img.onload = () => {
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          rendererRef.current!.render(sceneRef.current!, cameraRef.current!);
+        // Step 2: Draw the original captured image as the background
+        const backgroundImg = new Image();
+        backgroundImg.onload = () => {
+          ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+  
+          // Step 3: Render the current Three.js scene and overlay it
+          rendererRef.current.render(sceneRef.current!, cameraRef.current!);
           const renderData = rendererRef.current!.domElement.toDataURL("image/png");
           const renderImg = new Image();
           renderImg.onload = () => {
             ctx.drawImage(renderImg, 0, 0, canvas.width, canvas.height);
+  
+            // Step 4: Trigger download
             const link = document.createElement("a");
             link.download = "custom_blind_image.png";
             link.href = canvas.toDataURL("image/png");
             link.click();
+  
+            // Step 5: Restore UI elements
             setShowBlindMenu(true);
             if (controlButtonRef.current) controlButtonRef.current.style.display = "block";
             if (saveButtonRef.current) saveButtonRef.current.style.display = "block";
           };
           renderImg.src = renderData;
         };
-        img.src = capturedImage;
+        backgroundImg.src = capturedImage; // Use the original captured image as the base
       }
-    }, 100);
+    }, 100); // Delay to ensure UI is hidden and rendering is updated
   };
 
   const submitAndShowMenu = () => {
     console.log("Submitting and showing menu");
     setShowBlindMenu(true);
     if (controlButtonRef.current) controlButtonRef.current.style.display = "none";
-    if (saveButtonRef.current) saveButtonRef.current.style.display = "block";
+    if (saveButtonRef.current) saveButtonRef.current.className = saveButtonRef.current.className.replace(" hidden", "");
   };
 
   const selectBlindType = (type: string) => {
@@ -476,7 +520,7 @@ const FilterPage: React.FC = () => {
       new THREE.TextureLoader().load(selectedPattern || "images/pattern4.jpg", (texture) => {
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(scale.x * 2, scale.y * 2);
+        texture.repeat.set(8, 8);
 
         newModel.traverse((child) => {
           if ((child as THREE.Mesh).isMesh) {
@@ -486,6 +530,7 @@ const FilterPage: React.FC = () => {
               roughness: 0.5,
               metalness: 0.3,
             });
+            mesh.material.needsUpdate = true;
           }
         });
 
@@ -494,8 +539,12 @@ const FilterPage: React.FC = () => {
 
         sceneRef.current!.add(newModel);
         modelsRef.current[0] = { model: newModel, gltf };
-        console.log("Model updated");
+        console.log("Model updated with texture tiling set to 8x8");
+      }, undefined, (error) => {
+        console.error("Error loading texture:", error);
       });
+    }, undefined, (error) => {
+      console.error("Error loading model:", error);
     });
   };
 
@@ -508,7 +557,7 @@ const FilterPage: React.FC = () => {
     new THREE.TextureLoader().load(patternUrl, (texture) => {
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(model.scale.x * 2, model.scale.y * 2);
+      texture.repeat.set(8, 8);
 
       model.traverse((child) => {
         if ((child as THREE.Mesh).isMesh) {
@@ -518,8 +567,12 @@ const FilterPage: React.FC = () => {
             roughness: 0.5,
             metalness: 0.3,
           });
+          mesh.material.needsUpdate = true;
         }
       });
+      console.log("Pattern updated with tiling set to 8x8");
+    }, undefined, (error) => {
+      console.error("Error loading texture:", error);
     });
   };
 
@@ -533,8 +586,16 @@ const FilterPage: React.FC = () => {
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden" style={{ fontFamily: "Poppins, sans-serif", backgroundColor: "#F5F5DC" }}>
-      <div ref={mountRef} className="absolute inset-0 w-full h-full">
+    <div
+      className="relative w-screen h-auto min-h-screen overflow-x-hidden"
+      style={{ fontFamily: "Poppins, sans-serif", backgroundColor: "#F5F5DC" }}
+    >
+      {/* Image Container */}
+      <div
+        ref={mountRef}
+        className="relative w-full"
+        style={{ height: "calc(100vh - 4rem)", maxHeight: "1132px" }} // Maintain aspect ratio or fixed height
+      >
         {capturedImage && (
           <img
             src={capturedImage}
@@ -543,14 +604,19 @@ const FilterPage: React.FC = () => {
           />
         )}
       </div>
+
+      {/* Instruction */}
       <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 p-2 rounded shadow-md z-[50] text-brown-800 text-lg">
         {instruction}
       </div>
+
+      {/* Menus */}
       {showBlindMenu && (
-        <div className="absolute inset-0 flex justify-between">
-          <div className="blind-type-menu w-1/4 md:w-1/6 bg-white bg-opacity-90 shadow-lg rounded flex flex-col h-[calc(100%+5rem)] z-30">
+        <div className="menu-container w-full flex flex-col md:flex-row justify-between gap-4 p-4 md:absolute md:inset-0">
+          {/* Blind Type Menu */}
+          <div className="blind-type-menu w-full md:w-1/6 bg-white bg-opacity-90 shadow-lg rounded flex flex-col z-30">
             <h3 className="bg-gray-100 p-2 text-left text-sm text-brown-800 shadow h-12 flex items-center sticky top-0">Select Type of Blind</h3>
-            <div className="blind-type-content flex flex-col gap-2 mx-5 my-5 overflow-y-auto flex-1">
+            <div className="blind-type-content flex flex-col gap-2 mx-5 my-5 overflow-y-auto max-h-[50vh] md:max-h-[calc(100vh-5rem)]">
               {blindTypes.map(({ type, buttonImage }) => (
                 <div
                   key={type}
@@ -569,7 +635,9 @@ const FilterPage: React.FC = () => {
               ))}
             </div>
           </div>
-          <div className="patterns-menu w-1/3 md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col h-[calc(100%+5rem)] z-30">
+
+          {/* Patterns and Filters Menu */}
+          <div className="patterns-menu w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col z-30">
             <div className="options-menu p-2 bg-gray-100 rounded shadow">
               <h3 className="mb-2 text-sm text-brown-800 text-left h-12 flex items-center sticky top-0 bg-gray-100">Filter Options</h3>
               <div className="grid-container grid grid-cols-2 gap-2 mx-5 text-[13px]">
@@ -589,7 +657,7 @@ const FilterPage: React.FC = () => {
                 ))}
               </div>
             </div>
-            <div className="scrollable-buttons flex flex-col flex-1 max-h-[400px]">
+            <div className="scrollable-buttons flex flex-col flex-1 max-h-[50vh] md:max-h-[400px]">
               <h3 className="bg-gray-100 pt-[10px] pb-2 px-2 text-left text-sm text-brown-800 shadow h-12 flex items-center sticky top-0">Available Patterns</h3>
               <div className="viewport-content grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
                 {filteredPatterns.map((pattern, index) => (
