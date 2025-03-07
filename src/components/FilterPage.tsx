@@ -28,6 +28,8 @@ const FilterPage: React.FC = () => {
   const modelsRef = useRef<ModelData[]>([]);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const hasSelectionBox = useRef(false);
+  const lockedScaleRef = useRef<THREE.Vector3 | null>(null); // Ref for locked scale
+  const lockedPositionRef = useRef<THREE.Vector3 | null>(null); // Ref for locked position
 
   const blindTypes = [
     { type: "classicRoman", buttonImage: "/images/windowTypeIcons/image 12.png", modelUrl: "/models/classicRoman.glb" },
@@ -64,15 +66,17 @@ const FilterPage: React.FC = () => {
     rendererRef.current = renderer;
 
     if (mountRef.current) {
-      renderer.setSize(window.innerWidth, window.innerHeight);
+      const initialWidth = window.innerWidth;
+      const initialHeight = window.innerHeight;
+      renderer.setSize(initialWidth, initialHeight);
       mountRef.current.appendChild(renderer.domElement);
-      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.aspect = initialWidth / initialHeight;
       camera.updateProjectionMatrix();
-      renderer.domElement.style.position = "absolute";
+      renderer.domElement.style.position = "fixed"; // Fixed position to prevent scroll interference
       renderer.domElement.style.top = "0";
       renderer.domElement.style.left = "0";
       renderer.domElement.style.zIndex = "20";
-      console.log("Renderer mounted with size:", window.innerWidth, window.innerHeight);
+      console.log("Renderer mounted with size:", initialWidth, initialHeight);
     }
 
     scene.add(new THREE.AmbientLight(0xffffff, 1));
@@ -83,16 +87,6 @@ const FilterPage: React.FC = () => {
 
     animate();
 
-    const handleResize = () => {
-      if (cameraRef.current && rendererRef.current) {
-        rendererRef.current.setSize(window.innerWidth, window.innerHeight);
-        cameraRef.current.aspect = window.innerWidth / window.innerHeight;
-        cameraRef.current.updateProjectionMatrix();
-        console.log("Resized to:", window.innerWidth, window.innerHeight);
-      }
-    };
-    window.addEventListener("resize", handleResize);
-
     return () => {
       console.log("Cleaning up Three.js");
       if (rendererRef.current && mountRef.current) {
@@ -102,7 +96,6 @@ const FilterPage: React.FC = () => {
       if (cameraStreamRef.current) {
         cameraStreamRef.current.getTracks().forEach((track) => track.stop());
       }
-      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
@@ -181,72 +174,38 @@ const FilterPage: React.FC = () => {
   const captureImage = () => {
     console.log("Capturing image");
     if (!videoRef.current) return;
-  
+
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-  
-    // Get the video's intrinsic dimensions
+
     const videoWidth = videoRef.current.videoWidth;
     const videoHeight = videoRef.current.videoHeight;
-  
-    // Get the displayed dimensions
-    const displayedWidth = videoRef.current.offsetWidth;
-    const displayedHeight = videoRef.current.offsetHeight;
-  
-    // Calculate the aspect ratios
-    const videoAspect = videoWidth / videoHeight;
-    const displayAspect = displayedWidth / displayedHeight;
-  
-    let sx, sy, sWidth, sHeight;
-  
-    // Adjust the source rectangle to preserve aspect ratio
-    if (videoAspect > displayAspect) {
-      // Video is wider than display: crop the sides
-      sHeight = videoHeight;
-      sWidth = videoHeight * displayAspect;
-      sx = (videoWidth - sWidth) / 2;
-      sy = 0;
-    } else {
-      // Video is taller than display: crop the top/bottom
-      sWidth = videoWidth;
-      sHeight = videoWidth / displayAspect;
-      sx = 0;
-      sy = (videoHeight - sHeight) / 2;
-    }
-  
-    // Set canvas size to match displayed size
-    canvas.width = displayedWidth;
-    canvas.height = displayedHeight;
-  
-    // Draw the video onto the canvas, preserving aspect ratio
-    ctx.drawImage(
-      videoRef.current,
-      sx, sy, sWidth, sHeight, // Source rectangle (cropped video)
-      0, 0, displayedWidth, displayedHeight // Destination rectangle (canvas)
-    );
-  
+
+    canvas.width = videoWidth;
+    canvas.height = videoHeight;
+
+    ctx.drawImage(videoRef.current, 0, 0, videoWidth, videoHeight);
+
     const imageData = canvas.toDataURL("image/png");
     localStorage.setItem("capturedImage", imageData);
     setCapturedImage(imageData);
-  
-    // Stop the camera stream
+
     if (cameraStreamRef.current) {
       cameraStreamRef.current.getTracks().forEach((track) => track.stop());
       if (videoRef.current) videoRef.current.srcObject = null;
     }
-  
-    // Hide video and overlay
+
     if (videoRef.current) videoRef.current.className += " hidden";
     if (overlayImageRef.current)
       overlayImageRef.current.className = "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70";
-  
-    // Initialize selection box and update button
+
     initSelectionBox();
     if (controlButtonRef.current) controlButtonRef.current.textContent = "Submit";
+
+    console.log("Captured image at resolution:", videoWidth, "x", videoHeight);
   };
 
-  
   const initSelectionBox = () => {
     if (selectionBoxRef.current || hasSelectionBox.current) return;
 
@@ -417,21 +376,26 @@ const FilterPage: React.FC = () => {
 
         const scaleX = targetWidth / modelSize.x;
         const scaleY = targetHeight / modelSize.y;
-        model.scale.set(scaleX, scaleY, 0.3);
+        const scaleZ = 0.3;
+        model.scale.set(scaleX, scaleY, scaleZ);
+
+        lockedScaleRef.current = new THREE.Vector3(scaleX, scaleY, scaleZ);
 
         box.setFromObject(model);
         const modelCenter = new THREE.Vector3();
         box.getCenter(modelCenter);
 
-        model.position.set(
+        const position = new THREE.Vector3(
           (worldStart.x + worldEnd.x) / 2 - (modelCenter.x - model.position.x),
           (worldStart.y + worldEnd.y) / 2 - (modelCenter.y - model.position.y),
           0.1
         );
+        model.position.copy(position);
+        lockedPositionRef.current = position.clone();
 
         sceneRef.current!.add(model);
         modelsRef.current.push({ model, gltf });
-        console.log("3D model added with texture tiling set to 8x8");
+        console.log("3D model added with texture tiling set to 8x8, scale and position locked");
       }, undefined, (error) => {
         console.error("Error loading texture:", error);
       });
@@ -510,13 +474,11 @@ const FilterPage: React.FC = () => {
   };
 
   const updateExistingModel = (type: string) => {
-    if (!sceneRef.current || modelsRef.current.length === 0) return;
+    if (!sceneRef.current || modelsRef.current.length === 0 || !lockedScaleRef.current || !lockedPositionRef.current) return;
 
     console.log("Updating existing model with type:", type);
     const modelUrl = blindTypes.find((b) => b.type === type)?.modelUrl || "/models/shadeBake.glb";
     const { model } = modelsRef.current[0];
-    const position = model.position.clone();
-    const scale = model.scale.clone();
 
     sceneRef.current.remove(model);
 
@@ -540,12 +502,12 @@ const FilterPage: React.FC = () => {
           }
         });
 
-        newModel.scale.copy(scale);
-        newModel.position.copy(position);
+        newModel.scale.copy(lockedScaleRef.current);
+        newModel.position.copy(lockedPositionRef.current);
 
         sceneRef.current!.add(newModel);
         modelsRef.current[0] = { model: newModel, gltf };
-        console.log("Model updated with texture tiling set to 8x8");
+        console.log("Model updated with locked scale and position, texture tiling set to 8x8");
       }, undefined, (error) => {
         console.error("Error loading texture:", error);
       });
@@ -605,7 +567,8 @@ const FilterPage: React.FC = () => {
           <img
             src={capturedImage}
             alt="Captured Background"
-            className="absolute inset-0 w-full h-full object-cover z-0"
+            className="absolute inset-0 w-full h-full object-contain z-0"
+            style={{ maxWidth: "100%", maxHeight: "100%" }}
           />
         )}
       </div>
