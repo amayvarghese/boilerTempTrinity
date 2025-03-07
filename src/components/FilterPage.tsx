@@ -28,7 +28,6 @@ const FilterPage: React.FC = () => {
   const modelsRef = useRef<ModelData[]>([]);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const hasSelectionBox = useRef(false);
-  const lockedScaleRef = useRef<THREE.Vector3 | null>(null); // New ref for locked scale
 
   const blindTypes = [
     { type: "classicRoman", buttonImage: "/images/windowTypeIcons/image 12.png", modelUrl: "/models/classicRoman.glb" },
@@ -187,47 +186,67 @@ const FilterPage: React.FC = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
   
+    // Get the video's intrinsic dimensions
     const videoWidth = videoRef.current.videoWidth;
     const videoHeight = videoRef.current.videoHeight;
+  
+    // Get the displayed dimensions
     const displayedWidth = videoRef.current.offsetWidth;
     const displayedHeight = videoRef.current.offsetHeight;
+  
+    // Calculate the aspect ratios
     const videoAspect = videoWidth / videoHeight;
     const displayAspect = displayedWidth / displayedHeight;
   
     let sx, sy, sWidth, sHeight;
+  
+    // Adjust the source rectangle to preserve aspect ratio
     if (videoAspect > displayAspect) {
+      // Video is wider than display: crop the sides
       sHeight = videoHeight;
       sWidth = videoHeight * displayAspect;
       sx = (videoWidth - sWidth) / 2;
       sy = 0;
     } else {
+      // Video is taller than display: crop the top/bottom
       sWidth = videoWidth;
       sHeight = videoWidth / displayAspect;
       sx = 0;
       sy = (videoHeight - sHeight) / 2;
     }
   
+    // Set canvas size to match displayed size
     canvas.width = displayedWidth;
     canvas.height = displayedHeight;
-    ctx.drawImage(videoRef.current, sx, sy, sWidth, sHeight, 0, 0, displayedWidth, displayedHeight);
+  
+    // Draw the video onto the canvas, preserving aspect ratio
+    ctx.drawImage(
+      videoRef.current,
+      sx, sy, sWidth, sHeight, // Source rectangle (cropped video)
+      0, 0, displayedWidth, displayedHeight // Destination rectangle (canvas)
+    );
   
     const imageData = canvas.toDataURL("image/png");
     localStorage.setItem("capturedImage", imageData);
     setCapturedImage(imageData);
   
+    // Stop the camera stream
     if (cameraStreamRef.current) {
       cameraStreamRef.current.getTracks().forEach((track) => track.stop());
       if (videoRef.current) videoRef.current.srcObject = null;
     }
   
+    // Hide video and overlay
     if (videoRef.current) videoRef.current.className += " hidden";
     if (overlayImageRef.current)
       overlayImageRef.current.className = "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70";
   
+    // Initialize selection box and update button
     initSelectionBox();
     if (controlButtonRef.current) controlButtonRef.current.textContent = "Submit";
   };
 
+  
   const initSelectionBox = () => {
     if (selectionBoxRef.current || hasSelectionBox.current) return;
 
@@ -398,10 +417,7 @@ const FilterPage: React.FC = () => {
 
         const scaleX = targetWidth / modelSize.x;
         const scaleY = targetHeight / modelSize.y;
-        const scaleZ = 0.3;
-        model.scale.set(scaleX, scaleY, scaleZ);
-
-        lockedScaleRef.current = new THREE.Vector3(scaleX, scaleY, scaleZ);
+        model.scale.set(scaleX, scaleY, 0.3);
 
         box.setFromObject(model);
         const modelCenter = new THREE.Vector3();
@@ -415,7 +431,7 @@ const FilterPage: React.FC = () => {
 
         sceneRef.current!.add(model);
         modelsRef.current.push({ model, gltf });
-        console.log("3D model added with texture tiling set to 8x8 and scale locked");
+        console.log("3D model added with texture tiling set to 8x8");
       }, undefined, (error) => {
         console.error("Error loading texture:", error);
       });
@@ -494,12 +510,13 @@ const FilterPage: React.FC = () => {
   };
 
   const updateExistingModel = (type: string) => {
-    if (!sceneRef.current || modelsRef.current.length === 0 || !lockedScaleRef.current) return;
+    if (!sceneRef.current || modelsRef.current.length === 0) return;
 
     console.log("Updating existing model with type:", type);
     const modelUrl = blindTypes.find((b) => b.type === type)?.modelUrl || "/models/shadeBake.glb";
     const { model } = modelsRef.current[0];
     const position = model.position.clone();
+    const scale = model.scale.clone();
 
     sceneRef.current.remove(model);
 
@@ -523,12 +540,12 @@ const FilterPage: React.FC = () => {
           }
         });
 
-        newModel.scale.copy(lockedScaleRef.current);
+        newModel.scale.copy(scale);
         newModel.position.copy(position);
 
         sceneRef.current!.add(newModel);
         modelsRef.current[0] = { model: newModel, gltf };
-        console.log("Model updated with locked scale and texture tiling set to 8x8");
+        console.log("Model updated with texture tiling set to 8x8");
       }, undefined, (error) => {
         console.error("Error loading texture:", error);
       });
