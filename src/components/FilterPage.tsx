@@ -50,7 +50,6 @@ const FilterPage: React.FC = () => {
     (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
   );
 
-  // Keep your existing useEffect hooks for Three.js and DOM setup unchanged
   useEffect(() => {
     console.log("Initializing Three.js scene");
     const scene = new THREE.Scene();
@@ -145,7 +144,6 @@ const FilterPage: React.FC = () => {
     };
   }, []);
 
-  // Keep your existing functions unchanged (handleButtonClick, startCameraStream, etc.)
   const handleButtonClick = () => {
     console.log("Button clicked:", controlButtonRef.current?.textContent);
     if (!controlButtonRef.current) return;
@@ -183,87 +181,38 @@ const FilterPage: React.FC = () => {
   const captureImage = () => {
     console.log("Capturing image");
     if (!videoRef.current) return;
-  
+
     const canvas = document.createElement("canvas");
-    const targetWidth = 2012;
-    const targetHeight = 1132;
-    canvas.width = targetWidth;
-    canvas.height = targetHeight;
     const ctx = canvas.getContext("2d");
-  
-    if (ctx && videoRef.current) {
-      // Get the actual displayed dimensions of the video element
-      const displayedWidth = videoRef.current.offsetWidth;
-      const displayedHeight = videoRef.current.offsetHeight;
-      const displayedAspect = displayedWidth / displayedHeight;
-      const targetAspect = targetWidth / targetHeight;
-  
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  
-      let dx, dy, dWidth, dHeight;
-  
-      if (isMobile) {
-        // For mobile: Scale the video to fit the canvas while preserving aspect ratio
-        if (displayedAspect > targetAspect) {
-          // Video is wider than target: fit height, center horizontally
-          dHeight = targetHeight;
-          dWidth = targetHeight * displayedAspect;
-          dx = (targetWidth - dWidth) / 2;
-          dy = 0;
-        } else {
-          // Video is taller than target: fit width, center vertically
-          dWidth = targetWidth;
-          dHeight = targetWidth / displayedAspect;
-          dx = 0;
-          dy = (targetHeight - dHeight) / 2;
-        }
-  
-        // Clear canvas and draw the video as displayed
-        ctx.fillStyle = "#000000"; // Fill background to cover empty areas
-        ctx.fillRect(0, 0, targetWidth, targetHeight);
-        ctx.drawImage(videoRef.current, 0, 0, displayedWidth, displayedHeight, dx, dy, dWidth, dHeight);
-      } else {
-        // For desktop: Use the original cropping behavior
-        const videoWidth = videoRef.current.videoWidth;
-        const videoHeight = videoRef.current.videoHeight;
-        const videoAspect = videoWidth / videoHeight;
-  
-        let sx, sy, sWidth, sHeight;
-  
-        if (videoAspect > targetAspect) {
-          sHeight = videoHeight;
-          sWidth = videoHeight * targetAspect;
-          sx = (videoWidth - sWidth) / 2;
-          sy = 0;
-        } else {
-          sWidth = videoWidth;
-          sHeight = videoWidth / targetAspect;
-          sx = 0;
-          sy = (videoHeight - sHeight) / 2;
-        }
-  
-        ctx.drawImage(
-          videoRef.current,
-          sx, sy, sWidth, sHeight,
-          0, 0, targetWidth, targetHeight
-        );
-      }
-  
-      const imageData = canvas.toDataURL("image/png");
-      localStorage.setItem("capturedImage", imageData);
-      setCapturedImage(imageData);
-  
-      if (cameraStreamRef.current) {
-        cameraStreamRef.current.getTracks().forEach((track) => track.stop());
-        if (videoRef.current) videoRef.current.srcObject = null;
-      }
-  
-      if (videoRef.current) videoRef.current.className += " hidden";
-      if (overlayImageRef.current)
-        overlayImageRef.current.className = "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70";
-      initSelectionBox();
-      if (controlButtonRef.current) controlButtonRef.current.textContent = "Submit";
+    if (!ctx) return;
+
+    // Set canvas size to match the video element's displayed size
+    const displayedWidth = videoRef.current.offsetWidth;
+    const displayedHeight = videoRef.current.offsetHeight;
+    canvas.width = displayedWidth;
+    canvas.height = displayedHeight;
+
+    // Draw the video as it appears on the screen, preserving aspect ratio and visible content
+    ctx.drawImage(videoRef.current, 0, 0, displayedWidth, displayedHeight);
+
+    const imageData = canvas.toDataURL("image/png");
+    localStorage.setItem("capturedImage", imageData);
+    setCapturedImage(imageData);
+
+    // Stop the camera stream
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach((track) => track.stop());
+      if (videoRef.current) videoRef.current.srcObject = null;
     }
+
+    // Hide video and overlay
+    if (videoRef.current) videoRef.current.className += " hidden";
+    if (overlayImageRef.current)
+      overlayImageRef.current.className = "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70";
+
+    // Initialize selection box and update button
+    initSelectionBox();
+    if (controlButtonRef.current) controlButtonRef.current.textContent = "Submit";
   };
 
   const initSelectionBox = () => {
@@ -462,49 +411,42 @@ const FilterPage: React.FC = () => {
   const saveImage = () => {
     console.log("Saving image");
     if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !capturedImage) return;
-  
-    // Hide UI elements before rendering
+
     setShowBlindMenu(false);
     if (controlButtonRef.current) controlButtonRef.current.style.display = "none";
     if (saveButtonRef.current) saveButtonRef.current.style.display = "none";
-  
-    // Use setTimeout to ensure UI updates are applied before capturing
+
     setTimeout(() => {
-      // Step 1: Create a canvas matching the renderer size
       const canvas = document.createElement("canvas");
       canvas.width = rendererRef.current.domElement.width;
       canvas.height = rendererRef.current.domElement.height;
       const ctx = canvas.getContext("2d");
-  
+
       if (ctx) {
-        // Step 2: Draw the original captured image as the background
         const backgroundImg = new Image();
         backgroundImg.onload = () => {
           ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
-  
-          // Step 3: Render the current Three.js scene and overlay it
+
           rendererRef.current.render(sceneRef.current!, cameraRef.current!);
           const renderData = rendererRef.current!.domElement.toDataURL("image/png");
           const renderImg = new Image();
           renderImg.onload = () => {
             ctx.drawImage(renderImg, 0, 0, canvas.width, canvas.height);
-  
-            // Step 4: Trigger download
+
             const link = document.createElement("a");
             link.download = "custom_blind_image.png";
             link.href = canvas.toDataURL("image/png");
             link.click();
-  
-            // Step 5: Restore UI elements
+
             setShowBlindMenu(true);
             if (controlButtonRef.current) controlButtonRef.current.style.display = "block";
             if (saveButtonRef.current) saveButtonRef.current.style.display = "block";
           };
           renderImg.src = renderData;
         };
-        backgroundImg.src = capturedImage; // Use the original captured image as the base
+        backgroundImg.src = capturedImage;
       }
-    }, 100); // Delay to ensure UI is hidden and rendering is updated
+    }, 100);
   };
 
   const submitAndShowMenu = () => {
@@ -622,11 +564,10 @@ const FilterPage: React.FC = () => {
       className="relative w-screen h-auto min-h-screen overflow-x-hidden"
       style={{ fontFamily: "Poppins, sans-serif", backgroundColor: "#F5F5DC" }}
     >
-      {/* Image Container */}
       <div
         ref={mountRef}
         className="relative w-full"
-        style={{ height: "calc(100vh - 4rem)", maxHeight: "1132px" }} // Maintain aspect ratio or fixed height
+        style={{ height: "calc(100vh - 4rem)", maxHeight: "1132px" }}
       >
         {capturedImage && (
           <img
@@ -637,15 +578,12 @@ const FilterPage: React.FC = () => {
         )}
       </div>
 
-      {/* Instruction */}
       <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 p-2 rounded shadow-md z-[50] text-brown-800 text-lg">
         {instruction}
       </div>
 
-      {/* Menus */}
       {showBlindMenu && (
         <div className="menu-container w-full flex flex-col md:flex-row justify-between gap-4 p-4 md:absolute md:inset-0">
-          {/* Blind Type Menu */}
           <div className="blind-type-menu w-full md:w-1/6 bg-white bg-opacity-90 shadow-lg rounded flex flex-col z-30">
             <h3 className="bg-gray-100 p-2 text-left text-sm text-brown-800 shadow h-12 flex items-center sticky top-0">Select Type of Blind</h3>
             <div className="blind-type-content flex flex-col gap-2 mx-5 my-5 overflow-y-auto max-h-[50vh] md:max-h-[calc(100vh-5rem)]">
@@ -668,7 +606,6 @@ const FilterPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Patterns and Filters Menu */}
           <div className="patterns-menu w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col z-30">
             <div className="options-menu p-2 bg-gray-100 rounded shadow">
               <h3 className="mb-2 text-sm text-brown-800 text-left h-12 flex items-center sticky top-0 bg-gray-100">Filter Options</h3>
