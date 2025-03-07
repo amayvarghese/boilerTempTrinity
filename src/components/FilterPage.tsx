@@ -181,40 +181,72 @@ const FilterPage: React.FC = () => {
   const captureImage = () => {
     console.log("Capturing image");
     if (!videoRef.current) return;
-
+  
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
-    // Set canvas size to match the video element's displayed size
+  
+    // Get the video's intrinsic dimensions
+    const videoWidth = videoRef.current.videoWidth;
+    const videoHeight = videoRef.current.videoHeight;
+  
+    // Get the displayed dimensions
     const displayedWidth = videoRef.current.offsetWidth;
     const displayedHeight = videoRef.current.offsetHeight;
+  
+    // Calculate the aspect ratios
+    const videoAspect = videoWidth / videoHeight;
+    const displayAspect = displayedWidth / displayedHeight;
+  
+    let sx, sy, sWidth, sHeight;
+  
+    // Adjust the source rectangle to preserve aspect ratio
+    if (videoAspect > displayAspect) {
+      // Video is wider than display: crop the sides
+      sHeight = videoHeight;
+      sWidth = videoHeight * displayAspect;
+      sx = (videoWidth - sWidth) / 2;
+      sy = 0;
+    } else {
+      // Video is taller than display: crop the top/bottom
+      sWidth = videoWidth;
+      sHeight = videoWidth / displayAspect;
+      sx = 0;
+      sy = (videoHeight - sHeight) / 2;
+    }
+  
+    // Set canvas size to match displayed size
     canvas.width = displayedWidth;
     canvas.height = displayedHeight;
-
-    // Draw the video as it appears on the screen, preserving aspect ratio and visible content
-    ctx.drawImage(videoRef.current, 0, 0, displayedWidth, displayedHeight);
-
+  
+    // Draw the video onto the canvas, preserving aspect ratio
+    ctx.drawImage(
+      videoRef.current,
+      sx, sy, sWidth, sHeight, // Source rectangle (cropped video)
+      0, 0, displayedWidth, displayedHeight // Destination rectangle (canvas)
+    );
+  
     const imageData = canvas.toDataURL("image/png");
     localStorage.setItem("capturedImage", imageData);
     setCapturedImage(imageData);
-
+  
     // Stop the camera stream
     if (cameraStreamRef.current) {
       cameraStreamRef.current.getTracks().forEach((track) => track.stop());
       if (videoRef.current) videoRef.current.srcObject = null;
     }
-
+  
     // Hide video and overlay
     if (videoRef.current) videoRef.current.className += " hidden";
     if (overlayImageRef.current)
       overlayImageRef.current.className = "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70";
-
+  
     // Initialize selection box and update button
     initSelectionBox();
     if (controlButtonRef.current) controlButtonRef.current.textContent = "Submit";
   };
 
+  
   const initSelectionBox = () => {
     if (selectionBoxRef.current || hasSelectionBox.current) return;
 
