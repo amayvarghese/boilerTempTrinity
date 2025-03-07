@@ -28,8 +28,7 @@ const FilterPage: React.FC = () => {
   const modelsRef = useRef<ModelData[]>([]);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const hasSelectionBox = useRef(false);
-  const lockedScaleRef = useRef<THREE.Vector3 | null>(null); // Ref for locked scale
-  const lockedPositionRef = useRef<THREE.Vector3 | null>(null); // Ref for locked position
+  const lockedScaleRef = useRef<THREE.Vector3 | null>(null); // New ref for locked scale
 
   const blindTypes = [
     { type: "classicRoman", buttonImage: "/images/windowTypeIcons/image 12.png", modelUrl: "/models/classicRoman.glb" },
@@ -66,17 +65,15 @@ const FilterPage: React.FC = () => {
     rendererRef.current = renderer;
 
     if (mountRef.current) {
-      const initialWidth = window.innerWidth;
-      const initialHeight = window.innerHeight;
-      renderer.setSize(initialWidth, initialHeight);
+      renderer.setSize(window.innerWidth, window.innerHeight);
       mountRef.current.appendChild(renderer.domElement);
-      camera.aspect = initialWidth / initialHeight;
+      camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
-      renderer.domElement.style.position = "fixed"; // Use fixed to keep renderer in place
+      renderer.domElement.style.position = "absolute";
       renderer.domElement.style.top = "0";
       renderer.domElement.style.left = "0";
       renderer.domElement.style.zIndex = "20";
-      console.log("Renderer mounted with size:", initialWidth, initialHeight);
+      console.log("Renderer mounted with size:", window.innerWidth, window.innerHeight);
     }
 
     scene.add(new THREE.AmbientLight(0xffffff, 1));
@@ -87,16 +84,15 @@ const FilterPage: React.FC = () => {
 
     animate();
 
-    // Remove resize handler to prevent adjustments on scroll
-    // const handleResize = () => {
-    //   if (cameraRef.current && rendererRef.current) {
-    //     rendererRef.current.setSize(window.innerWidth, window.innerHeight);
-    //     cameraRef.current.aspect = window.innerWidth / window.innerHeight;
-    //     cameraRef.current.updateProjectionMatrix();
-    //     console.log("Resized to:", window.innerWidth, window.innerHeight);
-    //   }
-    // };
-    // window.addEventListener("resize", handleResize);
+    const handleResize = () => {
+      if (cameraRef.current && rendererRef.current) {
+        rendererRef.current.setSize(window.innerWidth, window.innerHeight);
+        cameraRef.current.aspect = window.innerWidth / window.innerHeight;
+        cameraRef.current.updateProjectionMatrix();
+        console.log("Resized to:", window.innerWidth, window.innerHeight);
+      }
+    };
+    window.addEventListener("resize", handleResize);
 
     return () => {
       console.log("Cleaning up Three.js");
@@ -107,7 +103,7 @@ const FilterPage: React.FC = () => {
       if (cameraStreamRef.current) {
         cameraStreamRef.current.getTracks().forEach((track) => track.stop());
       }
-      // window.removeEventListener("resize", handleResize);
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
@@ -411,17 +407,15 @@ const FilterPage: React.FC = () => {
         const modelCenter = new THREE.Vector3();
         box.getCenter(modelCenter);
 
-        const position = new THREE.Vector3(
+        model.position.set(
           (worldStart.x + worldEnd.x) / 2 - (modelCenter.x - model.position.x),
           (worldStart.y + worldEnd.y) / 2 - (modelCenter.y - model.position.y),
           0.1
         );
-        model.position.copy(position);
-        lockedPositionRef.current = position.clone(); // Lock the position
 
         sceneRef.current!.add(model);
         modelsRef.current.push({ model, gltf });
-        console.log("3D model added with texture tiling set to 8x8, scale and position locked");
+        console.log("3D model added with texture tiling set to 8x8 and scale locked");
       }, undefined, (error) => {
         console.error("Error loading texture:", error);
       });
@@ -500,11 +494,12 @@ const FilterPage: React.FC = () => {
   };
 
   const updateExistingModel = (type: string) => {
-    if (!sceneRef.current || modelsRef.current.length === 0 || !lockedScaleRef.current || !lockedPositionRef.current) return;
+    if (!sceneRef.current || modelsRef.current.length === 0 || !lockedScaleRef.current) return;
 
     console.log("Updating existing model with type:", type);
     const modelUrl = blindTypes.find((b) => b.type === type)?.modelUrl || "/models/shadeBake.glb";
     const { model } = modelsRef.current[0];
+    const position = model.position.clone();
 
     sceneRef.current.remove(model);
 
@@ -528,12 +523,12 @@ const FilterPage: React.FC = () => {
           }
         });
 
-        newModel.scale.copy(lockedScaleRef.current); // Use locked scale
-        newModel.position.copy(lockedPositionRef.current); // Use locked position
+        newModel.scale.copy(lockedScaleRef.current);
+        newModel.position.copy(position);
 
         sceneRef.current!.add(newModel);
         modelsRef.current[0] = { model: newModel, gltf };
-        console.log("Model updated with locked scale and position, texture tiling set to 8x8");
+        console.log("Model updated with locked scale and texture tiling set to 8x8");
       }, undefined, (error) => {
         console.error("Error loading texture:", error);
       });
