@@ -616,10 +616,11 @@ const FilterPageUI: React.FC = () => {
       uploadButtonRef.current = null;
     }
     saveButtonRef.current?.classList.remove("hidden");
-    // Ensure the body and container remain scrollable
+    // Ensure the body remains scrollable
     document.body.style.overflow = "auto";
-    if (mountRef.current) {
-      mountRef.current.style.overflowY = "auto"; // Explicitly allow scrolling on the mount container
+    // Allow touch scrolling over the Three.js canvas
+    if (rendererRef.current) {
+      rendererRef.current.domElement.style.pointerEvents = "none";
     }
   };
 
