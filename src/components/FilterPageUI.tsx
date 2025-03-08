@@ -133,12 +133,16 @@ const FilterPageUI: React.FC = () => {
     };
   }, []);
 
+  // Fixed: Use both width and height to ensure proper camera positioning
   const updateCameraPosition = (width: number, height: number) => {
     if (!cameraRef.current) return;
+    const aspect = width / height;
     const fovRad = cameraRef.current.fov * (Math.PI / 180);
-    const distance = (height / 100 / 2) / Math.tan(fovRad / 2);
+    const distance = (height / 100 / 2) / Math.tan(fovRad / 2); // Use height for vertical fit
+    cameraRef.current.aspect = aspect; // Ensure aspect is updated
     cameraRef.current.position.set(0, 0, distance);
     cameraRef.current.lookAt(0, 0, 0);
+    cameraRef.current.updateProjectionMatrix(); // Ensure matrix is updated
   };
 
   const adjustBackgroundPlane = (width: number, height: number) => {
@@ -309,26 +313,22 @@ const FilterPageUI: React.FC = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Calculate the correct source rectangle to preserve video aspect ratio
     const videoAspect = videoWidth / videoHeight;
     const screenAspect = screenWidth / screenHeight;
     let sx, sy, sWidth, sHeight;
 
     if (videoAspect > screenAspect) {
-      // Video is wider than screen, crop sides
       sHeight = videoHeight;
       sWidth = sHeight * screenAspect;
       sx = (videoWidth - sWidth) / 2;
       sy = 0;
     } else {
-      // Video is taller than screen, crop top/bottom
       sWidth = videoWidth;
       sHeight = sWidth / screenAspect;
       sx = 0;
       sy = (videoHeight - sHeight) / 2;
     }
 
-    // Draw the video frame, cropping to match screen aspect ratio
     ctx.drawImage(videoRef.current, sx, sy, sWidth, sHeight, 0, 0, screenWidth, screenHeight);
 
     const imageData = canvas.toDataURL("image/png");
