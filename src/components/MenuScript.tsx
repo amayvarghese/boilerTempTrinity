@@ -25,7 +25,7 @@ const MenuScript: React.FC = () => {
           {/* Logo */}
           <div className="relative mb-8 sm:mb-12">
             <img
-              src="/images/baeLogo.png" // Adjust the path as needed
+              src="/images/baelogoN.png" // Adjust the path as needed
               alt="Logo"
               className="w-24 h-24 sm:w-32 sm:h-32 object-contain"
               onError={(e) => {
