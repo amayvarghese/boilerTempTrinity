@@ -213,14 +213,14 @@ const FilterPageUI: React.FC = () => {
     controlButtonRef.current = document.createElement("button");
     controlButtonRef.current.id = "controlButton";
     controlButtonRef.current.textContent = "Start Camera";
-    controlButtonRef.current.className = "fixed bottom-16 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300 opacity-100";
+    controlButtonRef.current.className = "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300 opacity-100";
     document.body.appendChild(controlButtonRef.current);
     controlButtonRef.current.addEventListener("click", handleButtonClick);
 
     uploadButtonRef.current = document.createElement("button");
     uploadButtonRef.current.id = "uploadButton";
     uploadButtonRef.current.textContent = "Upload Image";
-    uploadButtonRef.current.className = "fixed bottom-32 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300 opacity-100";
+    uploadButtonRef.current.className = "fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300 opacity-100";
     document.body.appendChild(uploadButtonRef.current);
     uploadButtonRef.current.addEventListener("click", () => fileInputRef.current?.click());
 
@@ -616,6 +616,8 @@ const FilterPageUI: React.FC = () => {
       uploadButtonRef.current = null;
     }
     saveButtonRef.current?.classList.remove("hidden");
+    // Ensure the body remains scrollable
+    document.body.style.overflow = "auto";
   };
 
   const selectBlindType = (type: string) => {
@@ -680,7 +682,7 @@ const FilterPageUI: React.FC = () => {
 
   return (
     <div
-      className="relative w-screen h-auto min-h-screen overflow-x-hidden"
+      className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto"
       style={{
         fontFamily: "Poppins, sans-serif",
         backgroundImage: !capturedImage && !isCustomizerView ? "url('/images/background.jpg')" : "none",
@@ -707,7 +709,7 @@ const FilterPageUI: React.FC = () => {
         onChange={handleImageUpload}
       />
       {showBlindMenu && isCustomizerView && (
-        <div className="max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4">
+        <div className="max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen overflow-y-auto">
           <div className="blind-type-menu w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
             <h3 className="bg-white p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Select Type of Blind</h3>
             <div className="blind-type-content grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
