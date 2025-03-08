@@ -75,7 +75,8 @@ const FilterPageUI: React.FC = () => {
     const screenHeight = window.innerHeight;
     const aspectRatio = screenWidth / screenHeight;
 
-    const camera = new THREE.PerspectiveCamera(75, aspectRatio, 0.1, 1000);
+    // Adjusted FOV for mobile to reduce zoom effect
+    const camera = new THREE.PerspectiveCamera(60, aspectRatio, 0.1, 1000); // Reduced FOV from 75 to 60
     cameraRef.current = camera;
     updateCameraPosition(screenWidth, screenHeight);
 
@@ -133,16 +134,16 @@ const FilterPageUI: React.FC = () => {
     };
   }, []);
 
-  // Fixed: Use both width and height to ensure proper camera positioning
   const updateCameraPosition = (width: number, height: number) => {
     if (!cameraRef.current) return;
     const aspect = width / height;
     const fovRad = cameraRef.current.fov * (Math.PI / 180);
-    const distance = (height / 100 / 2) / Math.tan(fovRad / 2); // Use height for vertical fit
-    cameraRef.current.aspect = aspect; // Ensure aspect is updated
+    // Adjusted distance calculation to fit the full screen better on mobile
+    const distance = (Math.max(width, height) / 100 / 2) / Math.tan(fovRad / 2); // Use max dimension for wider view
+    cameraRef.current.aspect = aspect;
     cameraRef.current.position.set(0, 0, distance);
     cameraRef.current.lookAt(0, 0, 0);
-    cameraRef.current.updateProjectionMatrix(); // Ensure matrix is updated
+    cameraRef.current.updateProjectionMatrix();
   };
 
   const adjustBackgroundPlane = (width: number, height: number) => {
@@ -227,8 +228,9 @@ const FilterPageUI: React.FC = () => {
       .getUserMedia({
         video: {
           facingMode: "environment",
-          width: { ideal: screenWidth },
-          height: { ideal: screenHeight },
+          width: { ideal: screenWidth, max: screenWidth }, // Enforce screen width
+          height: { ideal: screenHeight, max: screenHeight }, // Enforce screen height
+          aspectRatio: screenWidth / screenHeight, // Match screen aspect ratio
         },
       })
       .then((stream) => {
@@ -240,6 +242,8 @@ const FilterPageUI: React.FC = () => {
               overlayImageRef.current.className = "absolute inset-0 w-full h-full object-fill z-[15] block opacity-70";
             }
             if (controlButtonRef.current) controlButtonRef.current.textContent = "Capture";
+            // Update camera position after video starts to match actual stream dimensions
+            updateCameraPosition(screenWidth, screenHeight);
           });
         }
       })
