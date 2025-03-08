@@ -56,13 +56,9 @@ const FilterPageUI: React.FC = () => {
   );
 
   const setTemporaryInstruction = (text: string) => {
-    if (instructionTimeoutRef.current) {
-      clearTimeout(instructionTimeoutRef.current);
-    }
+    if (instructionTimeoutRef.current) clearTimeout(instructionTimeoutRef.current);
     setInstruction(text);
-    instructionTimeoutRef.current = setTimeout(() => {
-      setInstruction("");
-    }, 3000);
+    instructionTimeoutRef.current = setTimeout(() => setInstruction(""), 3000);
   };
 
   useEffect(() => {
@@ -75,8 +71,7 @@ const FilterPageUI: React.FC = () => {
     const screenHeight = window.innerHeight;
     const aspectRatio = screenWidth / screenHeight;
 
-    // Consistent FOV across devices, adjusted for better mobile fit
-    const camera = new THREE.PerspectiveCamera(45, aspectRatio, 0.1, 1000); // Reduced FOV to 45 for consistency
+    const camera = new THREE.PerspectiveCamera(45, aspectRatio, 0.1, 1000);
     cameraRef.current = camera;
     updateCameraPosition(screenWidth, screenHeight);
 
@@ -107,9 +102,8 @@ const FilterPageUI: React.FC = () => {
       if (cameraRef.current && rendererRef.current && mountRef.current) {
         const newWidth = window.innerWidth;
         const newHeight = window.innerHeight;
-        const newAspect = newWidth / newHeight;
         rendererRef.current.setSize(newWidth, newHeight);
-        cameraRef.current.aspect = newAspect;
+        cameraRef.current.aspect = newWidth / newHeight;
         cameraRef.current.updateProjectionMatrix();
         updateCameraPosition(newWidth, newHeight);
         if (backgroundPlaneRef.current && capturedImage) {
@@ -127,9 +121,7 @@ const FilterPageUI: React.FC = () => {
       if (cameraStreamRef.current) {
         cameraStreamRef.current.getTracks().forEach((track) => track.stop());
       }
-      if (instructionTimeoutRef.current) {
-        clearTimeout(instructionTimeoutRef.current);
-      }
+      if (instructionTimeoutRef.current) clearTimeout(instructionTimeoutRef.current);
       window.removeEventListener("resize", handleResize);
     };
   }, []);
@@ -138,7 +130,7 @@ const FilterPageUI: React.FC = () => {
     if (!cameraRef.current) return;
     const aspect = width / height;
     const fovRad = cameraRef.current.fov * (Math.PI / 180);
-    const distance = (height / 100 / 2) / Math.tan(fovRad / 2); // Base distance on height for consistency
+    const distance = (height / 100 / 2) / Math.tan(fovRad / 2);
     cameraRef.current.aspect = aspect;
     cameraRef.current.position.set(0, 0, distance);
     cameraRef.current.lookAt(0, 0, 0);
@@ -156,9 +148,9 @@ const FilterPageUI: React.FC = () => {
     let planeWidth = width / 100;
     let planeHeight = height / 100;
     if (imgAspect > screenAspect) {
-      planeHeight = planeWidth / imgAspect; // Fit width, scale height
+      planeHeight = planeWidth / imgAspect;
     } else {
-      planeWidth = planeHeight * imgAspect; // Fit height, scale width
+      planeWidth = planeHeight * imgAspect;
     }
 
     const planeGeometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
@@ -231,15 +223,13 @@ const FilterPageUI: React.FC = () => {
   const startCameraStream = () => {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    const aspectRatio = screenWidth / screenHeight;
 
     navigator.mediaDevices
       .getUserMedia({
         video: {
           facingMode: "environment",
-          width: { ideal: screenWidth, exact: screenWidth }, // Enforce exact width
-          height: { ideal: screenHeight, exact: screenHeight }, // Enforce exact height
-          aspectRatio: { exact: aspectRatio }, // Enforce exact aspect ratio
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
         },
       })
       .then((stream) => {
@@ -247,35 +237,32 @@ const FilterPageUI: React.FC = () => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.play().then(() => {
-            if (overlayImageRef.current) {
-              overlayImageRef.current.className = "absolute inset-0 w-full h-full object-fill z-[15] block opacity-70";
-            }
-            if (controlButtonRef.current) controlButtonRef.current.textContent = "Capture";
-            updateCameraPosition(screenWidth, screenHeight);
+            videoRef.current!.onloadedmetadata = () => {
+              const videoWidth = videoRef.current!.videoWidth;
+              const videoHeight = videoRef.current!.videoHeight;
+              const videoAspect = videoWidth / videoHeight;
+              const screenAspect = screenWidth / screenHeight;
+
+              if (videoAspect > screenAspect) {
+                videoRef.current!.style.width = "100%";
+                videoRef.current!.style.height = "auto";
+              } else {
+                videoRef.current!.style.width = "auto";
+                videoRef.current!.style.height = "100%";
+              }
+
+              if (overlayImageRef.current) {
+                overlayImageRef.current.className = "absolute inset-0 w-full h-full object-fill z-[15] block opacity-70";
+              }
+              if (controlButtonRef.current) controlButtonRef.current.textContent = "Capture";
+              updateCameraPosition(screenWidth, screenHeight);
+            };
           });
         }
       })
       .catch((err) => {
         console.error("Camera stream error:", err);
-        // Fallback to less strict constraints if exact fails
-        navigator.mediaDevices
-          .getUserMedia({
-            video: { facingMode: "environment" },
-          })
-          .then((stream) => {
-            cameraStreamRef.current = stream;
-            if (videoRef.current) {
-              videoRef.current.srcObject = stream;
-              videoRef.current.play().then(() => {
-                if (overlayImageRef.current) {
-                  overlayImageRef.current.className = "absolute inset-0 w-full h-full object-fill z-[15] block opacity-70";
-                }
-                if (controlButtonRef.current) controlButtonRef.current.textContent = "Capture";
-                updateCameraPosition(screenWidth, screenHeight);
-              });
-            }
-          })
-          .catch((fallbackErr) => console.error("Fallback camera stream error:", fallbackErr));
+        setTemporaryInstruction("Failed to access camera. Please upload an image instead.");
       });
   };
 
@@ -338,14 +325,17 @@ const FilterPageUI: React.FC = () => {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
 
+    const videoWidth = videoRef.current.videoWidth;
+    const videoHeight = videoRef.current.videoHeight;
+    const videoAspect = videoWidth / videoHeight;
+
     const canvas = document.createElement("canvas");
-    canvas.width = screenWidth;
-    canvas.height = screenHeight;
+    canvas.width = videoWidth;
+    canvas.height = videoHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Draw video directly without cropping, respecting aspect ratio
-    ctx.drawImage(videoRef.current, 0, 0, screenWidth, screenHeight);
+    ctx.drawImage(videoRef.current, 0, 0, videoWidth, videoHeight);
 
     const imageData = canvas.toDataURL("image/png");
     localStorage.setItem("capturedImage", imageData);
@@ -367,8 +357,9 @@ const FilterPageUI: React.FC = () => {
     textureLoader.load(imageData, (texture) => {
       if (backgroundPlaneRef.current) sceneRef.current!.remove(backgroundPlaneRef.current);
 
-      const imgAspect = texture.image.width / texture.image.height;
       const screenAspect = screenWidth / screenHeight;
+      const imgAspect = videoAspect;
+
       let planeWidth = screenWidth / 100;
       let planeHeight = screenHeight / 100;
       if (imgAspect > screenAspect) {
@@ -394,7 +385,6 @@ const FilterPageUI: React.FC = () => {
   const initSelectionBox = () => {
     if (selectionBoxRef.current || hasSelectionBox.current) return;
 
-    console.log("Initializing selection box");
     selectionBoxRef.current = document.createElement("div");
     selectionBoxRef.current.className = "absolute border-2 border-dashed border-blue-500 bg-blue-200 bg-opacity-20 hidden pointer-events-auto";
     selectionBoxRef.current.style.zIndex = "25";
@@ -404,7 +394,6 @@ const FilterPageUI: React.FC = () => {
 
     const startSelection = (x: number, y: number) => {
       if (hasSelectionBox.current) return;
-      console.log("Starting selection at:", x, y);
       startX = x;
       startY = y;
       if (selectionBoxRef.current) {
@@ -419,7 +408,6 @@ const FilterPageUI: React.FC = () => {
 
     const updateSelection = (x: number, y: number) => {
       if (!isDragging || !selectionBoxRef.current) return;
-      console.log("Updating selection to:", x, y);
       selectionBoxRef.current.style.width = `${Math.abs(x - startX)}px`;
       selectionBoxRef.current.style.height = `${Math.abs(y - startY)}px`;
       selectionBoxRef.current.style.left = `${Math.min(startX, x)}px`;
@@ -428,7 +416,6 @@ const FilterPageUI: React.FC = () => {
 
     const endSelection = (x: number, y: number) => {
       if (!isDragging || !selectionBoxRef.current) return;
-      console.log("Ending selection at:", x, y);
       selectionBoxRef.current.className += " hidden";
       hasSelectionBox.current = true;
       isDragging = false;
@@ -520,7 +507,6 @@ const FilterPageUI: React.FC = () => {
   const create3DModelFromSelection = (startX: number, startY: number, endX: number, endY: number) => {
     if (!sceneRef.current || modelsRef.current.length > 0) return;
 
-    console.log("Creating 3D model from selection");
     const worldStart = screenToWorld(startX, startY);
     const worldEnd = screenToWorld(endX, endY);
 
@@ -572,20 +558,12 @@ const FilterPageUI: React.FC = () => {
 
         sceneRef.current!.add(model);
         modelsRef.current.push({ model, gltf });
-        console.log("3D model added with texture tiling set to 8x8");
-      }, undefined, (error) => {
-        console.error("Error loading texture:", error);
       });
-    }, undefined, (error) => {
-      console.error("Error loading model:", error);
     });
   };
 
   const saveImage = async () => {
-    if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !capturedImage) {
-      console.error("Missing required elements for saving image");
-      return;
-    }
+    if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !capturedImage) return;
 
     setShowBlindMenu(false);
     if (controlButtonRef.current) controlButtonRef.current.style.display = "none";
@@ -593,13 +571,13 @@ const FilterPageUI: React.FC = () => {
 
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-
     rendererRef.current.setSize(screenWidth, screenHeight);
     rendererRef.current.render(sceneRef.current, cameraRef.current);
 
     const canvas = document.createElement("canvas");
-    canvas.width = screenWidth;
-    canvas.height = screenHeight;
+    const texture = backgroundPlaneRef.current?.material.map;
+    canvas.width = texture?.image.width || screenWidth;
+    canvas.height = texture?.image.height || screenHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -616,16 +594,16 @@ const FilterPageUI: React.FC = () => {
 
     try {
       await loadImage(backgroundImg, capturedImage);
-      ctx.drawImage(backgroundImg, 0, 0, screenWidth, screenHeight);
+      ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
       renderImg.src = rendererRef.current.domElement.toDataURL("image/png");
       await loadImage(renderImg, renderImg.src);
-      ctx.drawImage(renderImg, 0, 0, screenWidth, screenHeight);
+      ctx.drawImage(renderImg, 0, 0, canvas.width, canvas.height);
 
       await loadImage(logoImg, "/images/baeLogo.png");
       const logoWidth = 96;
       const logoHeight = 96;
-      const logoX = (screenWidth - logoWidth) / 2;
+      const logoX = (canvas.width - logoWidth) / 2;
       const logoY = 16;
       ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
 
@@ -650,22 +628,16 @@ const FilterPageUI: React.FC = () => {
   };
 
   const selectBlindType = (type: string) => {
-    console.log("Selected blind type:", type);
     setSelectedBlindType(type);
-    if (modelsRef.current.length > 0) {
-      updateExistingModel(type);
-    }
+    if (modelsRef.current.length > 0) updateExistingModel(type);
     if (rendererRef.current && sceneRef.current && cameraRef.current) {
       rendererRef.current.render(sceneRef.current, cameraRef.current);
     }
   };
 
   const selectPattern = (patternUrl: string) => {
-    console.log("Selected pattern:", patternUrl);
     setSelectedPattern(patternUrl);
-    if (modelsRef.current.length > 0) {
-      updateExistingModelPattern(patternUrl);
-    }
+    if (modelsRef.current.length > 0) updateExistingModelPattern(patternUrl);
     if (rendererRef.current && sceneRef.current && cameraRef.current) {
       rendererRef.current.render(sceneRef.current, cameraRef.current);
     }
@@ -679,7 +651,6 @@ const FilterPageUI: React.FC = () => {
   const updateExistingModel = (type: string) => {
     if (!sceneRef.current || modelsRef.current.length === 0) return;
 
-    console.log("Updating existing model with type:", type);
     const modelUrl = blindTypes.find((b) => b.type === type)?.modelUrl || "/models/shadeBake.glb";
     const { model } = modelsRef.current[0];
     const position = model.position.clone();
@@ -712,22 +683,16 @@ const FilterPageUI: React.FC = () => {
 
         sceneRef.current!.add(newModel);
         modelsRef.current[0] = { model: newModel, gltf };
-        console.log("Model updated with texture tiling set to 8x8");
         if (rendererRef.current && sceneRef.current && cameraRef.current) {
           rendererRef.current.render(sceneRef.current, cameraRef.current);
         }
-      }, undefined, (error) => {
-        console.error("Error loading texture:", error);
       });
-    }, undefined, (error) => {
-      console.error("Error loading model:", error);
     });
   };
 
   const updateExistingModelPattern = (patternUrl: string) => {
     if (!sceneRef.current || modelsRef.current.length === 0) return;
 
-    console.log("Updating model pattern:", patternUrl);
     const { model } = modelsRef.current[0];
 
     new THREE.TextureLoader().load(patternUrl, (texture) => {
@@ -746,12 +711,9 @@ const FilterPageUI: React.FC = () => {
           mesh.material.needsUpdate = true;
         }
       });
-      console.log("Pattern updated with tiling set to 8x8");
       if (rendererRef.current && sceneRef.current && cameraRef.current) {
         rendererRef.current.render(sceneRef.current, cameraRef.current);
       }
-    }, undefined, (error) => {
-      console.error("Error loading texture:", error);
     });
   };
 
@@ -779,19 +741,16 @@ const FilterPageUI: React.FC = () => {
         {/* Three.js canvas is managed via mountRef */}
       </div>
 
-      {/* Logo - Always visible, fixed position */}
       <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60]">
         <img src="/images/baeLogo.png" alt="Logo" className="w-24 h-24 object-contain" />
       </div>
 
-      {/* Instruction */}
       {instruction && (
         <div className="fixed top-32 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 p-2 rounded shadow-md z-[50] text-brown-800 text-lg">
           {instruction}
         </div>
       )}
 
-      {/* Hidden File Input for Upload */}
       <input
         type="file"
         id="imageUpload"
