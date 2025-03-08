@@ -75,10 +75,9 @@ const FilterPageUI: React.FC = () => {
     const screenHeight = window.innerHeight;
     const aspectRatio = screenWidth / screenHeight;
 
-    // Adjusted FOV for mobile to reduce zoom effect
-    const camera = new THREE.PerspectiveCamera(60, aspectRatio, 0.1, 1000); // Reduced FOV from 75 to 60
+    const camera = new THREE.PerspectiveCamera(75, aspectRatio, 0.1, 1000);
+    camera.position.set(0, 0, 1); // Adjusted closer to match video feed
     cameraRef.current = camera;
-    updateCameraPosition(screenWidth, screenHeight);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -91,8 +90,6 @@ const FilterPageUI: React.FC = () => {
       renderer.domElement.style.top = "0";
       renderer.domElement.style.left = "0";
       renderer.domElement.style.zIndex = "20";
-      renderer.domElement.style.width = "100%";
-      renderer.domElement.style.height = "100%";
     }
 
     scene.add(new THREE.AmbientLight(0xffffff, 1));
@@ -111,7 +108,7 @@ const FilterPageUI: React.FC = () => {
         rendererRef.current.setSize(newWidth, newHeight);
         cameraRef.current.aspect = newAspect;
         cameraRef.current.updateProjectionMatrix();
-        updateCameraPosition(newWidth, newHeight);
+
         if (backgroundPlaneRef.current && capturedImage) {
           adjustBackgroundPlane(newWidth, newHeight);
         }
@@ -134,30 +131,28 @@ const FilterPageUI: React.FC = () => {
     };
   }, []);
 
-  const updateCameraPosition = (width: number, height: number) => {
-    if (!cameraRef.current) return;
-    const aspect = width / height;
-    const fovRad = cameraRef.current.fov * (Math.PI / 180);
-    // Adjusted distance calculation to fit the full screen better on mobile
-    const distance = (Math.max(width, height) / 100 / 2) / Math.tan(fovRad / 2); // Use max dimension for wider view
-    cameraRef.current.aspect = aspect;
-    cameraRef.current.position.set(0, 0, distance);
-    cameraRef.current.lookAt(0, 0, 0);
-    cameraRef.current.updateProjectionMatrix();
-  };
-
   const adjustBackgroundPlane = (width: number, height: number) => {
     if (!backgroundPlaneRef.current || !cameraRef.current) return;
     const texture = backgroundPlaneRef.current.material.map;
     if (!texture) return;
 
-    const planeWidth = width / 100;
+    const img = texture.image;
+    const imgAspect = img.width / img.height;
+    const screenAspect = width / height;
+
+    // Match the plane size to the screen size directly, no scaling adjustments
+    const planeWidth = width / 100; // Scale down to Three.js units
     const planeHeight = height / 100;
+
     const planeGeometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
     backgroundPlaneRef.current.geometry.dispose();
     backgroundPlaneRef.current.geometry = planeGeometry;
-    backgroundPlaneRef.current.position.set(0, 0, -0.1);
-    updateCameraPosition(width, height);
+
+    // Position camera to match the plane size exactly
+    const fovRad = cameraRef.current.fov * (Math.PI / 180);
+    const distance = (planeHeight / 2) / Math.tan(fovRad / 2);
+    cameraRef.current.position.set(0, 0, distance);
+    cameraRef.current.lookAt(0, 0, 0);
   };
 
   useEffect(() => {
@@ -228,9 +223,9 @@ const FilterPageUI: React.FC = () => {
       .getUserMedia({
         video: {
           facingMode: "environment",
-          width: { ideal: screenWidth, max: screenWidth }, // Enforce screen width
-          height: { ideal: screenHeight, max: screenHeight }, // Enforce screen height
-          aspectRatio: screenWidth / screenHeight, // Match screen aspect ratio
+          width: { ideal: screenWidth },
+          height: { ideal: screenHeight },
+          aspectRatio: screenWidth / screenHeight,
         },
       })
       .then((stream) => {
@@ -242,8 +237,6 @@ const FilterPageUI: React.FC = () => {
               overlayImageRef.current.className = "absolute inset-0 w-full h-full object-fill z-[15] block opacity-70";
             }
             if (controlButtonRef.current) controlButtonRef.current.textContent = "Capture";
-            // Update camera position after video starts to match actual stream dimensions
-            updateCameraPosition(screenWidth, screenHeight);
           });
         }
       })
@@ -279,26 +272,20 @@ const FilterPageUI: React.FC = () => {
 
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(imageData, (texture) => {
-      const imgAspect = texture.image.width / texture.image.height;
-      const screenAspect = screenWidth / screenHeight;
-
-      let planeWidth = screenWidth / 100;
-      let planeHeight = screenHeight / 100;
-      if (imgAspect > screenAspect) {
-        planeHeight = planeWidth / imgAspect;
-      } else {
-        planeWidth = planeHeight * imgAspect;
-      }
-
       if (backgroundPlaneRef.current) sceneRef.current!.remove(backgroundPlaneRef.current);
       const plane = new THREE.Mesh(
-        new THREE.PlaneGeometry(planeWidth, planeHeight),
+        new THREE.PlaneGeometry(screenWidth / 100, screenHeight / 100),
         new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide })
       );
       backgroundPlaneRef.current = plane;
-      plane.position.set(0, 0, -0.1);
+      plane.position.set(0, 0, -0.1); // Slightly behind to match video plane
       sceneRef.current!.add(plane);
-      updateCameraPosition(screenWidth, screenHeight);
+
+      const fovRad = cameraRef.current!.fov * (Math.PI / 180);
+      const distance = (screenHeight / 100 / 2) / Math.tan(fovRad / 2);
+      cameraRef.current!.position.set(0, 0, distance);
+      cameraRef.current!.lookAt(0, 0, 0);
+
       initSelectionBox();
     });
   };
@@ -308,8 +295,6 @@ const FilterPageUI: React.FC = () => {
 
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    const videoWidth = videoRef.current.videoWidth;
-    const videoHeight = videoRef.current.videoHeight;
 
     const canvas = document.createElement("canvas");
     canvas.width = screenWidth;
@@ -317,23 +302,8 @@ const FilterPageUI: React.FC = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const videoAspect = videoWidth / videoHeight;
-    const screenAspect = screenWidth / screenHeight;
-    let sx, sy, sWidth, sHeight;
-
-    if (videoAspect > screenAspect) {
-      sHeight = videoHeight;
-      sWidth = sHeight * screenAspect;
-      sx = (videoWidth - sWidth) / 2;
-      sy = 0;
-    } else {
-      sWidth = videoWidth;
-      sHeight = sWidth / screenAspect;
-      sx = 0;
-      sy = (videoHeight - sHeight) / 2;
-    }
-
-    ctx.drawImage(videoRef.current, sx, sy, sWidth, sHeight, 0, 0, screenWidth, screenHeight);
+    // Draw the video feed exactly as displayed
+    ctx.drawImage(videoRef.current, 0, 0, screenWidth, screenHeight);
 
     const imageData = canvas.toDataURL("image/png");
     localStorage.setItem("capturedImage", imageData);
@@ -354,17 +324,18 @@ const FilterPageUI: React.FC = () => {
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(imageData, (texture) => {
       if (backgroundPlaneRef.current) sceneRef.current!.remove(backgroundPlaneRef.current);
-
-      const planeWidth = screenWidth / 100;
-      const planeHeight = screenHeight / 100;
       const plane = new THREE.Mesh(
-        new THREE.PlaneGeometry(planeWidth, planeHeight),
+        new THREE.PlaneGeometry(screenWidth / 100, screenHeight / 100),
         new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide })
       );
       backgroundPlaneRef.current = plane;
-      plane.position.set(0, 0, -0.1);
+      plane.position.set(0, 0, -0.1); // Match the video plane position
       sceneRef.current!.add(plane);
-      updateCameraPosition(screenWidth, screenHeight);
+
+      const fovRad = cameraRef.current!.fov * (Math.PI / 180);
+      const distance = (screenHeight / 100 / 2) / Math.tan(fovRad / 2);
+      cameraRef.current!.position.set(0, 0, distance);
+      cameraRef.current!.lookAt(0, 0, 0);
     });
 
     initSelectionBox();
