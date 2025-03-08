@@ -37,6 +37,10 @@ module.exports = {
         'gray': '#525B7A',
         'neutral':'#E0E3EB',
         'olive':'##556B2F',
+        'olive-700':'#556B2F',
+        'bg-blue-500':'#3B82F6',
+        'bg-blue-700':'#1D4ED8',
+
       },
       boxShadow:{
         '2xl': '0px 20px 24px -4px rgba(17, 24, 39, 0.1), 0px 8px 8px -4px rgba(17, 24, 39, 0.04);',
