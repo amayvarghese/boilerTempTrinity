@@ -113,10 +113,11 @@ const FilterPageUI: React.FC = () => {
         position: absolute;
         top: 0;
         left: 0;
-        z-index: 20;
         width: 100%;
         height: 100%;
-        touch-action: ${isCustomizerView ? 'none' : 'auto'};
+        z-index: ${isCustomizerView ? 0 : 20}; // Lower z-index in customizer view
+        pointer-events: ${isCustomizerView ? 'none' : 'auto'}; // Disable pointer events in customizer
+        touch-action: ${isCustomizerView ? 'none' : 'auto'}; // Prevent touch interference
       `;
     }
 
@@ -617,18 +618,16 @@ const FilterPageUI: React.FC = () => {
       uploadButtonRef.current = null;
     }
     saveButtonRef.current?.classList.remove("hidden");
-    // Ensure the body remains scrollable
-    document.body.style.overflow = "auto";
-    // Ensure the Three.js canvas does not interfere with touch events
+    document.body.style.overflow = "auto"; // Ensure body is scrollable
+    document.body.style.touchAction = "auto"; // Allow touch scrolling on body
     if (rendererRef.current) {
-      rendererRef.current.domElement.style.pointerEvents = "none";
-      rendererRef.current.domElement.style.touchAction = "none"; // Prevent canvas from intercepting touch
-      rendererRef.current.domElement.style.zIndex = "10"; // Lower z-index to allow UI interaction
+      rendererRef.current.domElement.style.pointerEvents = "none"; // Disable all pointer events
+      rendererRef.current.domElement.style.touchAction = "none"; // Prevent canvas touch actions
+      rendererRef.current.domElement.style.zIndex = "0"; // Ensure canvas is below UI
     }
-    // Ensure the customizer UI is on top and scrollable
     if (mountRef.current) {
-      mountRef.current.style.position = "relative";
-      mountRef.current.style.zIndex = "5";
+      mountRef.current.style.zIndex = "0"; // Keep mount below UI
+      mountRef.current.style.pointerEvents = "none"; // Prevent mount from capturing events
     }
   };
 
@@ -724,7 +723,7 @@ const FilterPageUI: React.FC = () => {
       {showBlindMenu && isCustomizerView && (
         <div
           className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen overflow-y-auto"
-          style={{ zIndex: 30, position: "relative" }} // Ensure UI is above canvas
+          style={{ zIndex: 30, position: "relative",pointerEvents: "auto", touchAction: "auto" }} // Ensure UI is above canvas
         >
           <div className="blind-type-menu w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
             <h3 className="bg-white p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Select Type of Blind</h3>
