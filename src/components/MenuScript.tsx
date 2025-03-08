@@ -18,7 +18,7 @@ const MenuScript: React.FC = () => {
   return (
     <div className="relative w-screen h-screen font-poppins">
       {activeComponent === "none" ? (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-[url('/images/background2.avif')] bg-cover bg-center">
+        <div className="w-full h-full flex flex-col items-center justify-center bg-[url('/images/backgroundBlindNew.png')] bg-cover bg-center">
           {/* Overlay for text readability */}
           <div className="absolute inset-0 bg-black bg-opacity-40"></div>
 
