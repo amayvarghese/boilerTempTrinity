@@ -618,9 +618,35 @@ const FilterPageUI: React.FC = () => {
     saveButtonRef.current?.classList.remove("hidden");
     // Ensure the body remains scrollable
     document.body.style.overflow = "auto";
-    // Allow touch scrolling over the Three.js canvas
+
+    // Add touch event listeners for scrolling on the canvas
     if (rendererRef.current) {
-      rendererRef.current.domElement.style.pointerEvents = "none";
+      let touchStartY = 0;
+      let touchLastY = 0;
+
+      const handleTouchStart = (e: TouchEvent) => {
+        touchStartY = e.touches[0].clientY;
+        touchLastY = touchStartY;
+      };
+
+      const handleTouchMove = (e: TouchEvent) => {
+        e.preventDefault(); // Prevent default to avoid unwanted browser behavior
+        const touchY = e.touches[0].clientY;
+        const deltaY = touchLastY - touchY; // Positive for swipe up, negative for swipe down
+        window.scrollBy(0, deltaY); // Scroll the window by the delta
+        touchLastY = touchY;
+      };
+
+      const canvas = rendererRef.current.domElement;
+      canvas.addEventListener("touchstart", handleTouchStart);
+      canvas.addEventListener("touchmove", handleTouchMove);
+
+      // Cleanup listeners when component unmounts (handled in cleanupThreeJs)
+      const cleanup = () => {
+        canvas.removeEventListener("touchstart", handleTouchStart);
+        canvas.removeEventListener("touchmove", handleTouchMove);
+      };
+      // Store cleanup in ref or similar if needed, but here we rely on existing cleanupThreeJs
     }
   };
 
