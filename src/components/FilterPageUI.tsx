@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import * as THREE from "./three.js-r132/build/three.module.js"; // Adjust path as needed
+import * as THREE from "./three.js-r132/build/three.module.js";
 import { GLTFLoader } from "./three.js-r132/examples/jsm/loaders/GLTFLoader.js";
 
 interface ModelData {
@@ -68,7 +68,6 @@ const FilterPageUI: React.FC = () => {
   useEffect(() => {
     setTemporaryInstruction("Click 'Start Camera' or upload an image to begin.");
 
-    console.log("Initializing Three.js scene");
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
@@ -77,7 +76,7 @@ const FilterPageUI: React.FC = () => {
     const aspectRatio = screenWidth / screenHeight;
 
     const camera = new THREE.PerspectiveCamera(75, aspectRatio, 0.1, 1000);
-    camera.position.set(0, 0, 10);
+    camera.position.set(0, 0, 1); // Adjusted closer to match video feed
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -91,7 +90,6 @@ const FilterPageUI: React.FC = () => {
       renderer.domElement.style.top = "0";
       renderer.domElement.style.left = "0";
       renderer.domElement.style.zIndex = "20";
-      console.log("Renderer mounted with size:", screenWidth, screenHeight);
     }
 
     scene.add(new THREE.AmbientLight(0xffffff, 1));
@@ -112,29 +110,13 @@ const FilterPageUI: React.FC = () => {
         cameraRef.current.updateProjectionMatrix();
 
         if (backgroundPlaneRef.current && capturedImage) {
-          const texture = backgroundPlaneRef.current.material.map;
-          if (texture) {
-            const img = texture.image;
-            const imgAspect = img.width / img.height;
-            const planeWidth = newAspect > imgAspect ? newHeight * imgAspect : newWidth;
-            const planeHeight = newAspect > imgAspect ? newHeight : newWidth / imgAspect;
-            const planeGeometry = new THREE.PlaneGeometry(planeWidth / 100, planeHeight / 100);
-            backgroundPlaneRef.current.geometry.dispose();
-            backgroundPlaneRef.current.geometry = planeGeometry;
-
-            const fovRad = cameraRef.current.fov * (Math.PI / 180);
-            const distance = (planeWidth / (2 * Math.tan(fovRad / 2))) * 0.45 / 100;
-            cameraRef.current.position.set(0, 0, distance);
-            cameraRef.current.lookAt(0, 0, 0);
-          }
+          adjustBackgroundPlane(newWidth, newHeight);
         }
-        console.log("Resized to:", newWidth, newHeight);
       }
     };
     window.addEventListener("resize", handleResize);
 
     return () => {
-      console.log("Cleaning up Three.js");
       if (rendererRef.current && mountRef.current) {
         mountRef.current.removeChild(rendererRef.current.domElement);
         rendererRef.current.dispose();
@@ -149,8 +131,31 @@ const FilterPageUI: React.FC = () => {
     };
   }, []);
 
+  const adjustBackgroundPlane = (width: number, height: number) => {
+    if (!backgroundPlaneRef.current || !cameraRef.current) return;
+    const texture = backgroundPlaneRef.current.material.map;
+    if (!texture) return;
+
+    const img = texture.image;
+    const imgAspect = img.width / img.height;
+    const screenAspect = width / height;
+
+    // Match the plane size to the screen size directly, no scaling adjustments
+    const planeWidth = width / 100; // Scale down to Three.js units
+    const planeHeight = height / 100;
+
+    const planeGeometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
+    backgroundPlaneRef.current.geometry.dispose();
+    backgroundPlaneRef.current.geometry = planeGeometry;
+
+    // Position camera to match the plane size exactly
+    const fovRad = cameraRef.current.fov * (Math.PI / 180);
+    const distance = (planeHeight / 2) / Math.tan(fovRad / 2);
+    cameraRef.current.position.set(0, 0, distance);
+    cameraRef.current.lookAt(0, 0, 0);
+  };
+
   useEffect(() => {
-    console.log("Setting up DOM elements");
     overlayImageRef.current = document.createElement("img");
     overlayImageRef.current.src = "images/overlayFilter1.png";
     overlayImageRef.current.className = "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70";
@@ -182,12 +187,11 @@ const FilterPageUI: React.FC = () => {
     saveButtonRef.current.id = "saveButton";
     saveButtonRef.current.textContent = "Save Image";
     saveButtonRef.current.className =
-      "fixed bottom-16 right-5 py-3 px-6 text-lg bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 z-[50] transition duration-300 opacity-100 hidden"; // Initially hidden
+      "fixed bottom-16 right-5 py-3 px-6 text-lg bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 z-[50] transition duration-300 opacity-100 hidden";
     document.body.appendChild(saveButtonRef.current);
     saveButtonRef.current.addEventListener("click", saveImage);
 
     return () => {
-      console.log("Cleaning up DOM elements");
       if (overlayImageRef.current && mountRef.current) mountRef.current.removeChild(overlayImageRef.current);
       if (videoRef.current && mountRef.current) mountRef.current.removeChild(videoRef.current);
       if (controlButtonRef.current) document.body.removeChild(controlButtonRef.current);
@@ -197,7 +201,6 @@ const FilterPageUI: React.FC = () => {
   }, []);
 
   const handleButtonClick = () => {
-    console.log("Button clicked:", controlButtonRef.current?.textContent);
     if (!controlButtonRef.current) return;
     if (controlButtonRef.current.textContent === "Start Camera") {
       startCameraStream();
@@ -213,7 +216,6 @@ const FilterPageUI: React.FC = () => {
   };
 
   const startCameraStream = () => {
-    console.log("Starting camera stream");
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
 
@@ -223,6 +225,7 @@ const FilterPageUI: React.FC = () => {
           facingMode: "environment",
           width: { ideal: screenWidth },
           height: { ideal: screenHeight },
+          aspectRatio: screenWidth / screenHeight,
         },
       })
       .then((stream) => {
@@ -262,34 +265,24 @@ const FilterPageUI: React.FC = () => {
 
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    const screenAspect = screenWidth / screenHeight;
 
     rendererRef.current.setSize(screenWidth, screenHeight);
-    cameraRef.current.aspect = screenAspect;
+    cameraRef.current.aspect = screenWidth / screenHeight;
     cameraRef.current.updateProjectionMatrix();
 
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(imageData, (texture) => {
-      const img = texture.image;
-      const imgAspect = img.width / img.height;
-      let planeWidth = screenWidth;
-      let planeHeight = screenHeight;
-      if (screenAspect > imgAspect) {
-        planeWidth = screenHeight * imgAspect;
-      } else {
-        planeHeight = screenWidth / imgAspect;
-      }
-
-      const planeGeometry = new THREE.PlaneGeometry(planeWidth / 100, planeHeight / 100);
-      const planeMaterial = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
-      if (backgroundPlaneRef.current) sceneRef.current.remove(backgroundPlaneRef.current);
-      const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+      if (backgroundPlaneRef.current) sceneRef.current!.remove(backgroundPlaneRef.current);
+      const plane = new THREE.Mesh(
+        new THREE.PlaneGeometry(screenWidth / 100, screenHeight / 100),
+        new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide })
+      );
       backgroundPlaneRef.current = plane;
-      plane.position.set(0, 0, -1);
+      plane.position.set(0, 0, -0.1); // Slightly behind to match video plane
       sceneRef.current!.add(plane);
 
       const fovRad = cameraRef.current!.fov * (Math.PI / 180);
-      const distance = (planeWidth / (2 * Math.tan(fovRad / 2))) * 0.45 / 100;
+      const distance = (screenHeight / 100 / 2) / Math.tan(fovRad / 2);
       cameraRef.current!.position.set(0, 0, distance);
       cameraRef.current!.lookAt(0, 0, 0);
 
@@ -298,24 +291,19 @@ const FilterPageUI: React.FC = () => {
   };
 
   const captureImage = () => {
-    console.log("Capturing image");
     if (!videoRef.current || !sceneRef.current || !cameraRef.current || !rendererRef.current || !mountRef.current) return;
 
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    const screenAspect = screenWidth / screenHeight;
-
-    const videoWidth = videoRef.current.videoWidth;
-    const videoHeight = videoRef.current.videoHeight;
-    const videoAspect = videoWidth / videoHeight;
 
     const canvas = document.createElement("canvas");
+    canvas.width = screenWidth;
+    canvas.height = screenHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    canvas.width = videoWidth;
-    canvas.height = videoHeight;
-    ctx.drawImage(videoRef.current, 0, 0, videoWidth, videoHeight);
+    // Draw the video feed exactly as displayed
+    ctx.drawImage(videoRef.current, 0, 0, screenWidth, screenHeight);
 
     const imageData = canvas.toDataURL("image/png");
     localStorage.setItem("capturedImage", imageData);
@@ -330,30 +318,22 @@ const FilterPageUI: React.FC = () => {
       overlayImageRef.current.className = "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70";
 
     rendererRef.current.setSize(screenWidth, screenHeight);
-    cameraRef.current.aspect = screenAspect;
+    cameraRef.current.aspect = screenWidth / screenHeight;
     cameraRef.current.updateProjectionMatrix();
 
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(imageData, (texture) => {
-      const imgAspect = videoWidth / videoHeight;
-      let planeWidth = screenWidth;
-      let planeHeight = screenHeight;
-      if (screenAspect > imgAspect) {
-        planeWidth = screenHeight * imgAspect;
-      } else {
-        planeHeight = screenWidth / imgAspect;
-      }
-
-      const planeGeometry = new THREE.PlaneGeometry(planeWidth / 100, planeHeight / 100);
-      const planeMaterial = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
-      if (backgroundPlaneRef.current) sceneRef.current.remove(backgroundPlaneRef.current);
-      const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+      if (backgroundPlaneRef.current) sceneRef.current!.remove(backgroundPlaneRef.current);
+      const plane = new THREE.Mesh(
+        new THREE.PlaneGeometry(screenWidth / 100, screenHeight / 100),
+        new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide })
+      );
       backgroundPlaneRef.current = plane;
-      plane.position.set(0, 0, -1);
+      plane.position.set(0, 0, -0.1); // Match the video plane position
       sceneRef.current!.add(plane);
 
       const fovRad = cameraRef.current!.fov * (Math.PI / 180);
-      const distance = (planeWidth / (2 * Math.tan(fovRad / 2))) * 0.45 / 100;
+      const distance = (screenHeight / 100 / 2) / Math.tan(fovRad / 2);
       cameraRef.current!.position.set(0, 0, distance);
       cameraRef.current!.lookAt(0, 0, 0);
     });
@@ -529,7 +509,7 @@ const FilterPageUI: React.FC = () => {
 
         const scaleX = targetWidth / modelSize.x;
         const scaleY = targetHeight / modelSize.y;
-        model.scale.set(scaleX, scaleY, 0.3);
+        model.scale.set(scaleX, scaleY, 0.01);
 
         box.setFromObject(model);
         const modelCenter = new THREE.Vector3();
@@ -552,90 +532,68 @@ const FilterPageUI: React.FC = () => {
     });
   };
 
-  const saveImage = () => {
-    console.log("Saving image triggered");
+  const saveImage = async () => {
     if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !capturedImage) {
       console.error("Missing required elements for saving image");
       return;
     }
 
-    // Temporarily hide UI elements
     setShowBlindMenu(false);
     if (controlButtonRef.current) controlButtonRef.current.style.display = "none";
     if (saveButtonRef.current) saveButtonRef.current.style.display = "none";
 
-    // Use requestAnimationFrame to ensure rendering is complete
-    requestAnimationFrame(() => {
-      const screenWidth = window.innerWidth;
-      const screenHeight = window.innerHeight;
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
 
-      // Create canvas for final output
-      const canvas = document.createElement("canvas");
-      canvas.width = screenWidth;
-      canvas.height = screenHeight;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        console.error("Failed to get 2D context");
-        return;
-      }
+    rendererRef.current.setSize(screenWidth, screenHeight);
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
 
-      // Load and draw background image
-      const backgroundImg = new Image();
-      backgroundImg.onload = () => {
-        const imgAspect = backgroundImg.width / backgroundImg.height;
-        const screenAspect = screenWidth / screenHeight;
-        let drawWidth = screenWidth;
-        let drawHeight = screenHeight;
-        if (screenAspect > imgAspect) {
-          drawWidth = screenHeight * imgAspect;
-        } else {
-          drawHeight = screenWidth / imgAspect;
-        }
-        const offsetX = (screenWidth - drawWidth) / 2;
-        const offsetY = (screenHeight - drawHeight) / 2;
-        ctx.drawImage(backgroundImg, offsetX, offsetY, drawWidth, drawHeight);
+    const canvas = document.createElement("canvas");
+    canvas.width = screenWidth;
+    canvas.height = screenHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-        // Render 3D scene and draw it
-        rendererRef.current!.setSize(screenWidth, screenHeight);
-        rendererRef.current!.render(sceneRef.current!, cameraRef.current!);
-        const renderData = rendererRef.current!.domElement.toDataURL("image/png");
-        const renderImg = new Image();
-        renderImg.onload = () => {
-          ctx.drawImage(renderImg, 0, 0, screenWidth, screenHeight);
+    const backgroundImg = new Image();
+    const renderImg = new Image();
+    const logoImg = new Image();
 
-          // Draw logo on top
-          const logoImg = new Image();
-          logoImg.onload = () => {
-            const logoWidth = 96;
-            const logoHeight = 96;
-            const logoX = (screenWidth - logoWidth) / 2;
-            const logoY = 16; // Top position
-            ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
+    const loadImage = (img: HTMLImageElement, src: string) =>
+      new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+        img.src = src;
+      });
 
-            // Trigger download
-            const link = document.createElement("a");
-            link.download = "custom_blind_image.png";
-            link.href = canvas.toDataURL("image/png");
-            link.click();
+    try {
+      await loadImage(backgroundImg, capturedImage);
+      ctx.drawImage(backgroundImg, 0, 0, screenWidth, screenHeight);
 
-            // Restore UI
-            setShowBlindMenu(true);
-            if (controlButtonRef.current) controlButtonRef.current.style.display = "block";
-            if (saveButtonRef.current) saveButtonRef.current.style.display = "block";
-          };
-          logoImg.onerror = () => console.error("Failed to load logo image");
-          logoImg.src = "/images/baeLogo.png";
-        };
-        renderImg.onerror = () => console.error("Failed to load render image");
-        renderImg.src = renderData;
-      };
-      backgroundImg.onerror = () => console.error("Failed to load background image");
-      backgroundImg.src = capturedImage;
-    });
+      renderImg.src = rendererRef.current.domElement.toDataURL("image/png");
+      await loadImage(renderImg, renderImg.src);
+      ctx.drawImage(renderImg, 0, 0, screenWidth, screenHeight);
+
+      await loadImage(logoImg, "/images/baeLogo.png");
+      const logoWidth = 96;
+      const logoHeight = 96;
+      const logoX = (screenWidth - logoWidth) / 2;
+      const logoY = 16;
+      ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
+
+      const link = document.createElement("a");
+      link.download = "custom_blind_image.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (error) {
+      console.error("Error saving image:", error);
+    } finally {
+      setShowBlindMenu(true);
+      if (controlButtonRef.current) controlButtonRef.current.style.display = "block";
+      if (saveButtonRef.current) saveButtonRef.current.style.display = "block";
+    }
   };
 
   const submitAndShowMenu = () => {
-    console.log("Submitting and showing customizer menu");
     setShowBlindMenu(true);
     setIsCustomizerView(true);
     if (controlButtonRef.current) controlButtonRef.current.style.display = "none";
@@ -913,6 +871,3 @@ const FilterPageUI: React.FC = () => {
 };
 
 export default FilterPageUI;
-
-
-// end of page 1
