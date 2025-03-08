@@ -109,14 +109,15 @@ const FilterPageUI: React.FC = () => {
 
     if (mountRef.current) {
       mountRef.current.appendChild(renderer.domElement);
-      Object.assign(renderer.domElement.style, {
-        position: "absolute",
-        top: "0",
-        left: "0",
-        zIndex: "20",
-        width: "100%",
-        height: "100%",
-      });
+      renderer.domElement.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 20;
+        width: 100%;
+        height: 100%;
+        touch-action: ${isCustomizerView ? 'none' : 'auto'};
+      `;
     }
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
@@ -148,7 +149,7 @@ const FilterPageUI: React.FC = () => {
       cleanupThreeJs();
       window.removeEventListener("resize", handleResize);
     };
-  }, []);
+  }, [isCustomizerView]); // Add isCustomizerView as a dependency to update canvas styles
 
   const cleanupThreeJs = () => {
     if (rendererRef.current && mountRef.current) {
@@ -618,35 +619,16 @@ const FilterPageUI: React.FC = () => {
     saveButtonRef.current?.classList.remove("hidden");
     // Ensure the body remains scrollable
     document.body.style.overflow = "auto";
-
-    // Add touch event listeners for scrolling on the canvas
+    // Ensure the Three.js canvas does not interfere with touch events
     if (rendererRef.current) {
-      let touchStartY = 0;
-      let touchLastY = 0;
-
-      const handleTouchStart = (e: TouchEvent) => {
-        touchStartY = e.touches[0].clientY;
-        touchLastY = touchStartY;
-      };
-
-      const handleTouchMove = (e: TouchEvent) => {
-        e.preventDefault(); // Prevent default to avoid unwanted browser behavior
-        const touchY = e.touches[0].clientY;
-        const deltaY = touchLastY - touchY; // Positive for swipe up, negative for swipe down
-        window.scrollBy(0, deltaY); // Scroll the window by the delta
-        touchLastY = touchY;
-      };
-
-      const canvas = rendererRef.current.domElement;
-      canvas.addEventListener("touchstart", handleTouchStart);
-      canvas.addEventListener("touchmove", handleTouchMove);
-
-      // Cleanup listeners when component unmounts (handled in cleanupThreeJs)
-      const cleanup = () => {
-        canvas.removeEventListener("touchstart", handleTouchStart);
-        canvas.removeEventListener("touchmove", handleTouchMove);
-      };
-      // Store cleanup in ref or similar if needed, but here we rely on existing cleanupThreeJs
+      rendererRef.current.domElement.style.pointerEvents = "none";
+      rendererRef.current.domElement.style.touchAction = "none"; // Prevent canvas from intercepting touch
+      rendererRef.current.domElement.style.zIndex = "10"; // Lower z-index to allow UI interaction
+    }
+    // Ensure the customizer UI is on top and scrollable
+    if (mountRef.current) {
+      mountRef.current.style.position = "relative";
+      mountRef.current.style.zIndex = "5";
     }
   };
 
@@ -719,9 +701,10 @@ const FilterPageUI: React.FC = () => {
         backgroundColor: capturedImage || isCustomizerView ? "#F5F5DC" : "transparent",
         backgroundSize: "cover",
         backgroundPosition: "center",
+        touchAction: isCustomizerView ? "auto" : "none", // Ensure touch scrolling on the body
       }}
     >
-      <div ref={mountRef} className="relative w-full h-screen" />
+      <div ref={mountRef} className="relative w-full h-screen touch-auto" />
       <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60]">
         <img src="/images/baelogoN.png" alt="Logo" className="w-24 h-24 object-contain" />
       </div>
@@ -739,7 +722,10 @@ const FilterPageUI: React.FC = () => {
         onChange={handleImageUpload}
       />
       {showBlindMenu && isCustomizerView && (
-        <div className="max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen overflow-y-auto">
+        <div
+          className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen overflow-y-auto"
+          style={{ zIndex: 30, position: "relative" }} // Ensure UI is above canvas
+        >
           <div className="blind-type-menu w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
             <h3 className="bg-white p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Select Type of Blind</h3>
             <div className="blind-type-content grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
@@ -748,6 +734,7 @@ const FilterPageUI: React.FC = () => {
                   key={type}
                   className="button-container flex flex-col items-center text-center cursor-pointer px-[5px]"
                   onClick={() => selectBlindType(type)}
+                  onTouchEnd={() => selectBlindType(type)} // Add touch support
                 >
                   <img
                     src={buttonImage}
@@ -790,6 +777,7 @@ const FilterPageUI: React.FC = () => {
                       key={index}
                       className="button-container flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
                       onClick={() => selectPattern(pattern.patternUrl)}
+                      onTouchEnd={() => selectPattern(pattern.patternUrl)} // Add touch support
                     >
                       <img
                         src={pattern.image}
@@ -833,6 +821,7 @@ const FilterPageUI: React.FC = () => {
                       key={index}
                       className="button-container flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
                       onClick={() => selectPattern(pattern.patternUrl)}
+                      onTouchEnd={() => selectPattern(pattern.patternUrl)} // Add touch support
                     >
                       <img
                         src={pattern.image}
