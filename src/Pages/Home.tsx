@@ -1,12 +1,12 @@
 import React from "react";
-import FilterPageUI from "../components/FilterPageUI"; // Adjust the path as needed
+import MenuScript from "../components/MenuScript"; // Adjust the path as needed
 
-const NewPage: React.FC = () => {
+const MenuScriptPage: React.FC = () => {
   return (
     <>
-      <FilterPageUI />
+      <MenuScript />
     </>
   );
 };
 
-export default NewPage;
+export default MenuScriptPage;
