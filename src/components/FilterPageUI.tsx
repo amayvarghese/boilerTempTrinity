@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import * as THREE from "./three.js-r132/build/three.module.js";
+import * as THREE from "./three.js-r132/build/three.module.js"; // Adjust path as needed
 import { GLTFLoader } from "./three.js-r132/examples/jsm/loaders/GLTFLoader.js";
 
 interface ModelData {
@@ -7,13 +7,14 @@ interface ModelData {
   gltf: any;
 }
 
-const FilterPageUI: React.FC = () => {
+const FilterPage: React.FC = () => {
   const [showBlindMenu, setShowBlindMenu] = useState(false);
   const [selectedBlindType, setSelectedBlindType] = useState<string | null>(null);
   const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
   const [filters, setFilters] = useState<string[]>([]);
   const [capturedImage, setCapturedImage] = useState<string | null>(localStorage.getItem("capturedImage"));
-  const [instruction, setInstruction] = useState("Click 'Start Camera' to begin.");
+  const [instruction, setInstruction] = useState<string>("Click 'Start Camera' to begin.");
+  const [isCustomizerView, setIsCustomizerView] = useState(false);
 
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -28,22 +29,16 @@ const FilterPageUI: React.FC = () => {
   const modelsRef = useRef<ModelData[]>([]);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const hasSelectionBox = useRef(false);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const imageRef = useRef<HTMLImageElement | null>(null);
-  const selectionDataRef = useRef<{ startX: number; startY: number; endX: number; endY: number } | null>(null);
-  const containerObjectRef = useRef<THREE.Object3D | null>(null);
-  const relativeModelDataRef = useRef<{ relX: number; relY: number; relWidth: number; relHeight: number } | null>(null);
-
-  const CAPTURED_WIDTH = 2012, CAPTURED_HEIGHT = 1132;
+  const backgroundPlaneRef = useRef<THREE.Mesh | null>(null);
 
   const blindTypes = [
-    { type: "classicRoman", buttonImage: "/images/windowTypeIcons/image 12.png", modelUrl: "/models/shadeBake.glb" },
-    { type: "roller", buttonImage: "/images/windowTypeIcons/image 11.png", modelUrl: "/models/plantationShutter.glb" },
-    { type: "roman", buttonImage: "/images/windowTypeIcons/image 13.png", modelUrl: "/models/shadeBake.glb" },
-    { type: "plantationShutter", buttonImage: "/images/windowTypeIcons/image 15.png", modelUrl: "/models/plantationShutter.glb" },
-    { type: "solar", buttonImage: "/images/windowTypeIcons/image 14.png", modelUrl: "/models/shadeBake.glb" },
-    { type: "aluminumSheet", buttonImage: "/images/windowTypeIcons/image 17.png", modelUrl: "/models/plantationShutter.glb" },
-    { type: "cellularBlinds", buttonImage: "/images/windowTypeIcons/image 18.png", modelUrl: "/models/shadeBake.glb" },
+    { type: "classicRoman", buttonImage: "/images/windowTypeIcons/image 12.png", modelUrl: "/models/classicRoman.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: 0, y: 0, z: 0.1 } },
+    { type: "roller", buttonImage: "/images/windowTypeIcons/image 11.png", modelUrl: "/models/plantationShutter.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.6, y: 2, z: 1 }, basePosition: { x: 0, y: 0, z: 0.1 } },
+    { type: "roman", buttonImage: "/images/windowTypeIcons/image 13.png", modelUrl: "/models/shadeBake.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.6, y: 2, z: 1 }, basePosition: { x: 0, y: 0, z: 0.1 } },
+    { type: "plantationShutter", buttonImage: "/images/windowTypeIcons/image 15.png", modelUrl: "/models/plantationShutter.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.6, y: 2, z: 1 }, basePosition: { x: 0, y: 0, z: 0.1 } },
+    { type: "solar", buttonImage: "/images/windowTypeIcons/image 14.png", modelUrl: "/models/shadeBake.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.6, y: 2, z: 1 }, basePosition: { x: 0, y: 0, z: 0.1 } },
+    { type: "aluminumSheet", buttonImage: "/images/windowTypeIcons/image 17.png", modelUrl: "/models/plantationShutter.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.6, y: 2, z: 1 }, basePosition: { x: 0, y: 0, z: 0.1 } },
+    { type: "cellularBlinds", buttonImage: "/images/windowTypeIcons/image 18.png", modelUrl: "/models/shadeBake.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.6, y: 2, z: 1 }, basePosition: { x: 0, y: 0, z: 0.1 } },
   ];
 
   const patterns = [
@@ -53,470 +48,709 @@ const FilterPageUI: React.FC = () => {
     { name: "Texture 2", image: "/images/FabricP2.png", price: "Option B", filterTags: ["smooth"], patternUrl: "/images/ICONSforMaterial/pattern4.png" },
   ];
 
-  const filteredPatterns = patterns.filter(p => filters.length === 0 || p.filterTags.some(tag => filters.includes(tag)));
+  const filteredPatterns = patterns.filter(
+    (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
+  );
 
   useEffect(() => {
+    console.log("Initializing Three.js scene");
     const scene = new THREE.Scene();
     sceneRef.current = scene;
-    const camera = new THREE.PerspectiveCamera(75, CAPTURED_WIDTH / CAPTURED_HEIGHT, 0.1, 1000);
-    camera.position.set(0, 0, 5);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 10);
     cameraRef.current = camera;
+
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     rendererRef.current = renderer;
 
     if (mountRef.current) {
-      renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
+      const { width, height } = mountRef.current.getBoundingClientRect();
+      renderer.setSize(width, height);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
       mountRef.current.appendChild(renderer.domElement);
-      renderer.domElement.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;z-index:25;";
+      renderer.domElement.style.position = "absolute";
+      renderer.domElement.style.top = "0";
+      renderer.domElement.style.left = "0";
+      renderer.domElement.style.zIndex = "20";
+      console.log("Renderer mounted with size:", width, height);
     }
 
     scene.add(new THREE.AmbientLight(0xffffff, 1));
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(5, 5, 5);
-    light.castShadow = true;
-    scene.add(light);
-
-    const container = new THREE.Object3D();
-    containerObjectRef.current = container;
-    scene.add(container);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(5, 5, 1);
+    directionalLight.castShadow = true;
+    scene.add(directionalLight);
 
     animate();
 
     const handleResize = () => {
-      if (cameraRef.current && rendererRef.current && mountRef.current && !showBlindMenu) {
-        const { clientWidth: width, clientHeight: height } = mountRef.current;
+      if (cameraRef.current && rendererRef.current && mountRef.current) {
+        const { width, height } = mountRef.current.getBoundingClientRect();
         rendererRef.current.setSize(width, height);
         cameraRef.current.aspect = width / height;
         cameraRef.current.updateProjectionMatrix();
-      } else if (imageRef.current && showBlindMenu) {
-        updateModelScaleAndPosition();
+        if (backgroundPlaneRef.current) {
+          const planeGeometry = new THREE.PlaneGeometry(width, height);
+          backgroundPlaneRef.current.geometry.dispose();
+          backgroundPlaneRef.current.geometry = planeGeometry;
+        }
+        console.log("Resized to:", width, height);
       }
     };
     window.addEventListener("resize", handleResize);
 
     return () => {
-      if (rendererRef.current && mountRef.current) mountRef.current.removeChild(rendererRef.current.domElement);
-      rendererRef.current?.dispose();
-      cameraStreamRef.current?.getTracks().forEach(track => track.stop());
+      console.log("Cleaning up Three.js");
+      if (rendererRef.current && mountRef.current) {
+        mountRef.current.removeChild(rendererRef.current.domElement);
+        rendererRef.current.dispose();
+      }
+      if (cameraStreamRef.current) {
+        cameraStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
       window.removeEventListener("resize", handleResize);
     };
-  }, [showBlindMenu]);
+  }, []);
 
   useEffect(() => {
+    console.log("Setting up DOM elements");
     overlayImageRef.current = document.createElement("img");
     overlayImageRef.current.src = "images/overlayFilter1.png";
     overlayImageRef.current.className = "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70";
-    mountRef.current?.appendChild(overlayImageRef.current);
+    if (mountRef.current) mountRef.current.appendChild(overlayImageRef.current);
 
     videoRef.current = document.createElement("video");
     videoRef.current.setAttribute("playsinline", "");
     videoRef.current.muted = true;
     videoRef.current.className = "absolute inset-0 w-full h-full object-cover z-[10]";
-    mountRef.current?.appendChild(videoRef.current);
+    if (mountRef.current) mountRef.current.appendChild(videoRef.current);
 
     controlButtonRef.current = document.createElement("button");
     controlButtonRef.current.id = "controlButton";
     controlButtonRef.current.textContent = "Start Camera";
-    controlButtonRef.current.className = "fixed bottom-16 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-olive-600 text-white rounded-lg shadow-md hover:bg-olive-700 focus:outline-none focus:ring-2 focus:ring-olive-500 z-[40] transition duration-300";
+    controlButtonRef.current.className =
+      "fixed bottom-16 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-olive-600 text-white rounded-lg shadow-md hover:bg-olive-700 focus:outline-none focus:ring-2 focus:ring-olive-500 z-[40] transition duration-300 opacity-100";
     document.body.appendChild(controlButtonRef.current);
     controlButtonRef.current.addEventListener("click", handleButtonClick);
 
     saveButtonRef.current = document.createElement("button");
     saveButtonRef.current.id = "saveButton";
     saveButtonRef.current.textContent = "Save Image";
-    saveButtonRef.current.className = "fixed bottom-16 right-5 py-3 px-6 text-lg bg-olive-600 text-white rounded-lg shadow-md hover:bg-olive-700 focus:outline-none focus:ring-2 focus:ring-olive-500 z-[40] transition duration-300 hidden";
+    saveButtonRef.current.className =
+      "fixed bottom-16 right-5 py-3 px-6 text-lg bg-olive-600 text-white rounded-lg shadow-md hover:bg-olive-700 focus:outline-none focus:ring-2 focus:ring-olive-500 z-[40] transition duration-300 hidden opacity-100";
     document.body.appendChild(saveButtonRef.current);
     saveButtonRef.current.addEventListener("click", saveImage);
 
     return () => {
-      mountRef.current?.removeChild(overlayImageRef.current!);
-      mountRef.current?.removeChild(videoRef.current!);
-      document.body.removeChild(controlButtonRef.current!);
-      document.body.removeChild(saveButtonRef.current!);
+      console.log("Cleaning up DOM elements");
+      if (overlayImageRef.current && mountRef.current) mountRef.current.removeChild(overlayImageRef.current);
+      if (videoRef.current && mountRef.current) mountRef.current.removeChild(videoRef.current);
+      if (controlButtonRef.current) document.body.removeChild(controlButtonRef.current);
+      if (saveButtonRef.current) document.body.removeChild(saveButtonRef.current);
     };
   }, []);
 
   const handleButtonClick = () => {
+    console.log("Button clicked:", controlButtonRef.current?.textContent);
     if (!controlButtonRef.current) return;
-    const text = controlButtonRef.current.textContent;
-    if (text === "Start Camera") {
+    if (controlButtonRef.current.textContent === "Start Camera") {
       startCameraStream();
       setInstruction("Point your camera and click 'Capture' to take a photo.");
-    } else if (text === "Capture") {
+    } else if (controlButtonRef.current.textContent === "Capture") {
       captureImage();
       setInstruction("Draw a box on the image to place the 3D model.");
-    } else if (text === "Submit") {
+    } else if (controlButtonRef.current.textContent === "Submit") {
       submitAndShowMenu();
       setInstruction("Select a blind type and pattern, then click 'Save Image' to download.");
     }
   };
 
   const startCameraStream = () => {
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-      .then(stream => {
+    console.log("Starting camera stream");
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: "environment" } })
+      .then((stream) => {
         cameraStreamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.play().then(() => {
-            overlayImageRef.current!.className = "absolute inset-0 w-full h-full object-fill z-[15] block opacity-70";
-            controlButtonRef.current!.textContent = "Capture";
+            if (overlayImageRef.current) {
+              overlayImageRef.current.className = "absolute inset-0 w-full h-full object-fill z-[15] block opacity-70";
+            }
+            if (controlButtonRef.current) controlButtonRef.current.textContent = "Capture";
           });
         }
       })
-      .catch(err => console.error(err));
+      .catch((err) => console.error("Camera stream error:", err));
   };
 
   const captureImage = () => {
-    if (!videoRef.current || !videoRef.current.videoWidth || !mountRef.current) return;
+    console.log("Capturing image");
+    if (!videoRef.current || !sceneRef.current || !cameraRef.current || !rendererRef.current || !mountRef.current) return;
+
+    const { width: mountWidth, height: mountHeight } = mountRef.current.getBoundingClientRect();
+    const videoWidth = videoRef.current.videoWidth;
+    const videoHeight = videoRef.current.videoHeight;
+    const videoAspect = videoWidth / videoHeight;
+    const mountAspect = mountWidth / mountHeight;
+
     const canvas = document.createElement("canvas");
-    canvas.width = CAPTURED_WIDTH;
-    canvas.height = CAPTURED_HEIGHT;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const { videoWidth, videoHeight } = videoRef.current;
-    const videoAspect = videoWidth / videoHeight, targetAspect = CAPTURED_WIDTH / CAPTURED_HEIGHT;
-    let sx, sy, sWidth, sHeight;
-    if (videoAspect > targetAspect) {
+    canvas.width = mountWidth;
+    canvas.height = mountHeight;
+
+    let sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight;
+
+    if (videoAspect > mountAspect) {
       sHeight = videoHeight;
-      sWidth = videoHeight * targetAspect;
+      sWidth = videoHeight * mountAspect;
       sx = (videoWidth - sWidth) / 2;
       sy = 0;
+      dx = 0;
+      dy = 0;
+      dWidth = mountWidth;
+      dHeight = mountHeight;
     } else {
       sWidth = videoWidth;
-      sHeight = videoWidth / targetAspect;
+      sHeight = videoWidth / mountAspect;
       sx = 0;
       sy = (videoHeight - sHeight) / 2;
+      dx = 0;
+      dy = 0;
+      dWidth = mountWidth;
+      dHeight = mountHeight;
     }
 
-    ctx.drawImage(videoRef.current, sx, sy, sWidth, sHeight, 0, 0, CAPTURED_WIDTH, CAPTURED_HEIGHT);
+    ctx.drawImage(videoRef.current, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
     const imageData = canvas.toDataURL("image/png");
     localStorage.setItem("capturedImage", imageData);
     setCapturedImage(imageData);
 
-    while (containerObjectRef.current!.children.length > 0) containerObjectRef.current!.remove(containerObjectRef.current!.children[0]);
-    const { clientWidth: containerWidth, clientHeight: containerHeight } = mountRef.current;
-    rendererRef.current!.setSize(containerWidth, containerHeight);
-    cameraRef.current!.aspect = containerWidth / containerHeight;
-    cameraRef.current!.updateProjectionMatrix();
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach((track) => track.stop());
+      if (videoRef.current) videoRef.current.srcObject = null;
+    }
+    if (videoRef.current) videoRef.current.className += " hidden";
+    if (overlayImageRef.current)
+      overlayImageRef.current.className = "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70";
 
-    new THREE.TextureLoader().load(imageData, texture => {
+    rendererRef.current.setSize(mountWidth, mountHeight);
+    cameraRef.current.aspect = mountAspect;
+    cameraRef.current.updateProjectionMatrix();
+
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load(imageData, (texture) => {
+      const planeGeometry = new THREE.PlaneGeometry(mountWidth, mountHeight);
+      const planeMaterial = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+      if (backgroundPlaneRef.current) sceneRef.current.remove(backgroundPlaneRef.current);
+      const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+      backgroundPlaneRef.current = plane;
+      plane.position.set(0, 0, -1);
+      sceneRef.current!.add(plane);
+
       const fovRad = cameraRef.current!.fov * (Math.PI / 180);
-      const heightAtZ = 2 * cameraRef.current!.position.z * Math.tan(fovRad / 2);
-      const widthAtZ = heightAtZ * (containerWidth / containerHeight);
-      const plane = new THREE.Mesh(
-        new THREE.PlaneGeometry(widthAtZ, heightAtZ),
-        new THREE.MeshBasicMaterial({ map: texture, transparent: true })
-      );
-      plane.position.set(0, 0, 0);
-      containerObjectRef.current!.add(plane);
-      rendererRef.current!.render(sceneRef.current!, cameraRef.current!);
+      const distance = (mountWidth / (2 * Math.tan(fovRad / 2))) * 0.45;
+      cameraRef.current!.position.set(0, 0, distance);
+      cameraRef.current!.lookAt(0, 0, 0);
     });
 
-    cameraStreamRef.current?.getTracks().forEach(track => track.stop());
-    if (videoRef.current) videoRef.current.srcObject = null;
-    videoRef.current!.className += " hidden";
-    overlayImageRef.current!.className = "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70";
     initSelectionBox();
-    controlButtonRef.current!.textContent = "Submit";
+    if (controlButtonRef.current) controlButtonRef.current.textContent = "Submit";
   };
 
   const initSelectionBox = () => {
     if (selectionBoxRef.current || hasSelectionBox.current) return;
+
+    console.log("Initializing selection box");
     selectionBoxRef.current = document.createElement("div");
     selectionBoxRef.current.className = "absolute border-2 border-dashed border-blue-500 bg-blue-200 bg-opacity-20 hidden pointer-events-auto";
     selectionBoxRef.current.style.zIndex = "25";
-    mountRef.current?.appendChild(selectionBoxRef.current);
+    if (mountRef.current) mountRef.current.appendChild(selectionBoxRef.current);
 
     let startX: number, startY: number, isDragging = false;
 
-    const handleStart = (x: number, y: number) => {
+    const startSelection = (x: number, y: number) => {
       if (hasSelectionBox.current) return;
-      startX = x; startY = y;
-      selectionBoxRef.current!.style.cssText = `left:${startX}px;top:${startY}px;width:0;height:0;${selectionBoxRef.current!.style.cssText}`;
-      selectionBoxRef.current!.className = "absolute border-2 border-dashed border-blue-500 bg-blue-200 bg-opacity-20 pointer-events-auto";
-      isDragging = true;
+      console.log("Starting selection at:", x, y);
+      startX = x;
+      startY = y;
+      if (selectionBoxRef.current) {
+        selectionBoxRef.current.style.left = `${startX}px`;
+        selectionBoxRef.current.style.top = `${startY}px`;
+        selectionBoxRef.current.style.width = "0px";
+        selectionBoxRef.current.style.height = "0px";
+        selectionBoxRef.current.className = "absolute border-2 border-dashed border-blue-500 bg-blue-200 bg-opacity-20 pointer-events-auto";
+        isDragging = true;
+      }
     };
 
-    const handleMove = (x: number, y: number) => {
+    const updateSelection = (x: number, y: number) => {
       if (!isDragging || !selectionBoxRef.current) return;
+      console.log("Updating selection to:", x, y);
       selectionBoxRef.current.style.width = `${Math.abs(x - startX)}px`;
       selectionBoxRef.current.style.height = `${Math.abs(y - startY)}px`;
       selectionBoxRef.current.style.left = `${Math.min(startX, x)}px`;
       selectionBoxRef.current.style.top = `${Math.min(startY, y)}px`;
     };
 
-    const handleEnd = (x: number, y: number) => {
+    const endSelection = (x: number, y: number) => {
       if (!isDragging || !selectionBoxRef.current) return;
+      console.log("Ending selection at:", x, y);
       selectionBoxRef.current.className += " hidden";
       hasSelectionBox.current = true;
       isDragging = false;
-      selectionDataRef.current = { startX, startY, endX: x, endY: y };
       create3DModelFromSelection(startX, startY, x, y);
     };
 
-    const mouseDown = (e: MouseEvent) => { if (!hasSelectionBox.current && e.button === 0) handleStart(e.clientX - mountRef.current!.getBoundingClientRect().left, e.clientY - mountRef.current!.getBoundingClientRect().top); };
-    const mouseMove = (e: MouseEvent) => { if (isDragging) handleMove(e.clientX - mountRef.current!.getBoundingClientRect().left, e.clientY - mountRef.current!.getBoundingClientRect().top); };
-    const mouseUp = (e: MouseEvent) => { if (isDragging) handleEnd(e.clientX - mountRef.current!.getBoundingClientRect().left, e.clientY - mountRef.current!.getBoundingClientRect().top); };
-    const touchStart = (e: TouchEvent) => { e.preventDefault(); if (!hasSelectionBox.current) handleStart(e.touches[0].clientX - mountRef.current!.getBoundingClientRect().left, e.touches[0].clientY - mountRef.current!.getBoundingClientRect().top); };
-    const touchMove = (e: TouchEvent) => { if (isDragging) { e.preventDefault(); handleMove(e.touches[0].clientX - mountRef.current!.getBoundingClientRect().left, e.touches[0].clientY - mountRef.current!.getBoundingClientRect().top); } };
-    const touchEnd = (e: TouchEvent) => { if (isDragging) { e.preventDefault(); handleEnd(e.changedTouches[0].clientX - mountRef.current!.getBoundingClientRect().left, e.changedTouches[0].clientY - mountRef.current!.getBoundingClientRect().top); } };
+    const handleMouseDown = (event: MouseEvent) => {
+      if (hasSelectionBox.current || event.button !== 0) return;
+      const rect = mountRef.current!.getBoundingClientRect();
+      startSelection(event.clientX - rect.left, event.clientY - rect.top);
+    };
 
-    mountRef.current?.addEventListener("mousedown", mouseDown);
-    mountRef.current?.addEventListener("mousemove", mouseMove);
-    mountRef.current?.addEventListener("mouseup", mouseUp);
-    mountRef.current?.addEventListener("touchstart", touchStart);
-    mountRef.current?.addEventListener("touchmove", touchMove);
-    mountRef.current?.addEventListener("touchend", touchEnd);
+    const handleMouseMove = (event: MouseEvent) => {
+      if (isDragging) {
+        const rect = mountRef.current!.getBoundingClientRect();
+        updateSelection(event.clientX - rect.left, event.clientY - rect.top);
+      }
+    };
+
+    const handleMouseUp = (event: MouseEvent) => {
+      if (isDragging) {
+        const rect = mountRef.current!.getBoundingClientRect();
+        endSelection(event.clientX - rect.left, event.clientY - rect.top);
+      }
+    };
+
+    const handleTouchStart = (event: TouchEvent) => {
+      if (hasSelectionBox.current) return;
+      event.preventDefault();
+      const rect = mountRef.current!.getBoundingClientRect();
+      const touch = event.touches[0];
+      startSelection(touch.clientX - rect.left, touch.clientY - rect.top);
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (isDragging) {
+        event.preventDefault();
+        const rect = mountRef.current!.getBoundingClientRect();
+        const touch = event.touches[0];
+        updateSelection(touch.clientX - rect.left, touch.clientY - rect.top);
+      }
+    };
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      if (isDragging) {
+        event.preventDefault();
+        const rect = mountRef.current!.getBoundingClientRect();
+        const touch = event.changedTouches[0];
+        endSelection(touch.clientX - rect.left, touch.clientY - rect.top);
+      }
+    };
+
+    if (mountRef.current) {
+      mountRef.current.addEventListener("mousedown", handleMouseDown);
+      mountRef.current.addEventListener("mousemove", handleMouseMove);
+      mountRef.current.addEventListener("mouseup", handleMouseUp);
+      mountRef.current.addEventListener("touchstart", handleTouchStart);
+      mountRef.current.addEventListener("touchmove", handleTouchMove);
+      mountRef.current.addEventListener("touchend", handleTouchEnd);
+    }
 
     return () => {
-      mountRef.current?.removeEventListener("mousedown", mouseDown);
-      mountRef.current?.removeEventListener("mousemove", mouseMove);
-      mountRef.current?.removeEventListener("mouseup", mouseUp);
-      mountRef.current?.removeEventListener("touchstart", touchStart);
-      mountRef.current?.removeEventListener("touchmove", touchMove);
-      mountRef.current?.removeEventListener("touchend", touchEnd);
-      mountRef.current?.removeChild(selectionBoxRef.current!);
+      if (mountRef.current) {
+        mountRef.current.removeEventListener("mousedown", handleMouseDown);
+        mountRef.current.removeEventListener("mousemove", handleMouseMove);
+        mountRef.current.removeEventListener("mouseup", handleMouseUp);
+        mountRef.current.removeEventListener("touchstart", handleTouchStart);
+        mountRef.current.removeEventListener("touchmove", handleTouchMove);
+        mountRef.current.removeEventListener("touchend", handleTouchEnd);
+      }
+      if (selectionBoxRef.current && mountRef.current) mountRef.current.removeChild(selectionBoxRef.current);
     };
+  };
+
+  const screenToWorld = (x: number, y: number): THREE.Vector3 => {
+    if (!cameraRef.current || !mountRef.current) return new THREE.Vector3();
+    const rect = mountRef.current.getBoundingClientRect();
+    const vector = new THREE.Vector3(
+      (x / rect.width) * 2 - 1,
+      -(y / rect.height) * 2 + 1,
+      0.5
+    );
+    vector.unproject(cameraRef.current);
+    return cameraRef.current.position
+      .clone()
+      .add(vector.sub(cameraRef.current.position).normalize().multiplyScalar(-cameraRef.current.position.z / vector.z));
   };
 
   const create3DModelFromSelection = (startX: number, startY: number, endX: number, endY: number) => {
-    if (!sceneRef.current || modelsRef.current.length > 0 || !containerObjectRef.current) return;
-    const width = Math.abs(endX - startX), height = Math.abs(endY - startY);
-    const worldWidth = (width / CAPTURED_WIDTH) * 10, worldHeight = (height / CAPTURED_HEIGHT) * (10 * (CAPTURED_HEIGHT / CAPTURED_WIDTH));
-    const worldX = (((startX + endX) / 2) / CAPTURED_WIDTH - 0.5) * 10, worldY = -(((startY + endY) / 2) / CAPTURED_HEIGHT - 0.5) * (10 * (CAPTURED_HEIGHT / CAPTURED_WIDTH));
+    if (!sceneRef.current || modelsRef.current.length > 0) return;
 
-    // Store relative position and size
-    relativeModelDataRef.current = {
-      relX: (startX + endX) / 2 / CAPTURED_WIDTH,
-      relY: (startY + endY) / 2 / CAPTURED_HEIGHT,
-      relWidth: width / CAPTURED_WIDTH,
-      relHeight: height / CAPTURED_HEIGHT,
-    };
+    console.log("Creating 3D model from selection");
+    const worldStart = screenToWorld(startX, startY);
+    const worldEnd = screenToWorld(endX, endY);
 
-    const modelUrl = selectedBlindType ? blindTypes.find(b => b.type === selectedBlindType)?.modelUrl || "/models/shadeBake.glb" : "/models/shadeBake.glb";
-    new GLTFLoader().load(modelUrl, gltf => {
+    const targetWidth = Math.abs(worldEnd.x - worldStart.x);
+    const targetHeight = Math.abs(worldEnd.y - worldStart.y);
+
+    const modelUrl = selectedBlindType
+      ? blindTypes.find((b) => b.type === selectedBlindType)?.modelUrl || "/models/shadeBake.glb"
+      : "/models/shadeBake.glb";
+
+    new GLTFLoader().load(modelUrl, (gltf) => {
       const model = gltf.scene;
-      new THREE.TextureLoader().load(selectedPattern || "images/pattern4.jpg", texture => {
-        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+
+      new THREE.TextureLoader().load(selectedPattern || "images/pattern4.jpg", (texture) => {
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.set(8, 8);
-        model.traverse(child => {
+
+        model.traverse((child) => {
           if ((child as THREE.Mesh).isMesh) {
             const mesh = child as THREE.Mesh;
             mesh.geometry.computeBoundingBox();
-            mesh.material = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.5, metalness: 0.3 });
+            mesh.material = new THREE.MeshStandardMaterial({
+              map: texture,
+              roughness: 0.5,
+              metalness: 0.3,
+            });
             mesh.material.needsUpdate = true;
           }
         });
-        const box = new THREE.Box3().setFromObject(model), modelSize = new THREE.Vector3();
+
+        const box = new THREE.Box3().setFromObject(model);
+        const modelSize = new THREE.Vector3();
         box.getSize(modelSize);
-        model.scale.set(worldWidth / modelSize.x, worldHeight / modelSize.y, 0.3);
-        model.position.set(worldX, worldY, 0.1);
-        containerObjectRef.current!.add(model);
+
+        const scaleX = targetWidth / modelSize.x;
+        const scaleY = targetHeight / modelSize.y;
+        model.scale.set(scaleX, scaleY, 0.3);
+
+        box.setFromObject(model);
+        const modelCenter = new THREE.Vector3();
+        box.getCenter(modelCenter);
+
+        model.position.set(
+          (worldStart.x + worldEnd.x) / 2 - (modelCenter.x - model.position.x),
+          (worldStart.y + worldEnd.y) / 2 - (modelCenter.y - model.position.y),
+          0.1
+        );
+
+        sceneRef.current!.add(model);
         modelsRef.current.push({ model, gltf });
-        rendererRef.current!.render(sceneRef.current!, cameraRef.current!);
+        console.log("3D model added with texture tiling set to 8x8");
+      }, undefined, (error) => {
+        console.error("Error loading texture:", error);
       });
+    }, undefined, (error) => {
+      console.error("Error loading model:", error);
     });
   };
 
-  const updateModelScaleAndPosition = () => {
-    if (!modelsRef.current.length || !imageRef.current || !relativeModelDataRef.current || !containerObjectRef.current) return;
-    const model = modelsRef.current[0].model, { relX, relY, relWidth, relHeight } = relativeModelDataRef.current;
-    const { clientWidth: containerWidth, clientHeight: containerHeight } = imageRef.current.parentElement!;
-    const imageAspect = CAPTURED_WIDTH / CAPTURED_HEIGHT, containerAspect = containerWidth / containerHeight;
-    const [displayedWidth, displayedHeight] = imageAspect > containerAspect ? [containerWidth, containerWidth / imageAspect] : [containerHeight * imageAspect, containerHeight];
-
-    // Calculate new world dimensions based on relative size
-    const worldWidth = relWidth * 10;
-    const worldHeight = relHeight * (10 * (CAPTURED_HEIGHT / CAPTURED_WIDTH));
-    const worldX = (relX - 0.5) * 10;
-    const worldY = -(relY - 0.5) * (10 * (CAPTURED_HEIGHT / CAPTURED_WIDTH));
-
-    // Scale container to match displayed size
-    containerObjectRef.current.scale.set(displayedWidth / 10, displayedHeight / (10 * (CAPTURED_HEIGHT / CAPTURED_WIDTH)), 1);
-
-    // Adjust model scale and position
-    const box = new THREE.Box3().setFromObject(model), modelSize = new THREE.Vector3();
-    box.getSize(modelSize);
-    model.scale.set(worldWidth / modelSize.x, worldHeight / modelSize.y, 0.3);
-    model.position.set(worldX, worldY, 0.1);
-
-    if (cameraRef.current && rendererRef.current) {
-      rendererRef.current.setSize(displayedWidth, displayedHeight);
-      cameraRef.current.aspect = displayedWidth / displayedHeight;
-      cameraRef.current.updateProjectionMatrix();
-      const fov = cameraRef.current.fov * (Math.PI / 180), distance = Math.max(displayedWidth, displayedHeight) / (2 * Math.tan(fov / 2)) * 1.5;
-      cameraRef.current.position.set(0, 0, distance);
-      cameraRef.current.lookAt(0, 0, 0);
-      rendererRef.current.render(sceneRef.current!, cameraRef.current!);
-    }
-  };
-
   const saveImage = () => {
-    if (!capturedImage || !rendererRef.current || !sceneRef.current || !cameraRef.current) return;
+    console.log("Saving image");
+    if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !capturedImage) return;
+
     setShowBlindMenu(false);
-    controlButtonRef.current!.style.display = saveButtonRef.current!.style.display = "none";
+    if (controlButtonRef.current) controlButtonRef.current.style.display = "none";
+    if (saveButtonRef.current) saveButtonRef.current.style.display = "none";
+
     setTimeout(() => {
       const canvas = document.createElement("canvas");
-      canvas.width = CAPTURED_WIDTH;
-      canvas.height = CAPTURED_HEIGHT;
+      canvas.width = rendererRef.current.domElement.width;
+      canvas.height = rendererRef.current.domElement.height;
       const ctx = canvas.getContext("2d");
+
       if (ctx) {
-        const img = new Image();
-        img.onload = () => {
-          ctx.drawImage(img, 0, 0, CAPTURED_WIDTH, CAPTURED_HEIGHT);
-          rendererRef.current!.setSize(CAPTURED_WIDTH, CAPTURED_HEIGHT);
-          rendererRef.current!.render(sceneRef.current!, cameraRef.current!);
+        const backgroundImg = new Image();
+        backgroundImg.onload = () => {
+          ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+
+          rendererRef.current.render(sceneRef.current!, cameraRef.current!);
+          const renderData = rendererRef.current!.domElement.toDataURL("image/png");
           const renderImg = new Image();
           renderImg.onload = () => {
-            ctx.drawImage(renderImg, 0, 0, CAPTURED_WIDTH, CAPTURED_HEIGHT);
+            ctx.drawImage(renderImg, 0, 0, canvas.width, canvas.height);
+
             const link = document.createElement("a");
             link.download = "custom_blind_image.png";
             link.href = canvas.toDataURL("image/png");
             link.click();
+
             setShowBlindMenu(true);
-            controlButtonRef.current!.style.display = saveButtonRef.current!.style.display = "block";
+            if (controlButtonRef.current) controlButtonRef.current.style.display = "block";
+            if (saveButtonRef.current) saveButtonRef.current.style.display = "block";
           };
-          renderImg.src = rendererRef.current!.domElement.toDataURL("image/png");
+          renderImg.src = renderData;
         };
-        img.src = capturedImage;
+        backgroundImg.src = capturedImage;
       }
     }, 100);
   };
 
   const submitAndShowMenu = () => {
+    console.log("Submitting and showing customizer menu");
     setShowBlindMenu(true);
-    controlButtonRef.current!.style.display = "none";
-    saveButtonRef.current!.className = saveButtonRef.current!.className.replace(" hidden", "");
-    if (rendererRef.current && imageRef.current && canvasRef.current && mountRef.current) {
-      mountRef.current.removeChild(rendererRef.current.domElement);
-      canvasRef.current.appendChild(rendererRef.current.domElement);
-      updateModelScaleAndPosition();
+    setIsCustomizerView(true);
+    if (controlButtonRef.current) controlButtonRef.current.style.display = "none";
+    if (saveButtonRef.current) saveButtonRef.current.className = saveButtonRef.current.className.replace(" hidden", "");
+    // Do not remove the renderer here; keep the Three.js scene active
+  };
+
+  const selectBlindType = (type: string) => {
+    console.log("Selected blind type:", type);
+    setSelectedBlindType(type);
+    if (modelsRef.current.length > 0) {
+      updateExistingModel(type);
+    }
+    if (rendererRef.current && sceneRef.current && cameraRef.current) {
+      rendererRef.current.render(sceneRef.current, cameraRef.current);
     }
   };
 
-  const selectBlindType = (type: string) => { setSelectedBlindType(type); if (modelsRef.current.length > 0) updateExistingModel(type); };
-  const selectPattern = (patternUrl: string) => { setSelectedPattern(patternUrl); if (modelsRef.current.length > 0) updateExistingModelPattern(patternUrl); };
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => setFilters(prev => e.target.checked ? [...prev, e.target.value] : prev.filter(tag => tag !== e.target.value));
+  const selectPattern = (patternUrl: string) => {
+    console.log("Selected pattern:", patternUrl);
+    setSelectedPattern(patternUrl);
+    if (modelsRef.current.length > 0) {
+      updateExistingModelPattern(patternUrl);
+    }
+    if (rendererRef.current && sceneRef.current && cameraRef.current) {
+      rendererRef.current.render(sceneRef.current, cameraRef.current);
+    }
+  };
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFilters((prev) => (e.target.checked ? [...prev, value] : prev.filter((tag) => tag !== value)));
+  };
 
   const updateExistingModel = (type: string) => {
-    if (!sceneRef.current || modelsRef.current.length === 0 || !containerObjectRef.current) return;
-    const modelUrl = blindTypes.find(b => b.type === type)?.modelUrl || "/models/shadeBake.glb";
-    const { model } = modelsRef.current[0], position = model.position.clone(), scale = model.scale.clone();
-    containerObjectRef.current.remove(model);
-    new GLTFLoader().load(modelUrl, gltf => {
+    if (!sceneRef.current || modelsRef.current.length === 0) return;
+
+    console.log("Updating existing model with type:", type);
+    const modelUrl = blindTypes.find((b) => b.type === type)?.modelUrl || "/models/shadeBake.glb";
+    const { model } = modelsRef.current[0];
+    const position = model.position.clone();
+    const scale = model.scale.clone();
+
+    sceneRef.current.remove(model);
+
+    new GLTFLoader().load(modelUrl, (gltf) => {
       const newModel = gltf.scene;
-      new THREE.TextureLoader().load(selectedPattern || "images/pattern4.jpg", texture => {
-        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+
+      new THREE.TextureLoader().load(selectedPattern || "images/pattern4.jpg", (texture) => {
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.set(8, 8);
-        newModel.traverse(child => { if ((child as THREE.Mesh).isMesh) (child as THREE.Mesh).material = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.5, metalness: 0.3 }); });
+
+        newModel.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            const mesh = child as THREE.Mesh;
+            mesh.material = new THREE.MeshStandardMaterial({
+              map: texture,
+              roughness: 0.5,
+              metalness: 0.3,
+            });
+            mesh.material.needsUpdate = true;
+          }
+        });
+
         newModel.scale.copy(scale);
         newModel.position.copy(position);
-        containerObjectRef.current!.add(newModel);
+
+        sceneRef.current!.add(newModel);
         modelsRef.current[0] = { model: newModel, gltf };
-        rendererRef.current!.render(sceneRef.current!, cameraRef.current!);
+        console.log("Model updated with texture tiling set to 8x8");
+        if (rendererRef.current && sceneRef.current && cameraRef.current) {
+          rendererRef.current.render(sceneRef.current, cameraRef.current);
+        }
+      }, undefined, (error) => {
+        console.error("Error loading texture:", error);
       });
+    }, undefined, (error) => {
+      console.error("Error loading model:", error);
     });
   };
 
   const updateExistingModelPattern = (patternUrl: string) => {
     if (!sceneRef.current || modelsRef.current.length === 0) return;
-    new THREE.TextureLoader().load(patternUrl, texture => {
-      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+
+    console.log("Updating model pattern:", patternUrl);
+    const { model } = modelsRef.current[0];
+
+    new THREE.TextureLoader().load(patternUrl, (texture) => {
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
       texture.repeat.set(8, 8);
-      modelsRef.current[0].model.traverse(child => { if ((child as THREE.Mesh).isMesh) (child as THREE.Mesh).material = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.5, metalness: 0.3 }); });
-      rendererRef.current!.render(sceneRef.current!, cameraRef.current!);
+
+      model.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const mesh = child as THREE.Mesh;
+          mesh.material = new THREE.MeshStandardMaterial({
+            map: texture,
+            roughness: 0.5,
+            metalness: 0.3,
+          });
+          mesh.material.needsUpdate = true;
+        }
+      });
+      console.log("Pattern updated with tiling set to 8x8");
+      if (rendererRef.current && sceneRef.current && cameraRef.current) {
+        rendererRef.current.render(sceneRef.current, cameraRef.current);
+      }
+    }, undefined, (error) => {
+      console.error("Error loading texture:", error);
     });
   };
 
   const animate = () => {
     requestAnimationFrame(animate);
-    mixersRef.current.forEach(mixer => mixer.update(0.016));
-    if (sceneRef.current && cameraRef.current && rendererRef.current) rendererRef.current.render(sceneRef.current, cameraRef.current);
+    const deltaTime = 0.016;
+    mixersRef.current.forEach((mixer) => mixer.update(deltaTime));
+    if (sceneRef.current && cameraRef.current && rendererRef.current) {
+      rendererRef.current.render(sceneRef.current, cameraRef.current);
+    }
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden" style={{ fontFamily: "Poppins, sans-serif", backgroundColor: "#F5F5DC" }}>
-      <div ref={mountRef} className="absolute inset-0 w-full h-full" />
-      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 p-2 rounded shadow-md z-[50] text-brown-800 text-lg">{instruction}</div>
-      {showBlindMenu && (
-        <div className="container max-w-7xl mx-auto min-h-screen p-4 md:p-8">
-          <section className="roman-shades flex flex-col md:flex-row items-start justify-center my-5 bg-gray-100 p-4 rounded gap-4">
-            <div className="blind-type-menu w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col h-[calc(100%+5rem)]">
-              <h3 className="bg-gray-100 p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Select Type of Blind</h3>
-              <div className="blind-type-content grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
-                {blindTypes.map(({ type, buttonImage }) => (
-                  <div key={type} className="button-container flex flex-col items-center text-center cursor-pointer px-[5px]" onClick={() => selectBlindType(type)}>
-                    <img src={buttonImage} alt={`${type} Blind`} className="button-image w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover" />
-                    <div className="button-text flex justify-center w-full mt-1 text-gray-700 text-[11px]"><span>{type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}</span></div>
+    <div
+      className="relative w-screen h-auto min-h-screen overflow-x-hidden"
+      style={{ fontFamily: "Poppins, sans-serif", backgroundColor: "#F5F5DC" }}
+    >
+      <div
+        ref={mountRef}
+        className="relative w-full"
+        style={{ height: "calc(100vh - 4rem)", maxHeight: "1132px" }}
+      >
+        {/* Three.js canvas is managed via mountRef; no static image here */}
+      </div>
+
+      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 p-2 rounded shadow-md z-[50] text-brown-800 text-lg">
+        {instruction}
+      </div>
+
+      {showBlindMenu && isCustomizerView && (
+        <div className="max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4">
+          <div className="blind-type-menu w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
+            <h3 className="bg-gray-100 p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Select Type of Blind</h3>
+            <div className="blind-type-content grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
+              {blindTypes.map(({ type, buttonImage }) => (
+                <div
+                  key={type}
+                  className="button-container flex flex-col items-center text-center cursor-pointer px-[5px]"
+                  onClick={() => selectBlindType(type)}
+                >
+                  <img
+                    src={buttonImage}
+                    alt={`${type} Blind`}
+                    className="button-image w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
+                  />
+                  <div className="button-text flex justify-center w-full mt-1 text-gray-700 text-[11px]">
+                    <span className="text-center">{type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}</span>
                   </div>
-                ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="central-content flex flex-col items-center w-full md:w-3/4 relative">
+            <div className="md:hidden w-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
+              <div className="options-menu p-2 bg-gray-100 rounded shadow">
+                <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
+                <div className="grid-container grid grid-cols-2 gap-2 mx-5 text-[13px]">
+                  {["red", "blue", "green", "smooth", "patterned"].map((filter) => (
+                    <div key={filter} className="option-row flex items-center gap-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          value={filter}
+                          checked={filters.includes(filter)}
+                          onChange={handleFilterChange}
+                          className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer"
+                        />
+                        {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="scrollable-buttons flex flex-col flex-1 max-h-[300px]">
+                <h3 className="bg-gray-100 pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Available Patterns</h3>
+                <div className="viewport-content grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
+                  {filteredPatterns.map((pattern, index) => (
+                    <div
+                      key={index}
+                      className="button-container flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
+                      onClick={() => selectPattern(pattern.patternUrl)}
+                    >
+                      <img
+                        src={pattern.image}
+                        alt={pattern.name}
+                        className="button-image w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
+                      />
+                      <div className="button-text flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
+                        <span className="left-text truncate">{pattern.name}</span>
+                        <span className="right-text">{pattern.price}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="central-content flex flex-col items-center w-full md:w-3/4 relative">
-              <div className="backgroundImage relative w-full h-[calc(100%-4rem)]">
-                <img ref={imageRef} src={capturedImage || ""} alt="Captured Image" className="main_bg relative w-full h-full object-contain z-20" />
-                <canvas ref={canvasRef} className="blind_overlay absolute inset-0 w-full h-full z-30" style={{ minHeight: "400px" }} />
-                <div className="hidden md:block viewport absolute top-0 right-0 w-1/3 h-[calc(100%+5rem)] bg-white bg-opacity-90 shadow-lg rounded flex flex-col z-40">
-                  <div className="options-menu p-2 bg-gray-100 rounded shadow">
-                    <h3 className="mb-2 text-sm text-gray-700 text-left h-12">Filter Options</h3>
-                    <div className="grid-container grid grid-cols-2 gap-2 mx-5 text-[13px]">
-                      {["red", "blue", "green", "smooth", "patterned"].map(filter => (
-                        <div key={filter} className="option-row flex items-center gap-2">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" value={filter} checked={filters.includes(filter)} onChange={handleFilterChange} className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer" />
-                            {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                          </label>
-                        </div>
-                      ))}
+            <div className="hidden md:block absolute top-0 right-0 w-1/3 h-full bg-white shadow-lg rounded flex flex-col z-40">
+              <div className="options-menu p-2 bg-gray-100 rounded shadow">
+                <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
+                <div className="grid-container grid grid-cols-2 gap-2 mx-5 text-[13px]">
+                  {["red", "blue", "green", "smooth", "patterned"].map((filter) => (
+                    <div key={filter} className="option-row flex items-center gap-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          value={filter}
+                          checked={filters.includes(filter)}
+                          onChange={handleFilterChange}
+                          className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer"
+                        />
+                        {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                      </label>
                     </div>
-                  </div>
-                  <div className="scrollable-buttons flex flex-col flex-1 max-h-[400px]">
-                    <h3 className="bg-gray-100 pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Available Patterns</h3>
-                    <div className="viewport-content grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
-                      {filteredPatterns.map((pattern, index) => (
-                        <div key={index} className="button-container flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition" onClick={() => selectPattern(pattern.patternUrl)}>
-                          <img src={pattern.image} alt={pattern.name} className="button-image w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover" />
-                          <div className="button-text flex justify-between w-full mt-0.5 text-gray-700 text-[11px]"><span className="left-text truncate">{pattern.name}</span><span className="right-text">{pattern.price}</span></div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
-              <div className="md:hidden w-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col h-[calc(100%)] mt-4">
-                <div className="options-menu p-2 bg-gray-100 rounded shadow">
-                  <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
-                  <div className="grid-container grid grid-cols-2 gap-2 mx-5 text-[13px]">
-                    {["red", "blue", "green", "smooth", "patterned"].map(filter => (
-                      <div key={filter} className="option-row flex items-center gap-2">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input type="checkbox" value={filter} checked={filters.includes(filter)} onChange={handleFilterChange} className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer" />
-                          {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                        </label>
+              <div className="scrollable-buttons flex flex-col flex-1 max-h-[400px]">
+                <h3 className="bg-gray-100 pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Available Patterns</h3>
+                <div className="viewport-content grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
+                  {filteredPatterns.map((pattern, index) => (
+                    <div
+                      key={index}
+                      className="button-container flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
+                      onClick={() => selectPattern(pattern.patternUrl)}
+                    >
+                      <img
+                        src={pattern.image}
+                        alt={pattern.name}
+                        className="button-image w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
+                      />
+                      <div className="button-text flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
+                        <span className="left-text truncate">{pattern.name}</span>
+                        <span className="right-text">{pattern.price}</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="scrollable-buttons flex flex-col flex-1 max-h-[300px]">
-                  <h3 className="bg-gray-100 pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Available Patterns</h3>
-                  <div className="viewport-content grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
-                    {filteredPatterns.map((pattern, index) => (
-                      <div key={index} className="button-container flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition" onClick={() => selectPattern(pattern.patternUrl)}>
-                        <img src={pattern.image} alt={pattern.name} className="button-image w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover" />
-                        <div className="button-text flex justify-between w-full mt-0.5 text-gray-700 text-[11px]"><span className="left-text truncate">{pattern.name}</span><span className="right-text">{pattern.price}</span></div>
-                      </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
-          </section>
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-export default FilterPageUI;
+export default FilterPage;

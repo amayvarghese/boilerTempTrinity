@@ -128,7 +128,7 @@ const BlindCustomizeThreeJs: React.FC = () => {
     rendererRef.current = renderer;
 
     const textureLoader = new THREE.TextureLoader();
-    textureLoader.load('/images/RoomElements.png', (texture) => {
+    textureLoader.load('/images/RoomElements1.png', (texture) => {
       const planeWidth = containerWidth;
       const planeHeight = containerHeight;
       const geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
