@@ -13,7 +13,7 @@ interface BlindType {
   type: string;
   buttonImage: string;
   modelUrl: string;
-  meshName?: string; // Optional: specify which mesh to apply texture to
+  meshName?: string;
   rotation: Vector3D;
   baseScale: Vector3D;
   basePosition: Vector3D;
@@ -33,7 +33,6 @@ interface ModelData {
 }
 
 const FilterPageUI: React.FC = () => {
-  // State declarations
   const [showBlindMenu, setShowBlindMenu] = useState(false);
   const [selectedBlindType, setSelectedBlindType] = useState<string | null>(null);
   const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
@@ -42,7 +41,6 @@ const FilterPageUI: React.FC = () => {
   const [instruction, setInstruction] = useState<string>("Click 'Start Camera' or upload an image to begin.");
   const [isCustomizerView, setIsCustomizerView] = useState(false);
 
-  // Ref declarations
   const sceneRef = useRef<THREE.Scene>(new THREE.Scene());
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -61,7 +59,6 @@ const FilterPageUI: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const instructionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Constants
   const blindTypes: BlindType[] = [
     { type: "classicRoman", buttonImage: "/images/windowTypeIcons/image 12.png", modelUrl: "/models/classicRoman.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: 0, y: 0, z: 0.1 } },
     { type: "roller", buttonImage: "/images/windowTypeIcons/image 11.png", modelUrl: "/models/plantationShutter.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.6, y: 2, z: 1 }, basePosition: { x: 0, y: 0, z: 0.1 } },
@@ -87,14 +84,12 @@ const FilterPageUI: React.FC = () => {
     (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
   );
 
-  // Utility function for temporary instructions
   const setTemporaryInstruction = (text: string) => {
     if (instructionTimeoutRef.current) clearTimeout(instructionTimeoutRef.current);
     setInstruction(text);
     instructionTimeoutRef.current = setTimeout(() => setInstruction(""), 3000);
   };
 
-  // Initialize Three.js scene
   useEffect(() => {
     setTemporaryInstruction("Click 'Start Camera' or upload an image to begin.");
 
@@ -155,7 +150,6 @@ const FilterPageUI: React.FC = () => {
     };
   }, []);
 
-  // Cleanup Three.js resources
   const cleanupThreeJs = () => {
     if (rendererRef.current && mountRef.current) {
       mountRef.current.removeChild(rendererRef.current.domElement);
@@ -167,7 +161,6 @@ const FilterPageUI: React.FC = () => {
     if (instructionTimeoutRef.current) clearTimeout(instructionTimeoutRef.current);
   };
 
-  // Update camera position based on screen dimensions
   const updateCameraPosition = (width: number, height: number) => {
     if (!cameraRef.current) return;
     const fovRad = cameraRef.current.fov * (Math.PI / 180);
@@ -178,10 +171,10 @@ const FilterPageUI: React.FC = () => {
     cameraRef.current.updateProjectionMatrix();
   };
 
-  // Adjust background plane to match image aspect ratio
   const adjustBackgroundPlane = (width: number, height: number) => {
     if (!backgroundPlaneRef.current || !cameraRef.current) return;
-    const texture = backgroundPlaneRef.current.material.map;
+    const material = backgroundPlaneRef.current.material as THREE.MeshBasicMaterial;
+    const texture = material.map;
     if (!texture) return;
 
     const screenAspect = width / height;
@@ -202,7 +195,6 @@ const FilterPageUI: React.FC = () => {
     updateCameraPosition(width, height);
   };
 
-  // Setup DOM elements
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
@@ -221,21 +213,21 @@ const FilterPageUI: React.FC = () => {
     controlButtonRef.current = document.createElement("button");
     controlButtonRef.current.id = "controlButton";
     controlButtonRef.current.textContent = "Start Camera";
-    controlButtonRef.current.className = "fixed bottom-16 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 z-[50] transition duration-300 opacity-100";
+    controlButtonRef.current.className = "fixed bottom-16 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300 opacity-100";
     document.body.appendChild(controlButtonRef.current);
     controlButtonRef.current.addEventListener("click", handleButtonClick);
 
     uploadButtonRef.current = document.createElement("button");
     uploadButtonRef.current.id = "uploadButton";
     uploadButtonRef.current.textContent = "Upload Image";
-    uploadButtonRef.current.className = "fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 z-[50] transition duration-300 opacity-100";
+    uploadButtonRef.current.className = "fixed bottom-32 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300 opacity-100";
     document.body.appendChild(uploadButtonRef.current);
     uploadButtonRef.current.addEventListener("click", () => fileInputRef.current?.click());
 
     saveButtonRef.current = document.createElement("button");
     saveButtonRef.current.id = "saveButton";
     saveButtonRef.current.textContent = "Save Image";
-    saveButtonRef.current.className = "fixed bottom-16 right-5 py-3 px-6 text-lg bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 z-[50] transition duration-300 opacity-100 hidden";
+    saveButtonRef.current.className = "fixed bottom-16 right-5 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300 opacity-100 hidden";
     document.body.appendChild(saveButtonRef.current);
     saveButtonRef.current.addEventListener("click", saveImage);
 
@@ -250,7 +242,6 @@ const FilterPageUI: React.FC = () => {
     };
   }, []);
 
-  // Handle button clicks
   const handleButtonClick = () => {
     const button = controlButtonRef.current;
     if (!button) return;
@@ -272,7 +263,6 @@ const FilterPageUI: React.FC = () => {
     }
   };
 
-  // Start camera stream
   const startCameraStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -294,7 +284,6 @@ const FilterPageUI: React.FC = () => {
     }
   };
 
-  // Adjust video aspect ratio
   const adjustVideoAspect = () => {
     if (!videoRef.current) return;
     const videoAspect = videoRef.current.videoWidth / videoRef.current.videoHeight;
@@ -303,7 +292,6 @@ const FilterPageUI: React.FC = () => {
     videoRef.current.style.height = videoAspect > screenAspect ? "auto" : "100%";
   };
 
-  // Handle image upload
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -321,7 +309,6 @@ const FilterPageUI: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  // Load uploaded image
   const loadUploadedImage = (imageData: string) => {
     if (!sceneRef.current || !cameraRef.current || !rendererRef.current) return;
 
@@ -334,7 +321,6 @@ const FilterPageUI: React.FC = () => {
     initSelectionBox();
   };
 
-  // Capture image from video
   const captureImage = () => {
     if (!videoRef.current || !sceneRef.current || !cameraRef.current || !rendererRef.current) return;
 
@@ -355,7 +341,6 @@ const FilterPageUI: React.FC = () => {
     controlButtonRef.current!.textContent = "Submit";
   };
 
-  // Cleanup camera stream
   const cleanupCameraStream = () => {
     if (cameraStreamRef.current) {
       cameraStreamRef.current.getTracks().forEach((track) => track.stop());
@@ -365,14 +350,18 @@ const FilterPageUI: React.FC = () => {
     }
   };
 
-  // Load texture and create plane with proper color encoding
   const loadTextureAndCreatePlane = (imageData: string, width: number, height: number) => {
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(imageData, (texture) => {
       if (backgroundPlaneRef.current) {
         sceneRef.current!.remove(backgroundPlaneRef.current);
         backgroundPlaneRef.current.geometry.dispose();
-        backgroundPlaneRef.current.material.dispose();
+        const material = backgroundPlaneRef.current.material;
+        if (Array.isArray(material)) {
+          material.forEach(mat => mat.dispose());
+        } else {
+          material.dispose();
+        }
       }
 
       texture.colorSpace = THREE.SRGBColorSpace;
@@ -396,12 +385,11 @@ const FilterPageUI: React.FC = () => {
     });
   };
 
-  // Initialize selection box
   const initSelectionBox = () => {
     if (selectionBoxRef.current || hasSelectionBox.current || !mountRef.current) return;
 
     selectionBoxRef.current = document.createElement("div");
-    selectionBoxRef.current.className = "absolute border-2 border-dashed border-blue-500 bg-blue-200 bg-opacity-20 hidden pointer-events-auto";
+    selectionBoxRef.current.className = "absolute border-2 border-dashed border-[#2F3526] bg-[#2F3526] bg-opacity-20 hidden pointer-events-auto";
     selectionBoxRef.current.style.zIndex = "25";
     mountRef.current.appendChild(selectionBoxRef.current);
 
@@ -475,7 +463,6 @@ const FilterPageUI: React.FC = () => {
     return () => Object.entries(eventHandlers).forEach(([event, handler]) => mountRef.current!.removeEventListener(event, handler as EventListener));
   };
 
-  // Convert screen to world coordinates
   const screenToWorld = (x: number, y: number): THREE.Vector3 => {
     if (!cameraRef.current || !mountRef.current) return new THREE.Vector3();
     const rect = mountRef.current.getBoundingClientRect();
@@ -490,7 +477,6 @@ const FilterPageUI: React.FC = () => {
     return cameraRef.current.position.clone().add(dir.multiplyScalar(distance));
   };
 
-  // Create 3D model from selection
   const create3DModelFromSelection = (startX: number, startY: number, endX: number, endY: number) => {
     if (!sceneRef.current || modelsRef.current.length > 0) return;
 
@@ -505,7 +491,6 @@ const FilterPageUI: React.FC = () => {
     loadModel(modelUrl, targetWidth, targetHeight, worldStart, worldEnd, meshName);
   };
 
-  // Load and apply model
   const loadModel = (
     modelUrl: string,
     targetWidth: number,
@@ -536,7 +521,6 @@ const FilterPageUI: React.FC = () => {
     });
   };
 
-  // Apply texture to model with consistent color encoding
   const applyTextureToModel = (
     model: THREE.Group,
     patternUrl: string,
@@ -559,13 +543,11 @@ const FilterPageUI: React.FC = () => {
           const mesh = child as THREE.Mesh;
           mesh.geometry.computeBoundingBox();
           if (meshName) {
-            // Apply texture only to the specified mesh
             if (mesh.name === meshName) {
               mesh.material = newMaterial;
               mesh.material.needsUpdate = true;
             }
           } else {
-            // Apply texture to all meshes if no meshName is specified
             mesh.material = newMaterial;
             mesh.material.needsUpdate = true;
           }
@@ -575,7 +557,6 @@ const FilterPageUI: React.FC = () => {
     });
   };
 
-  // Save rendered image
   const saveImage = async () => {
     if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !capturedImage) return;
 
@@ -587,7 +568,8 @@ const FilterPageUI: React.FC = () => {
     rendererRef.current.render(sceneRef.current, cameraRef.current);
 
     const canvas = document.createElement("canvas");
-    const texture = backgroundPlaneRef.current?.material.map;
+    const material = backgroundPlaneRef.current?.material as THREE.MeshBasicMaterial | undefined;
+    const texture = material?.map;
     canvas.width = texture?.image.width || width;
     canvas.height = texture?.image.height || height;
     const ctx = canvas.getContext("2d");
@@ -622,7 +604,6 @@ const FilterPageUI: React.FC = () => {
     }
   };
 
-  // Submit and show menu
   const submitAndShowMenu = () => {
     setShowBlindMenu(true);
     setIsCustomizerView(true);
@@ -637,27 +618,23 @@ const FilterPageUI: React.FC = () => {
     saveButtonRef.current?.classList.remove("hidden");
   };
 
-  // Select blind type
   const selectBlindType = (type: string) => {
     setSelectedBlindType(type);
     if (modelsRef.current.length > 0) updateExistingModel(type);
     renderScene();
   };
 
-  // Select pattern
   const selectPattern = (patternUrl: string) => {
     setSelectedPattern(patternUrl);
     if (modelsRef.current.length > 0) updateExistingModelPattern(patternUrl);
     renderScene();
   };
 
-  // Handle filter change
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setFilters(prev => e.target.checked ? [...prev, value] : prev.filter(tag => tag !== value));
   };
 
-  // Update existing model
   const updateExistingModel = (type: string) => {
     if (!sceneRef.current || modelsRef.current.length === 0) return;
 
@@ -682,7 +659,6 @@ const FilterPageUI: React.FC = () => {
     });
   };
 
-  // Update existing model pattern
   const updateExistingModelPattern = (patternUrl: string) => {
     if (!sceneRef.current || modelsRef.current.length === 0) return;
     const blindType = selectedBlindType ? blindTypes.find(b => b.type === selectedBlindType) : blindTypes[0];
@@ -690,14 +666,12 @@ const FilterPageUI: React.FC = () => {
     applyTextureToModel(modelsRef.current[0].model, patternUrl, meshName, renderScene);
   };
 
-  // Render scene helper
   const renderScene = () => {
     if (rendererRef.current && sceneRef.current && cameraRef.current) {
       rendererRef.current.render(sceneRef.current, cameraRef.current);
     }
   };
 
-  // Animation loop
   const animate = () => {
     requestAnimationFrame(animate);
     mixersRef.current.forEach(mixer => mixer.update(0.016));
@@ -720,7 +694,7 @@ const FilterPageUI: React.FC = () => {
         <img src="/images/baelogoN.png" alt="Logo" className="w-24 h-24 object-contain" />
       </div>
       {instruction && (
-        <div className="fixed top-32 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 p-2 rounded shadow-md z-[50] text-brown-800 text-lg">
+        <div className="fixed top-32 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 p-2 rounded shadow-md z-[100] text-brown-800 text-lg">
           {instruction}
         </div>
       )}
