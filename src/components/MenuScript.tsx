@@ -56,7 +56,7 @@ const MenuScript: React.FC = () => {
                     "https://via.placeholder.com/48?text=Icon+1"; // Fallback
                 }}
               />
-              <span className="text-left">Test blinds on virtual room</span>
+              <span className="text-left">Virtual Room</span>
             </button>
             <button
               className="flex items-center py-4 sm:py-6 px-4 sm:px-6 bg-white text-gray-800 text-lg sm:text-xl font-light rounded-xl shadow-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-400 transition duration-300 w-full font-poppins"
@@ -71,7 +71,7 @@ const MenuScript: React.FC = () => {
                     "https://via.placeholder.com/48?text=Icon+2"; // Fallback
                 }}
               />
-              <span className="text-left">Test blinds on your own room</span>
+              <span className="text-left">Capture your room</span>
             </button>
           </div>
         </div>
