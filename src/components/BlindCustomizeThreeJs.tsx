@@ -16,11 +16,14 @@ const BlindCustomizeThreeJs: React.FC = () => {
   const solidColorLayerRef = useRef<HTMLDivElement>(null); // Ref for the background color element
 
   const patterns = [
-    { name: 'Semi Transparent', image: '/images/FabricP3.png', price: '200$', filterTags: ['smooth'], patternUrl: '/images/ICONSforMaterial/pattern2.png' },
-    { name: 'Red Pattern', image: '/images/FabricP0.png', price: '200$', filterTags: ['red', 'patterned'], patternUrl: '/images/ICONSforMaterial/red.png' },
-    { name: 'Stripes Colorful', image: '/images/FabricP1.png', price: '200$', filterTags: ['patterned'], patternUrl: '/images/ICONSforMaterial/pattern3.png' },
-    { name: 'Texture 2', image: '/images/FabricP2.png', price: 'Option B', filterTags: ['smooth'], patternUrl: '/images/ICONSforMaterial/pattern4.png' },
-    { name: 'Texture 2', image: '/images/FabricP5.png', price: 'Option B', filterTags: ['smooth'], patternUrl: '/images/ICONSforMaterial/pattern6.png' },
+    { name: "Beige", image: "/images/ICONSforMaterial/beige.png", price: "200$", filterTags: ["smooth"], patternUrl: "/images/ICONSforMaterial/beige.png" },
+    { name: "Sunday Blue", image: "/images/ICONSforMaterial/blue1.png", price: "200$", filterTags: ["blue", "smooth"], patternUrl: "/images/ICONSforMaterial/blue1.png" },
+    { name: "Stripes Colorful", image: "/images/ICONSforMaterial/pattern4.png", price: "200$", filterTags: ["patterned"], patternUrl: "/images/ICONSforMaterial/pattern4.png" },
+    { name: "Navy Blue", image: "/images/ICONSforMaterial/blue2.png", price: "Option B", filterTags: ["smooth"], patternUrl: "/images/ICONSforMaterial/blue2.png" },
+    { name: "Green", image: "/images/ICONSforMaterial/green.png", price: "200$", filterTags: ["green", "smooth"], patternUrl: "/images/ICONSforMaterial/green.png" },
+    { name: "Caramel Cream", image: "/images/ICONSforMaterial/kaki.png", price: "200$", filterTags: ["smooth"], patternUrl: "/images/ICONSforMaterial/kaki.png" },
+    { name: "Circle Mandala", image: "/images/ICONSforMaterial/patterncir.png", price: "200$", filterTags: ["patterned"], patternUrl: "/images/ICONSforMaterial/patterncir.png" },
+    { name: "Leaf Pattern", image: "/images/ICONSforMaterial/patternleaf.png", price: "Option B", filterTags: ["blue", "smooth"], patternUrl: "/images/ICONSforMaterial/patternleaf.png" },
   ];
 
   const blindTypes = [
@@ -39,6 +42,14 @@ const BlindCustomizeThreeJs: React.FC = () => {
       rotation: { x: 0, y: 0, z: 0 }, 
       baseScale: { x: 1.6, y: 2, z: 1 }, 
       basePosition: { x: -45, y: -30, z: 5 }
+    },
+    { 
+      type: 'roman', 
+      buttonImage: '/images/windowTypeIcons/image 13.png', 
+      modelUrl: '/models/shadeBake.glb', 
+      rotation: { x: 0, y: 0, z: 0 }, 
+      baseScale: { x: 1.55, y: 2, z: 1 }, 
+      basePosition: { x: -45, y: -20, z: 5 }
     },
   ];
 
