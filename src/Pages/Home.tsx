@@ -1,9 +1,12 @@
 import React from "react";
-import CustomizerPage from "../components/BlindCustomizerSection";
-import BlindCustomizeThreeJs from "../components/BlindCustomizeThreeJs";
+import FilterPageUI from "../components/FilterPageUI"; // Adjust the path as needed
 
-const Blindcustomizer: React.FC = () => {
-  return <BlindCustomizeThreeJs />;
+const NewPage: React.FC = () => {
+  return (
+    <>
+      <FilterPageUI />
+    </>
+  );
 };
 
-export default BlindCustomizeThreeJs;
+export default NewPage;
