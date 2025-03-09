@@ -274,7 +274,7 @@ const FilterPageUI: React.FC = () => {
     controlButtonRef.current = document.createElement("button");
     controlButtonRef.current.id = "controlButton";
     controlButtonRef.current.textContent = "Start Camera";
-    controlButtonRef.current.className = "fixed bottom-16 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300 opacity-100";
+    controlButtonRef.current.className = "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300 opacity-100";
     document.body.appendChild(controlButtonRef.current);
     controlButtonRef.current.addEventListener("click", handleButtonClick);
 
@@ -661,24 +661,24 @@ const FilterPageUI: React.FC = () => {
 
   const applyTextureToModel = (model: THREE.Group, patternUrl: string, meshName?: string) => {
     const textureLoader = new THREE.TextureLoader();
-
+  
     model.traverse((child: THREE.Object3D) => {
       if (isMesh(child)) {
-        const mesh = child as THREE.Mesh; // Explicit assertion to fix 'never' issue
+        const mesh = child as THREE.Mesh;
         const material = mesh.material as THREE.MeshStandardMaterial;
         material.opacity = 0.5;
         material.needsUpdate = true;
       }
     });
     renderScene();
-
+  
     textureLoader.load(
       patternUrl,
       (texture) => {
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.set(8, 8);
         texture.colorSpace = THREE.SRGBColorSpace;
-
+  
         const newMaterial = new THREE.MeshStandardMaterial({
           map: texture,
           roughness: 0.5,
@@ -686,31 +686,35 @@ const FilterPageUI: React.FC = () => {
           transparent: true,
           opacity: 1,
         });
-
+  
         let textureApplied = false;
         let targetMesh: THREE.Mesh | null = null;
-
+  
         if (meshName) {
           model.traverse((child: THREE.Object3D) => {
-            if (isMesh(child) && child.name === meshName) {
-              targetMesh = child;
-              targetMesh.material = newMaterial;
-              targetMesh.material.needsUpdate = true;
-              textureApplied = true;
-              console.log(`Texture applied to specific mesh: ${meshName}`);
-            }
-          });
-        }
-
-        if (!textureApplied) {
-          model.traverse((child: THREE.Object3D) => {
-            if (isMesh(child) && !textureApplied) {
-              if (child.geometry && !targetMesh) {
-                targetMesh = child;
+            if (isMesh(child)) { // Ensure type guard is recognized
+              const mesh = child as THREE.Mesh; // Explicit assertion
+              if (mesh.name === meshName) {
+                targetMesh = mesh;
+                targetMesh.material = newMaterial;
+                targetMesh.material.needsUpdate = true;
+                textureApplied = true;
+                console.log(`Texture applied to specific mesh: ${meshName}`);
               }
             }
           });
-
+        }
+  
+        if (!textureApplied) {
+          model.traverse((child: THREE.Object3D) => {
+            if (isMesh(child) && !textureApplied) {
+              const mesh = child as THREE.Mesh; // Explicit assertion
+              if (mesh.geometry && !targetMesh) {
+                targetMesh = mesh;
+              }
+            }
+          });
+  
           if (targetMesh) {
             targetMesh.material = newMaterial;
             targetMesh.material.needsUpdate = true;
@@ -718,16 +722,19 @@ const FilterPageUI: React.FC = () => {
             console.log(`Texture applied to primary mesh: ${targetMesh.name || "unnamed"}`);
           }
         }
-
+  
         if (!textureApplied) {
           console.warn(`No suitable mesh found for texture in model. Pattern: ${patternUrl}`);
           const meshNames: string[] = [];
           model.traverse((child: THREE.Object3D) => {
-            if (isMesh(child)) meshNames.push(child.name || "unnamed");
+            if (isMesh(child)) {
+              const mesh = child as THREE.Mesh; // Explicit assertion
+              meshNames.push(mesh.name || "unnamed");
+            }
           });
           console.log(`Available meshes in model: ${meshNames.join(", ")}`);
         }
-
+  
         renderScene();
       },
       undefined,
