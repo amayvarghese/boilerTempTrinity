@@ -29,7 +29,7 @@ interface Pattern {
 
 interface ModelData {
   model: THREE.Group;
-  gltf: any;
+  gltf?: any; // Made optional to align with usage
 }
 
 interface SelectionBoxParams {
@@ -75,8 +75,8 @@ const FilterPageUI: React.FC = () => {
   const initialModelParamsRef = useRef<InitialModelParams | null>(null);
   const selectionBoxCleanupRef = useRef<(() => void) | null>(null);
   const isProcessingRef = useRef(false);
-  const changeQueueRef = useRef<{ type: "blind" | "pattern"; value: string }[]>([]); // Queue for changes
-  const preloadedModelsRef = useRef<Map<string, ModelData>>(new Map()); // Preloaded models
+  const changeQueueRef = useRef<{ type: "blind" | "pattern"; value: string }[]>([]);
+  const preloadedModelsRef = useRef<Map<string, ModelData>>(new Map());
 
   const blindTypes: BlindType[] = [
     { type: "classicRoman", buttonImage: "/images/windowTypeIcons/image 12.png", modelUrl: "/models/classicRoman.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: 0, y: 0, z: 0.1 } },
@@ -121,14 +121,14 @@ const FilterPageUI: React.FC = () => {
             loader.load(
               url,
               (gltf) => {
-                const model = gltf.scene.clone(); // Clone to avoid modifying the original
+                const model = gltf.scene.clone();
                 preloadedModelsRef.current.set(url, { model, gltf });
                 resolve();
               },
               undefined,
               (error) => {
                 console.error(`Failed to preload model: ${url}`, error);
-                resolve(); // Continue even if one fails
+                resolve();
               }
             );
           })
@@ -558,8 +558,8 @@ const FilterPageUI: React.FC = () => {
       setSelectedPattern("/images/ICONSforMaterial/beige.png");
     }
 
-    const preloaded = preloadedModelsRef.current.get(defaultModelUrl);
-    const { model } = preloaded ? { model: preloaded.model.clone(), gltf: preloaded.gltf } : await loadModel(defaultModelUrl);
+    const preloaded = preloadedModelsRef.current.get(defaultModelUrl) as ModelData | undefined;
+    const { model, gltf } = preloaded ? { model: preloaded.model.clone(), gltf: preloaded.gltf } : await loadModel(defaultModelUrl);
 
     applyTextureToModel(model, selectedPattern || "/images/ICONSforMaterial/beige.png", defaultMeshName);
     const box = new THREE.Box3().setFromObject(model);
@@ -582,9 +582,8 @@ const FilterPageUI: React.FC = () => {
       position: new THREE.Vector3(positionX, positionY, positionZ),
     };
 
-    model.opacity = 0; // Start invisible for fade-in
     sceneRef.current.add(model);
-    defaultModelRef.current = { model, gltf: preloaded?.gltf || null };
+    defaultModelRef.current = { model, gltf };
     fadeInModel(model);
 
     isProcessingRef.current = false;
@@ -597,7 +596,6 @@ const FilterPageUI: React.FC = () => {
       const { model } = defaultModelRef.current;
       await fadeOutModel(model);
       sceneRef.current.remove(model);
-      // Don't dispose preloaded models, only dispose if dynamically loaded
       if (!preloadedModelsRef.current.has(blindTypes.find(b => b.type === selectedBlindType)?.modelUrl || "")) {
         disposeModel(model);
       }
@@ -616,6 +614,7 @@ const FilterPageUI: React.FC = () => {
           const material = mesh.material as THREE.MeshStandardMaterial;
           material.opacity = opacity;
           material.transparent = true;
+          material.needsUpdate = true;
         }
       });
       if (opacity < 1) requestAnimationFrame(fadeIn);
@@ -635,6 +634,7 @@ const FilterPageUI: React.FC = () => {
             const material = mesh.material as THREE.MeshStandardMaterial;
             material.opacity = opacity;
             material.transparent = true;
+            material.needsUpdate = true;
           }
         });
         if (opacity > 0) {
@@ -830,14 +830,13 @@ const FilterPageUI: React.FC = () => {
     }
 
     await cleanupCurrentModel();
-    const preloaded = preloadedModelsRef.current.get(blindType.modelUrl);
-    const { model } = preloaded ? { model: preloaded.model.clone(), gltf: preloaded.gltf } : await loadModel(blindType.modelUrl);
+    const preloaded = preloadedModelsRef.current.get(blindType.modelUrl) as ModelData | undefined;
+    const { model, gltf } = preloaded ? { model: preloaded.model.clone(), gltf: preloaded.gltf } : await loadModel(blindType.modelUrl);
 
     updateModelProperties(model, blindType);
     applyTextureToModel(model, selectedPattern || "/images/ICONSforMaterial/beige.png", blindType.meshName);
-    model.opacity = 0; // Start invisible for fade-in
     sceneRef.current!.add(model);
-    defaultModelRef.current = { model, gltf: preloaded?.gltf || null };
+    defaultModelRef.current = { model, gltf };
     fadeInModel(model);
 
     isProcessingRef.current = false;
@@ -1034,7 +1033,7 @@ const FilterPageUI: React.FC = () => {
                       <img
                         src={pattern.image}
                         alt={pattern.name}
-                        className="button-image w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
+                        className="button-image w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object/well-cover"
                       />
                       <div className="button-text flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
                         <span className="left-text truncate">{pattern.name}</span>
