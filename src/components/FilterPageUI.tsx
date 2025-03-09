@@ -52,6 +52,7 @@ const FilterPageUI: React.FC = () => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [instruction, setInstruction] = useState<string>("Click 'Start Camera' or upload an image to begin.");
   const [isCustomizerView, setIsCustomizerView] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const sceneRef = useRef<THREE.Scene>(new THREE.Scene());
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -73,6 +74,9 @@ const FilterPageUI: React.FC = () => {
   const selectionBoxParamsRef = useRef<SelectionBoxParams | null>(null);
   const initialModelParamsRef = useRef<InitialModelParams | null>(null);
   const selectionBoxCleanupRef = useRef<(() => void) | null>(null);
+  const isProcessingRef = useRef(false);
+  const changeQueueRef = useRef<{ type: "blind" | "pattern"; value: string }[]>([]); // Queue for changes
+  const preloadedModelsRef = useRef<Map<string, ModelData>>(new Map()); // Preloaded models
 
   const blindTypes: BlindType[] = [
     { type: "classicRoman", buttonImage: "/images/windowTypeIcons/image 12.png", modelUrl: "/models/classicRoman.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: 0, y: 0, z: 0.1 } },
@@ -105,9 +109,39 @@ const FilterPageUI: React.FC = () => {
     instructionTimeoutRef.current = setTimeout(() => setInstruction(""), 3000);
   };
 
+  // Preload all models on mount
+  useEffect(() => {
+    const preloadModels = async () => {
+      setIsLoading(true);
+      const uniqueModelUrls = Array.from(new Set(blindTypes.map(b => b.modelUrl)));
+      const loader = new GLTFLoader();
+      await Promise.all(
+        uniqueModelUrls.map(url =>
+          new Promise<void>((resolve) => {
+            loader.load(
+              url,
+              (gltf) => {
+                const model = gltf.scene.clone(); // Clone to avoid modifying the original
+                preloadedModelsRef.current.set(url, { model, gltf });
+                resolve();
+              },
+              undefined,
+              (error) => {
+                console.error(`Failed to preload model: ${url}`, error);
+                resolve(); // Continue even if one fails
+              }
+            );
+          })
+        )
+      );
+      setIsLoading(false);
+      console.log("All models preloaded:", preloadedModelsRef.current.size);
+    };
+    preloadModels();
+  }, []);
+
   // Scene, Camera, Renderer Setup
   useEffect(() => {
-    console.log("Initial setup: Setting up scene, camera, and renderer.");
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
 
@@ -162,27 +196,20 @@ const FilterPageUI: React.FC = () => {
     window.addEventListener("resize", handleResize);
 
     return () => {
-      console.log("Cleaning up Three.js resources on unmount.");
       if (rendererRef.current && mountRef.current) {
         mountRef.current.removeChild(rendererRef.current.domElement);
         rendererRef.current.dispose();
-      }
-      if (defaultModelRef.current) {
-        disposeModel(defaultModelRef.current.model);
-        sceneRef.current.remove(defaultModelRef.current.model);
-        defaultModelRef.current = null;
       }
       window.removeEventListener("resize", handleResize);
     };
   }, []);
 
-  // Update renderer styles when isCustomizerView changes
   useEffect(() => {
     if (rendererRef.current && mountRef.current) {
       rendererRef.current.domElement.style.zIndex = isCustomizerView ? "0" : "20";
       rendererRef.current.domElement.style.pointerEvents = isCustomizerView ? "none" : "auto";
       rendererRef.current.domElement.style.touchAction = isCustomizerView ? "auto" : "none";
-      rendererRef.current.domElement.style.height = isCustomizerView ? `${window.innerHeight}px` : "100%"; // Fixed height in customizer view
+      rendererRef.current.domElement.style.height = isCustomizerView ? `${window.innerHeight}px` : "100%";
     }
   }, [isCustomizerView]);
 
@@ -211,7 +238,6 @@ const FilterPageUI: React.FC = () => {
 
     const screenAspect = width / height;
     const imgAspect = texture.image.width / texture.image.height;
-
     let planeWidth = width / 100;
     let planeHeight = height / 100;
     if (imgAspect > screenAspect) {
@@ -397,7 +423,6 @@ const FilterPageUI: React.FC = () => {
       }
 
       texture.colorSpace = THREE.SRGBColorSpace;
-
       const screenAspect = width / height;
       const imgAspect = texture.image.width / texture.image.height;
       let planeWidth = width / 100;
@@ -458,7 +483,6 @@ const FilterPageUI: React.FC = () => {
       selectionBoxRef.current.classList.add("hidden");
       hasSelectionBox.current = true;
       isDragging = false;
-      console.log("Selection box completed. Calling createDefaultModel with coords:", { startX, startY, endX: x, endY: y });
       createDefaultModel(startX, startY, x, y);
     };
 
@@ -511,18 +535,15 @@ const FilterPageUI: React.FC = () => {
     return cameraRef.current.position.clone().add(dir.multiplyScalar(distance));
   };
 
-  const createDefaultModel = (startX: number, startY: number, endX: number, endY: number) => {
-    if (!sceneRef.current) {
-      console.error("Scene not initialized.");
-      return;
-    }
+  const createDefaultModel = async (startX: number, startY: number, endX: number, endY: number) => {
+    if (!sceneRef.current || isProcessingRef.current) return;
+
+    isProcessingRef.current = true;
+    setIsLoading(true);
 
     if (defaultModelRef.current) {
-      console.log("Default model already exists, skipping creation.");
-      return;
+      await cleanupCurrentModel();
     }
-
-    console.log("Creating default model with selection box:", { startX, startY, endX, endY });
 
     const worldStart = screenToWorld(startX, startY);
     const worldEnd = screenToWorld(endX, endY);
@@ -530,75 +551,112 @@ const FilterPageUI: React.FC = () => {
     const targetHeight = Math.abs(worldEnd.y - worldStart.y);
 
     selectionBoxParamsRef.current = { targetWidth, targetHeight, worldStart, worldEnd };
-    console.log("Selection box params stored:", selectionBoxParamsRef.current);
 
     const defaultModelUrl = "/models/shadeBake.glb";
     const defaultMeshName = "polySurface1";
     if (!selectedPattern) {
       setSelectedPattern("/images/ICONSforMaterial/beige.png");
-      console.log("No pattern selected, defaulting to beige.");
     }
 
-    console.log("Loading default model:", defaultModelUrl);
-    new GLTFLoader().load(
-      defaultModelUrl,
-      (gltf) => {
-        const model = gltf.scene;
-        console.log("Default model loaded:", defaultModelUrl);
-        applyTextureToModel(model, selectedPattern || "/images/ICONSforMaterial/beige.png", defaultMeshName);
-        const box = new THREE.Box3().setFromObject(model);
-        const modelSize = new THREE.Vector3();
-        box.getSize(modelSize);
-        console.log("Model size:", { width: modelSize.x, height: modelSize.y, depth: modelSize.z });
+    const preloaded = preloadedModelsRef.current.get(defaultModelUrl);
+    const { model } = preloaded ? { model: preloaded.model.clone(), gltf: preloaded.gltf } : await loadModel(defaultModelUrl);
 
-        const scaleX = targetWidth / modelSize.x;
-        const scaleY = targetHeight / modelSize.y;
-        const scaleZ = 0.01;
-        model.scale.set(scaleX, scaleY, scaleZ);
-        console.log("Applied initial scale:", { x: scaleX, y: scaleY, z: scaleZ });
+    applyTextureToModel(model, selectedPattern || "/images/ICONSforMaterial/beige.png", defaultMeshName);
+    const box = new THREE.Box3().setFromObject(model);
+    const modelSize = new THREE.Vector3();
+    box.getSize(modelSize);
 
-        const modelCenter = box.setFromObject(model).getCenter(new THREE.Vector3());
-        const positionX = (worldStart.x + worldEnd.x) / 2 - (modelCenter.x - model.position.x);
-        const positionY = (worldStart.y + worldEnd.y) / 2 - (modelCenter.y - model.position.y);
-        const positionZ = 0.1;
-        model.position.set(positionX, positionY, positionZ);
-        console.log("Model positioned at:", { x: positionX, y: positionY, z: positionZ });
+    const scaleX = targetWidth / modelSize.x;
+    const scaleY = targetHeight / modelSize.y;
+    const scaleZ = 0.01;
+    model.scale.set(scaleX, scaleY, scaleZ);
 
-        initialModelParamsRef.current = {
-          scale: new THREE.Vector3(scaleX, scaleY, scaleZ),
-          position: new THREE.Vector3(positionX, positionY, positionZ),
-        };
-        console.log("Initial model params stored:", initialModelParamsRef.current);
+    const modelCenter = box.setFromObject(model).getCenter(new THREE.Vector3());
+    const positionX = (worldStart.x + worldEnd.x) / 2 - (modelCenter.x - model.position.x);
+    const positionY = (worldStart.y + worldEnd.y) / 2 - (modelCenter.y - model.position.y);
+    const positionZ = 0.1;
+    model.position.set(positionX, positionY, positionZ);
 
-        sceneRef.current!.add(model);
-        defaultModelRef.current = { model, gltf };
-        console.log("Default model added to scene and stored in defaultModelRef.");
-        renderScene();
-      },
-      undefined,
-      (error) => {
-        console.error("Failed to load default model:", defaultModelUrl, error);
-      }
-    );
+    initialModelParamsRef.current = {
+      scale: new THREE.Vector3(scaleX, scaleY, scaleZ),
+      position: new THREE.Vector3(positionX, positionY, positionZ),
+    };
+
+    model.opacity = 0; // Start invisible for fade-in
+    sceneRef.current.add(model);
+    defaultModelRef.current = { model, gltf: preloaded?.gltf || null };
+    fadeInModel(model);
+
+    isProcessingRef.current = false;
+    setIsLoading(false);
+    processNextChange();
   };
 
-  const updateModelProperties = (model: THREE.Group) => {
-    if (!initialModelParamsRef.current) {
-      console.error("No initial model params available to update model.");
-      return;
+  const cleanupCurrentModel = async () => {
+    if (defaultModelRef.current && sceneRef.current) {
+      const { model } = defaultModelRef.current;
+      await fadeOutModel(model);
+      sceneRef.current.remove(model);
+      // Don't dispose preloaded models, only dispose if dynamically loaded
+      if (!preloadedModelsRef.current.has(blindTypes.find(b => b.type === selectedBlindType)?.modelUrl || "")) {
+        disposeModel(model);
+      }
+      defaultModelRef.current = null;
+      renderScene();
     }
+  };
 
-    const { scale, position } = initialModelParamsRef.current;
-    model.scale.copy(scale);
-    model.position.copy(position);
-    console.log("Model properties updated with initial params:", {
-      scale: { x: scale.x, y: scale.y, z: scale.z },
-      position: { x: position.x, y: position.y, z: position.z }
+  const fadeInModel = (model: THREE.Group) => {
+    let opacity = 0;
+    const fadeIn = () => {
+      opacity += 0.1;
+      model.traverse(child => {
+        if ((child as THREE.Mesh).isMesh) {
+          const mesh = child as THREE.Mesh;
+          const material = mesh.material as THREE.MeshStandardMaterial;
+          material.opacity = opacity;
+          material.transparent = true;
+        }
+      });
+      if (opacity < 1) requestAnimationFrame(fadeIn);
+      else renderScene();
+    };
+    requestAnimationFrame(fadeIn);
+  };
+
+  const fadeOutModel = (model: THREE.Group): Promise<void> => {
+    return new Promise((resolve) => {
+      let opacity = 1;
+      const fadeOut = () => {
+        opacity -= 0.1;
+        model.traverse(child => {
+          if ((child as THREE.Mesh).isMesh) {
+            const mesh = child as THREE.Mesh;
+            const material = mesh.material as THREE.MeshStandardMaterial;
+            material.opacity = opacity;
+            material.transparent = true;
+          }
+        });
+        if (opacity > 0) {
+          requestAnimationFrame(fadeOut);
+          renderScene();
+        } else {
+          resolve();
+        }
+      };
+      requestAnimationFrame(fadeOut);
     });
   };
 
-  const applyTextureToModel = (model: THREE.Group, patternUrl: string, meshName: string | undefined) => {
-    console.log("Applying texture to model:", { patternUrl, meshName });
+  const updateModelProperties = (model: THREE.Group, blindType: BlindType) => {
+    if (!initialModelParamsRef.current) return;
+    const { scale, position } = initialModelParamsRef.current;
+    model.scale.copy(scale);
+    model.position.copy(position);
+    model.rotation.set(blindType.rotation.x, blindType.rotation.y, blindType.rotation.z);
+  };
+
+  const applyTextureToModel = (model: THREE.Group, patternUrl: string, meshName?: string) => {
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(
       patternUrl,
@@ -611,6 +669,8 @@ const FilterPageUI: React.FC = () => {
           map: texture,
           roughness: 0.5,
           metalness: 0.1,
+          transparent: true,
+          opacity: 1,
         });
 
         let textureApplied = false;
@@ -622,33 +682,25 @@ const FilterPageUI: React.FC = () => {
               mesh.material = newMaterial;
               mesh.material.needsUpdate = true;
               textureApplied = true;
-              console.log(`Texture applied to mesh: ${meshName}`);
             } else if (!meshName) {
               mesh.material = newMaterial;
               mesh.material.needsUpdate = true;
               textureApplied = true;
-              console.log("Texture applied to unnamed mesh.");
             }
           }
         });
 
         if (!textureApplied) {
-          console.warn("No suitable mesh found to apply texture:", patternUrl);
-        } else {
-          console.log("Texture application successful for:", patternUrl);
+          console.warn("No suitable mesh found for texture:", patternUrl);
         }
-        renderScene(); // Immediate render after texture application
+        renderScene();
       },
       undefined,
-      (error) => {
-        console.error("Error loading texture:", patternUrl, error);
-        renderScene(); // Render even on error
-      }
+      (error) => console.error("Error loading texture:", patternUrl, error)
     );
   };
 
   const disposeModel = (model: THREE.Group) => {
-    console.log("Disposing model.");
     model.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
@@ -666,7 +718,6 @@ const FilterPageUI: React.FC = () => {
   const saveImage = async () => {
     if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !capturedImage) return;
 
-    console.log("Saving image. Rendering scene with current model state.");
     setShowBlindMenu(false);
     saveButtonRef.current?.style.setProperty("display", "none");
 
@@ -688,32 +739,26 @@ const FilterPageUI: React.FC = () => {
       img.src = src;
     });
 
-    try {
-      await loadImage(backgroundImg, capturedImage);
-      ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+    await loadImage(backgroundImg, capturedImage);
+    ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
-      renderImg.src = rendererRef.current.domElement.toDataURL("image/png");
-      await loadImage(renderImg, renderImg.src);
-      ctx.drawImage(renderImg, 0, 0, canvas.width, canvas.height);
+    renderImg.src = rendererRef.current.domElement.toDataURL("image/png");
+    await loadImage(renderImg, renderImg.src);
+    ctx.drawImage(renderImg, 0, 0, canvas.width, canvas.height);
 
-      await loadImage(logoImg, "/images/baelogoN.png");
-      ctx.drawImage(logoImg, (canvas.width - 96) / 2, 16, 96, 96);
+    await loadImage(logoImg, "/images/baelogoN.png");
+    ctx.drawImage(logoImg, (canvas.width - 96) / 2, 16, 96, 96);
 
-      const link = document.createElement("a");
-      link.download = "custom_blind_image.png";
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-      console.log("Image saved successfully.");
-    } catch (error) {
-      console.error("Error saving image:", error);
-    } finally {
-      setShowBlindMenu(true);
-      saveButtonRef.current?.style.setProperty("display", "block");
-    }
+    const link = document.createElement("a");
+    link.download = "custom_blind_image.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+
+    setShowBlindMenu(true);
+    saveButtonRef.current?.style.setProperty("display", "block");
   };
 
   const submitAndShowMenu = () => {
-    console.log("Submitting and showing menu. Model should already be in scene.");
     setShowBlindMenu(true);
     setIsCustomizerView(true);
     if (controlButtonRef.current && document.body.contains(controlButtonRef.current)) {
@@ -728,19 +773,10 @@ const FilterPageUI: React.FC = () => {
     document.body.style.overflow = "auto";
     document.body.style.touchAction = "auto";
     cleanupThreeJs();
-    // Clean up selection box event listeners to enable scrolling
     if (selectionBoxCleanupRef.current) {
       selectionBoxCleanupRef.current();
       selectionBoxCleanupRef.current = null;
     }
-  };
-
-  const debounce = (func: (...args: any[]) => void, wait: number) => {
-    let timeout: NodeJS.Timeout | null = null;
-    return (...args: any[]) => {
-      if (timeout) clearTimeout(timeout);
-      timeout = setTimeout(() => func(...args), wait);
-    };
   };
 
   const loadModel = (modelUrl: string): Promise<ModelData> => {
@@ -749,78 +785,98 @@ const FilterPageUI: React.FC = () => {
         modelUrl,
         (gltf) => {
           const model = gltf.scene;
-          console.log(`Model loaded: ${modelUrl}`);
           resolve({ model, gltf });
         },
         undefined,
-        (error) => {
-          console.error(`Failed to load model: ${modelUrl}`, error);
-          reject(error);
-        }
+        (error) => reject(error)
       );
     });
   };
 
-  const selectBlindType = debounce(async (type: string) => {
-    console.log(`Selecting blind type: ${type}`);
+  const processNextChange = async () => {
+    if (isProcessingRef.current || changeQueueRef.current.length === 0) return;
+
+    const nextChange = changeQueueRef.current.shift()!;
+    if (nextChange.type === "blind") {
+      await selectBlindType(nextChange.value);
+    } else if (nextChange.type === "pattern") {
+      await selectPattern(nextChange.value);
+    }
+  };
+
+  const selectBlindType = async (type: string) => {
+    if (isProcessingRef.current) {
+      changeQueueRef.current.push({ type: "blind", value: type });
+      return;
+    }
+
+    isProcessingRef.current = true;
+    setIsLoading(true);
     setSelectedBlindType(type);
 
     if (!selectionBoxParamsRef.current || !initialModelParamsRef.current) {
-      console.log("No selection box or initial params yet. Waiting for user to draw a box.");
+      changeQueueRef.current.push({ type: "blind", value: type });
+      isProcessingRef.current = false;
+      setIsLoading(false);
       return;
     }
 
     const blindType = blindTypes.find(b => b.type === type);
     if (!blindType) {
       console.error("Blind type not found:", type);
+      isProcessingRef.current = false;
+      setIsLoading(false);
       return;
     }
 
-    if (defaultModelRef.current) {
-      sceneRef.current!.remove(defaultModelRef.current.model);
-      disposeModel(defaultModelRef.current.model);
-      defaultModelRef.current = null;
-      console.log("Removed existing model to load new blind type.");
+    await cleanupCurrentModel();
+    const preloaded = preloadedModelsRef.current.get(blindType.modelUrl);
+    const { model } = preloaded ? { model: preloaded.model.clone(), gltf: preloaded.gltf } : await loadModel(blindType.modelUrl);
+
+    updateModelProperties(model, blindType);
+    applyTextureToModel(model, selectedPattern || "/images/ICONSforMaterial/beige.png", blindType.meshName);
+    model.opacity = 0; // Start invisible for fade-in
+    sceneRef.current!.add(model);
+    defaultModelRef.current = { model, gltf: preloaded?.gltf || null };
+    fadeInModel(model);
+
+    isProcessingRef.current = false;
+    setIsLoading(false);
+    processNextChange();
+  };
+
+  const selectPattern = async (patternUrl: string) => {
+    if (isProcessingRef.current) {
+      changeQueueRef.current.push({ type: "pattern", value: patternUrl });
+      return;
     }
 
-    try {
-      const { model, gltf } = await loadModel(blindType.modelUrl);
-      updateModelProperties(model);
-      model.rotation.set(blindType.rotation.x, blindType.rotation.y, blindType.rotation.z);
-      applyTextureToModel(model, selectedPattern || "/images/ICONSforMaterial/beige.png", blindType.meshName);
-      sceneRef.current!.add(model);
-      defaultModelRef.current = { model, gltf };
-      console.log(`Blind type ${type} model added to scene with initial params and current pattern.`);
-      renderScene();
-    } catch (error) {
-      console.error("Error in selectBlindType:", error);
-    }
-  }, 300);
-
-  const selectPattern = (patternUrl: string) => {
-    console.log(`Selecting pattern: ${patternUrl}`);
+    isProcessingRef.current = true;
+    setIsLoading(true);
     setSelectedPattern(patternUrl);
 
     if (!selectionBoxParamsRef.current || !initialModelParamsRef.current) {
-      console.log("No selection box or initial params yet. Waiting for user to draw a box.");
-      return;
+      await createDefaultModel(
+        selectionBoxParamsRef.current?.worldStart.x || 0,
+        selectionBoxParamsRef.current?.worldStart.y || 0,
+        selectionBoxParamsRef.current?.worldEnd.x || 0,
+        selectionBoxParamsRef.current?.worldEnd.y || 0
+      );
     }
 
     if (!defaultModelRef.current) {
-      console.log("No model exists yet. Creating default model with selected pattern.");
-      createDefaultModel(
-        selectionBoxParamsRef.current.worldStart.x,
-        selectionBoxParamsRef.current.worldStart.y,
-        selectionBoxParamsRef.current.worldEnd.x,
-        selectionBoxParamsRef.current.worldEnd.y
-      );
-      setTimeout(() => selectPattern(patternUrl), 500);
+      changeQueueRef.current.push({ type: "pattern", value: patternUrl });
+      isProcessingRef.current = false;
+      setIsLoading(false);
       return;
     }
 
     const blindType = selectedBlindType ? blindTypes.find(b => b.type === selectedBlindType) : blindTypes.find(b => b.modelUrl === "/models/shadeBake.glb");
     applyTextureToModel(defaultModelRef.current.model, patternUrl, blindType?.meshName || "polySurface1");
-    console.log(`Pattern ${patternUrl} applied to existing model.`);
+
+    isProcessingRef.current = false;
+    setIsLoading(false);
+    processNextChange();
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -830,17 +886,14 @@ const FilterPageUI: React.FC = () => {
 
   const renderScene = () => {
     if (rendererRef.current && sceneRef.current && cameraRef.current) {
-      console.log("Rendering scene. Model present:", !!defaultModelRef.current);
       rendererRef.current.render(sceneRef.current, cameraRef.current);
-    } else {
-      console.error("Cannot render scene: renderer, scene, or camera is null.");
     }
   };
 
   const animate = () => {
     requestAnimationFrame(animate);
     mixersRef.current.forEach(mixer => mixer.update(0.016));
-    renderScene();
+    if (!isLoading) renderScene();
   };
 
   return (
@@ -861,6 +914,11 @@ const FilterPageUI: React.FC = () => {
       {instruction && (
         <div className="fixed top-32 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 p-2 rounded shadow-md z-[100] text-brown-800 text-lg">
           {instruction}
+        </div>
+      )}
+      {isLoading && (
+        <div className="fixed inset-0 flex items-center justify-center z-[50] bg-black bg-opacity-50">
+          <div className="text-white text-lg">Loading...</div>
         </div>
       )}
       <input
