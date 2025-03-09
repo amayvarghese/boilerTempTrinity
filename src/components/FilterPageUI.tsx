@@ -44,6 +44,11 @@ interface InitialModelParams {
   position: THREE.Vector3;
 }
 
+// Type guard for THREE.Mesh
+const isMesh = (object: THREE.Object3D): object is THREE.Mesh => {
+  return (object as THREE.Mesh).isMesh === true;
+};
+
 const FilterPageUI: React.FC = () => {
   const [showBlindMenu, setShowBlindMenu] = useState(false);
   const [selectedBlindType, setSelectedBlindType] = useState<string | null>(null);
@@ -56,7 +61,7 @@ const FilterPageUI: React.FC = () => {
 
   const sceneRef = useRef<THREE.Scene>(new THREE.Scene());
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const rendererRef = useRef< WikiGLRenderer | null>(null);
   const mountRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const selectionBoxRef = useRef<HTMLDivElement | null>(null);
@@ -269,7 +274,7 @@ const FilterPageUI: React.FC = () => {
     controlButtonRef.current = document.createElement("button");
     controlButtonRef.current.id = "controlButton";
     controlButtonRef.current.textContent = "Start Camera";
-    controlButtonRef.current.className = "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300 opacity-100";
+    controlButtonRef.current.className = "fixed bottom-16 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300 opacity-100";
     document.body.appendChild(controlButtonRef.current);
     controlButtonRef.current.addEventListener("click", handleButtonClick);
 
@@ -657,11 +662,7 @@ const FilterPageUI: React.FC = () => {
   const applyTextureToModel = (model: THREE.Group, patternUrl: string, meshName?: string) => {
     const textureLoader = new THREE.TextureLoader();
 
-    const isMesh = (object: THREE.Object3D): object is THREE.Mesh => {
-      return (object as THREE.Mesh).isMesh === true;
-    };
-
-    model.traverse((child) => {
+    model.traverse((child: THREE.Object3D) => {
       if (isMesh(child)) {
         const material = child.material as THREE.MeshStandardMaterial;
         material.opacity = 0.5;
@@ -689,7 +690,7 @@ const FilterPageUI: React.FC = () => {
         let targetMesh: THREE.Mesh | null = null;
 
         if (meshName) {
-          model.traverse((child) => {
+          model.traverse((child: THREE.Object3D) => {
             if (isMesh(child) && child.name === meshName) {
               targetMesh = child;
               targetMesh.material = newMaterial;
@@ -701,7 +702,7 @@ const FilterPageUI: React.FC = () => {
         }
 
         if (!textureApplied) {
-          model.traverse((child) => {
+          model.traverse((child: THREE.Object3D) => {
             if (isMesh(child) && !textureApplied) {
               if (child.geometry && !targetMesh) {
                 targetMesh = child;
@@ -720,7 +721,7 @@ const FilterPageUI: React.FC = () => {
         if (!textureApplied) {
           console.warn(`No suitable mesh found for texture in model. Pattern: ${patternUrl}`);
           const meshNames: string[] = [];
-          model.traverse((child) => {
+          model.traverse((child: THREE.Object3D) => {
             if (isMesh(child)) meshNames.push(child.name || "unnamed");
           });
           console.log(`Available meshes in model: ${meshNames.join(", ")}`);
