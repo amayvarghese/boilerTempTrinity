@@ -716,11 +716,13 @@ const FilterPageUI: React.FC = () => {
           });
   
           if (targetMesh) {
-            targetMesh.material = newMaterial;
-            targetMesh.material.needsUpdate = true;
+            const mesh = targetMesh as THREE.Mesh;
+            mesh.material = newMaterial;
+            mesh.material.needsUpdate = true;
             textureApplied = true;
-            console.log(`Texture applied to primary mesh: ${targetMesh.name || "unnamed"}`);
+            console.log(`Texture applied to primary mesh: ${mesh.name || "unnamed"}`);
           }
+          
         }
   
         if (!textureApplied) {
