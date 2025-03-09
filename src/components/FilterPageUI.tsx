@@ -61,7 +61,7 @@ const FilterPageUI: React.FC = () => {
 
   const sceneRef = useRef<THREE.Scene>(new THREE.Scene());
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const rendererRef = useRef< WikiGLRenderer | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null); // Fixed typo here
   const mountRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const selectionBoxRef = useRef<HTMLDivElement | null>(null);
@@ -664,7 +664,8 @@ const FilterPageUI: React.FC = () => {
 
     model.traverse((child: THREE.Object3D) => {
       if (isMesh(child)) {
-        const material = child.material as THREE.MeshStandardMaterial;
+        const mesh = child as THREE.Mesh; // Explicit assertion to fix 'never' issue
+        const material = mesh.material as THREE.MeshStandardMaterial;
         material.opacity = 0.5;
         material.needsUpdate = true;
       }
