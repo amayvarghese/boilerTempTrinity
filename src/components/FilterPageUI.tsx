@@ -743,7 +743,7 @@ const FilterPageUI: React.FC = () => {
     };
   };
 
-  const loadModel = (modelUrl: string, meshName: string | undefined, rotation: Vector3D): Promise<ModelData> => {
+  const loadModel = (modelUrl: string): Promise<ModelData> => {
     return new Promise((resolve, reject) => {
       new GLTFLoader().load(
         modelUrl,
@@ -784,7 +784,7 @@ const FilterPageUI: React.FC = () => {
     }
 
     try {
-      const { model, gltf } = await loadModel(blindType.modelUrl, blindType.meshName, blindType.rotation);
+      const { model, gltf } = await loadModel(blindType.modelUrl);
       updateModelProperties(model);
       model.rotation.set(blindType.rotation.x, blindType.rotation.y, blindType.rotation.z);
       applyTextureToModel(model, selectedPattern || "/images/ICONSforMaterial/beige.png", blindType.meshName);
@@ -936,7 +936,7 @@ const FilterPageUI: React.FC = () => {
                       />
                       <div className="button-text flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
                         <span className="left-text truncate">{pattern.name}</span>
-                        <span class="right-text">{pattern.price}</span>
+                        <span className="right-text">{pattern.price}</span>
                       </div>
                     </div>
                   ))}
