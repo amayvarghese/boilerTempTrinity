@@ -724,7 +724,7 @@ const FilterPageUI: React.FC = () => {
           }
           
         }
-  
+  //
         if (!textureApplied) {
           console.warn(`No suitable mesh found for texture in model. Pattern: ${patternUrl}`);
           const meshNames: string[] = [];
