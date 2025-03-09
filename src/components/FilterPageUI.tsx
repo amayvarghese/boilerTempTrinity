@@ -657,10 +657,13 @@ const FilterPageUI: React.FC = () => {
   const applyTextureToModel = (model: THREE.Group, patternUrl: string, meshName?: string) => {
     const textureLoader = new THREE.TextureLoader();
 
+    const isMesh = (object: THREE.Object3D): object is THREE.Mesh => {
+      return (object as THREE.Mesh).isMesh === true;
+    };
+
     model.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
-        const mesh = child as THREE.Mesh;
-        const material = mesh.material as THREE.MeshStandardMaterial;
+      if (isMesh(child)) {
+        const material = child.material as THREE.MeshStandardMaterial;
         material.opacity = 0.5;
         material.needsUpdate = true;
       }
@@ -687,8 +690,8 @@ const FilterPageUI: React.FC = () => {
 
         if (meshName) {
           model.traverse((child) => {
-            if ((child as THREE.Mesh).isMesh && child.name === meshName) {
-              targetMesh = child as THREE.Mesh;
+            if (isMesh(child) && child.name === meshName) {
+              targetMesh = child;
               targetMesh.material = newMaterial;
               targetMesh.material.needsUpdate = true;
               textureApplied = true;
@@ -699,10 +702,9 @@ const FilterPageUI: React.FC = () => {
 
         if (!textureApplied) {
           model.traverse((child) => {
-            if ((child as THREE.Mesh).isMesh && !textureApplied) {
-              const mesh = child as THREE.Mesh;
-              if (mesh.geometry && !targetMesh) {
-                targetMesh = mesh;
+            if (isMesh(child) && !textureApplied) {
+              if (child.geometry && !targetMesh) {
+                targetMesh = child;
               }
             }
           });
@@ -719,7 +721,7 @@ const FilterPageUI: React.FC = () => {
           console.warn(`No suitable mesh found for texture in model. Pattern: ${patternUrl}`);
           const meshNames: string[] = [];
           model.traverse((child) => {
-            if ((child as THREE.Mesh).isMesh) meshNames.push((child as THREE.Mesh).name || "unnamed");
+            if (isMesh(child)) meshNames.push(child.name || "unnamed");
           });
           console.log(`Available meshes in model: ${meshNames.join(", ")}`);
         }
