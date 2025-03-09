@@ -29,7 +29,7 @@ interface Pattern {
 
 interface ModelData {
   model: THREE.Group;
-  gltf?: any; // Made optional to align with usage
+  gltf?: any;
 }
 
 interface SelectionBoxParams {
@@ -109,7 +109,6 @@ const FilterPageUI: React.FC = () => {
     instructionTimeoutRef.current = setTimeout(() => setInstruction(""), 3000);
   };
 
-  // Preload all models on mount
   useEffect(() => {
     const preloadModels = async () => {
       setIsLoading(true);
@@ -140,7 +139,6 @@ const FilterPageUI: React.FC = () => {
     preloadModels();
   }, []);
 
-  // Scene, Camera, Renderer Setup
   useEffect(() => {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
@@ -658,6 +656,17 @@ const FilterPageUI: React.FC = () => {
 
   const applyTextureToModel = (model: THREE.Group, patternUrl: string, meshName?: string) => {
     const textureLoader = new THREE.TextureLoader();
+
+    model.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        const material = mesh.material as THREE.MeshStandardMaterial;
+        material.opacity = 0.5;
+        material.needsUpdate = true;
+      }
+    });
+    renderScene();
+
     textureLoader.load(
       patternUrl,
       (texture) => {
@@ -674,29 +683,55 @@ const FilterPageUI: React.FC = () => {
         });
 
         let textureApplied = false;
-        model.traverse((child) => {
-          if ((child as THREE.Mesh).isMesh) {
-            const mesh = child as THREE.Mesh;
-            mesh.geometry.computeBoundingBox();
-            if (meshName && mesh.name === meshName) {
-              mesh.material = newMaterial;
-              mesh.material.needsUpdate = true;
+        let targetMesh: THREE.Mesh | null = null;
+
+        if (meshName) {
+          model.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh && child.name === meshName) {
+              targetMesh = child as THREE.Mesh;
+              targetMesh.material = newMaterial;
+              targetMesh.material.needsUpdate = true;
               textureApplied = true;
-            } else if (!meshName) {
-              mesh.material = newMaterial;
-              mesh.material.needsUpdate = true;
-              textureApplied = true;
+              console.log(`Texture applied to specific mesh: ${meshName}`);
             }
-          }
-        });
+          });
+        }
 
         if (!textureApplied) {
-          console.warn("No suitable mesh found for texture:", patternUrl);
+          model.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh && !textureApplied) {
+              const mesh = child as THREE.Mesh;
+              if (mesh.geometry && !targetMesh) {
+                targetMesh = mesh;
+              }
+            }
+          });
+
+          if (targetMesh) {
+            targetMesh.material = newMaterial;
+            targetMesh.material.needsUpdate = true;
+            textureApplied = true;
+            console.log(`Texture applied to primary mesh: ${targetMesh.name || "unnamed"}`);
+          }
         }
+
+        if (!textureApplied) {
+          console.warn(`No suitable mesh found for texture in model. Pattern: ${patternUrl}`);
+          const meshNames: string[] = [];
+          model.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) meshNames.push((child as THREE.Mesh).name || "unnamed");
+          });
+          console.log(`Available meshes in model: ${meshNames.join(", ")}`);
+        }
+
         renderScene();
       },
       undefined,
-      (error) => console.error("Error loading texture:", patternUrl, error)
+      (error) => {
+        console.error("Error loading texture:", patternUrl, error);
+        setIsLoading(false);
+        renderScene();
+      }
     );
   };
 
@@ -844,38 +879,28 @@ const FilterPageUI: React.FC = () => {
     processNextChange();
   };
 
-  const selectPattern = async (patternUrl: string) => {
-    if (isProcessingRef.current) {
+  const selectPattern = (patternUrl: string) => {
+    if (!defaultModelRef.current || !sceneRef.current) {
       changeQueueRef.current.push({ type: "pattern", value: patternUrl });
+      if (selectionBoxParamsRef.current && initialModelParamsRef.current) {
+        createDefaultModel(
+          selectionBoxParamsRef.current.worldStart.x,
+          selectionBoxParamsRef.current.worldStart.y,
+          selectionBoxParamsRef.current.worldEnd.x,
+          selectionBoxParamsRef.current.worldEnd.y
+        );
+      }
       return;
     }
 
-    isProcessingRef.current = true;
-    setIsLoading(true);
     setSelectedPattern(patternUrl);
+    setIsLoading(true);
 
-    if (!selectionBoxParamsRef.current || !initialModelParamsRef.current) {
-      await createDefaultModel(
-        selectionBoxParamsRef.current?.worldStart.x || 0,
-        selectionBoxParamsRef.current?.worldStart.y || 0,
-        selectionBoxParamsRef.current?.worldEnd.x || 0,
-        selectionBoxParamsRef.current?.worldEnd.y || 0
-      );
-    }
+    const currentBlindType = blindTypes.find(b => b.type === selectedBlindType) || blindTypes[0];
+    applyTextureToModel(defaultModelRef.current.model, patternUrl, currentBlindType.meshName);
 
-    if (!defaultModelRef.current) {
-      changeQueueRef.current.push({ type: "pattern", value: patternUrl });
-      isProcessingRef.current = false;
-      setIsLoading(false);
-      return;
-    }
-
-    const blindType = selectedBlindType ? blindTypes.find(b => b.type === selectedBlindType) : blindTypes.find(b => b.modelUrl === "/models/shadeBake.glb");
-    applyTextureToModel(defaultModelRef.current.model, patternUrl, blindType?.meshName || "polySurface1");
-
-    isProcessingRef.current = false;
     setIsLoading(false);
-    processNextChange();
+    renderScene();
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -892,7 +917,7 @@ const FilterPageUI: React.FC = () => {
   const animate = () => {
     requestAnimationFrame(animate);
     mixersRef.current.forEach(mixer => mixer.update(0.016));
-    if (!isLoading) renderScene();
+    renderScene();
   };
 
   return (
@@ -1033,7 +1058,7 @@ const FilterPageUI: React.FC = () => {
                       <img
                         src={pattern.image}
                         alt={pattern.name}
-                        className="button-image w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object/well-cover"
+                        className="button-image w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
                       />
                       <div className="button-text flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
                         <span className="left-text truncate">{pattern.name}</span>
