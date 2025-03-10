@@ -475,7 +475,6 @@ const FilterPageUI: React.FC = () => {
       const currentX = Math.max(0, Math.min(x, rect.width));
       const currentY = Math.max(0, Math.min(y, rect.height));
 
-      // Use requestAnimationFrame to batch DOM updates and reduce flickering
       requestAnimationFrame(() => {
         if (selectionBoxRef.current) {
           selectionBoxRef.current.style.width = `${Math.abs(currentX - startX)}px`;
@@ -500,7 +499,7 @@ const FilterPageUI: React.FC = () => {
       mousedown: (e: MouseEvent) => {
         if (!hasSelectionBox.current && e.button === 0) {
           e.preventDefault();
-          e.stopPropagation(); // Prevent event bubbling
+          e.stopPropagation();
           const rect = mountRef.current!.getBoundingClientRect();
           startSelection(e.clientX - rect.left, e.clientY - rect.top);
         }
@@ -508,7 +507,7 @@ const FilterPageUI: React.FC = () => {
       mousemove: (e: MouseEvent) => {
         if (isDragging) {
           e.preventDefault();
-          e.stopPropagation(); // Prevent event bubbling
+          e.stopPropagation();
           const rect = mountRef.current!.getBoundingClientRect();
           updateSelection(e.clientX - rect.left, e.clientY - rect.top);
         }
@@ -516,7 +515,7 @@ const FilterPageUI: React.FC = () => {
       mouseup: (e: MouseEvent) => {
         if (isDragging) {
           e.preventDefault();
-          e.stopPropagation(); // Prevent event bubbling
+          e.stopPropagation();
           const rect = mountRef.current!.getBoundingClientRect();
           endSelection(e.clientX - rect.left, e.clientY - rect.top);
         }
@@ -848,20 +847,24 @@ const FilterPageUI: React.FC = () => {
 
       const dataUrl = canvas.toDataURL("image/png");
 
-      if (navigator.share && navigator.canShare) {
+      if (navigator.share) {
         const response = await fetch(dataUrl);
         const blob = await response.blob();
         const file = new File([blob], "custom_blind_image.png", { type: "image/png" });
 
-        try {
-          await navigator.share({
-            files: [file],
-            title: "Custom Blind Image",
-            text: "Check out my custom blind design!",
-          });
-          setTemporaryInstruction("Image shared successfully! Check Photos or your share destination.");
-        } catch (shareError) {
-          console.warn("Web Share API failed:", shareError);
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: "Custom Blind Image",
+              text: "Check out my custom blind design!",
+            });
+            setTemporaryInstruction("Image shared successfully! Check Photos or your share destination.");
+          } catch (shareError) {
+            console.warn("Web Share API failed:", shareError);
+            triggerDownload(dataUrl);
+          }
+        } else {
           triggerDownload(dataUrl);
         }
       } else {
