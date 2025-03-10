@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-// Interfaces for type safety
+// Interfaces
 interface Vector3D {
   x: number;
   y: number;
@@ -44,7 +44,6 @@ interface InitialModelParams {
   position: THREE.Vector3;
 }
 
-// Type guard for THREE.Mesh
 const isMesh = (object: THREE.Object3D): object is THREE.Mesh => {
   return (object as THREE.Mesh).isMesh === true;
 };
@@ -61,7 +60,7 @@ const FilterPageUI: React.FC = () => {
 
   const sceneRef = useRef<THREE.Scene>(new THREE.Scene());
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null); // Fixed typo here
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const mountRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const selectionBoxRef = useRef<HTMLDivElement | null>(null);
@@ -82,6 +81,7 @@ const FilterPageUI: React.FC = () => {
   const isProcessingRef = useRef(false);
   const changeQueueRef = useRef<{ type: "blind" | "pattern"; value: string }[]>([]);
   const preloadedModelsRef = useRef<Map<string, ModelData>>(new Map());
+  const lastMousePosition = useRef<{ x: number; y: number } | null>(null);
 
   const blindTypes: BlindType[] = [
     { type: "classicRoman", buttonImage: "/images/windowTypeIcons/image 12.png", modelUrl: "/models/classicRoman.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: 0, y: 0, z: 0.1 } },
@@ -139,12 +139,16 @@ const FilterPageUI: React.FC = () => {
         )
       );
       setIsLoading(false);
-      console.log("All models preloaded:", preloadedModelsRef.current.size);
     };
     preloadModels();
   }, []);
 
   useEffect(() => {
+    if (!mountRef.current) {
+      console.error("Mount ref is not available during initialization");
+      return;
+    }
+
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
 
@@ -152,26 +156,24 @@ const FilterPageUI: React.FC = () => {
     cameraRef.current = camera;
     updateCameraPosition(screenWidth, screenHeight);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(screenWidth, screenHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.LinearToneMapping;
     rendererRef.current = renderer;
 
-    if (mountRef.current) {
-      mountRef.current.appendChild(renderer.domElement);
-      renderer.domElement.style.cssText = `
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: ${isCustomizerView ? 0 : 20};
-        pointer-events: ${isCustomizerView ? 'none' : 'auto'};
-        touch-action: ${isCustomizerView ? 'auto' : 'none'};
-      `;
-    }
+    mountRef.current.appendChild(renderer.domElement);
+    renderer.domElement.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: ${isCustomizerView ? 0 : 20};
+      pointer-events: ${isCustomizerView ? 'none' : 'auto'};
+      touch-action: ${isCustomizerView ? 'auto' : 'none'};
+    `;
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     sceneRef.current.add(ambientLight);
@@ -205,15 +207,6 @@ const FilterPageUI: React.FC = () => {
       }
       window.removeEventListener("resize", handleResize);
     };
-  }, []);
-
-  useEffect(() => {
-    if (rendererRef.current && mountRef.current) {
-      rendererRef.current.domElement.style.zIndex = isCustomizerView ? "0" : "20";
-      rendererRef.current.domElement.style.pointerEvents = isCustomizerView ? "none" : "auto";
-      rendererRef.current.domElement.style.touchAction = isCustomizerView ? "auto" : "none";
-      rendererRef.current.domElement.style.height = isCustomizerView ? `${window.innerHeight}px` : "100%";
-    }
   }, [isCustomizerView]);
 
   const cleanupThreeJs = () => {
@@ -274,21 +267,21 @@ const FilterPageUI: React.FC = () => {
     controlButtonRef.current = document.createElement("button");
     controlButtonRef.current.id = "controlButton";
     controlButtonRef.current.textContent = "Start Camera";
-    controlButtonRef.current.className = "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300 opacity-100";
+    controlButtonRef.current.className = "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300";
     document.body.appendChild(controlButtonRef.current);
     controlButtonRef.current.addEventListener("click", handleButtonClick);
 
     uploadButtonRef.current = document.createElement("button");
     uploadButtonRef.current.id = "uploadButton";
     uploadButtonRef.current.textContent = "Upload Image";
-    uploadButtonRef.current.className = "fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300 opacity-100";
+    uploadButtonRef.current.className = "fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300";
     document.body.appendChild(uploadButtonRef.current);
     uploadButtonRef.current.addEventListener("click", () => fileInputRef.current?.click());
 
     saveButtonRef.current = document.createElement("button");
     saveButtonRef.current.id = "saveButton";
     saveButtonRef.current.textContent = "Save Image";
-    saveButtonRef.current.className = "fixed bottom-16 right-5 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300 opacity-100 hidden";
+    saveButtonRef.current.className = "fixed bottom-16 right-5 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300 hidden";
     document.body.appendChild(saveButtonRef.current);
     saveButtonRef.current.addEventListener("click", saveImage);
 
@@ -442,6 +435,10 @@ const FilterPageUI: React.FC = () => {
       plane.position.set(0, 0, -0.1);
       sceneRef.current!.add(plane);
       updateCameraPosition(width, height);
+
+      // Ensure capturedImage is set to the background image data
+      setCapturedImage(imageData);
+      localStorage.setItem("capturedImage", imageData);
     });
   };
 
@@ -449,8 +446,9 @@ const FilterPageUI: React.FC = () => {
     if (selectionBoxRef.current || hasSelectionBox.current || !mountRef.current) return;
 
     selectionBoxRef.current = document.createElement("div");
-    selectionBoxRef.current.className = "absolute border-2 border-dashed border-[#2F3526] bg-[#2F3526] bg-opacity-20 hidden pointer-events-auto";
+    selectionBoxRef.current.className = "absolute border-2 border-dashed border-[#2F3526] bg-[#2F3526] bg-opacity-20 pointer-events-auto";
     selectionBoxRef.current.style.zIndex = "25";
+    selectionBoxRef.current.style.willChange = "width, height, left, top";
     mountRef.current.appendChild(selectionBoxRef.current);
 
     let startX = 0, startY = 0, isDragging = false;
@@ -465,37 +463,56 @@ const FilterPageUI: React.FC = () => {
           top: `${startY}px`,
           width: "0px",
           height: "0px",
+          display: "block",
         });
-        selectionBoxRef.current.classList.remove("hidden");
         isDragging = true;
       }
     };
 
     const updateSelection = (x: number, y: number) => {
       if (!isDragging || !selectionBoxRef.current) return;
-      Object.assign(selectionBoxRef.current.style, {
-        width: `${Math.abs(x - startX)}px`,
-        height: `${Math.abs(y - startY)}px`,
-        left: `${Math.min(startX, x)}px`,
-        top: `${Math.min(startY, y)}px`,
-      });
+
+      const currentX = Math.max(0, Math.min(x, mountRef.current!.clientWidth));
+      const currentY = Math.max(0, Math.min(y, mountRef.current!.clientHeight));
+
+      selectionBoxRef.current.style.width = `${Math.abs(currentX - startX)}px`;
+      selectionBoxRef.current.style.height = `${Math.abs(currentY - startY)}px`;
+      selectionBoxRef.current.style.left = `${Math.min(startX, currentX)}px`;
+      selectionBoxRef.current.style.top = `${Math.min(startY, currentY)}px`;
+
+      lastMousePosition.current = { x: currentX, y: currentY };
     };
 
     const endSelection = (x: number, y: number) => {
       if (!isDragging || !selectionBoxRef.current) return;
-      selectionBoxRef.current.classList.add("hidden");
+      selectionBoxRef.current.style.display = "none";
       hasSelectionBox.current = true;
       isDragging = false;
       createDefaultModel(startX, startY, x, y);
     };
 
     const eventHandlers = {
-      mousedown: (e: MouseEvent) => !hasSelectionBox.current && e.button === 0 && startSelection(e.offsetX, e.offsetY),
-      mousemove: (e: MouseEvent) => isDragging && updateSelection(e.offsetX, e.offsetY),
-      mouseup: (e: MouseEvent) => isDragging && endSelection(e.offsetX, e.offsetY),
+      mousedown: (e: MouseEvent) => {
+        if (!hasSelectionBox.current && e.button === 0) {
+          e.preventDefault();
+          startSelection(e.offsetX, e.offsetY);
+        }
+      },
+      mousemove: (e: MouseEvent) => {
+        if (isDragging) {
+          e.preventDefault();
+          updateSelection(e.offsetX, e.offsetY);
+        }
+      },
+      mouseup: (e: MouseEvent) => {
+        if (isDragging) {
+          e.preventDefault();
+          endSelection(e.offsetX, e.offsetY);
+        }
+      },
       touchstart: (e: TouchEvent) => {
-        e.preventDefault();
         if (!hasSelectionBox.current) {
+          e.preventDefault();
           const touch = e.touches[0];
           const rect = mountRef.current!.getBoundingClientRect();
           startSelection(touch.clientX - rect.left, touch.clientY - rect.top);
@@ -519,8 +536,16 @@ const FilterPageUI: React.FC = () => {
       },
     };
 
-    Object.entries(eventHandlers).forEach(([event, handler]) => mountRef.current!.addEventListener(event, handler as EventListener));
-    selectionBoxCleanupRef.current = () => Object.entries(eventHandlers).forEach(([event, handler]) => mountRef.current!.removeEventListener(event, handler as EventListener));
+    Object.entries(eventHandlers).forEach(([event, handler]) =>
+      mountRef.current!.addEventListener(event, handler as EventListener, { passive: false })
+    );
+
+    selectionBoxCleanupRef.current = () => {
+      Object.entries(eventHandlers).forEach(([event, handler]) =>
+        mountRef.current!.removeEventListener(event, handler as EventListener)
+      );
+    };
+
     return selectionBoxCleanupRef.current;
   };
 
@@ -661,24 +686,14 @@ const FilterPageUI: React.FC = () => {
 
   const applyTextureToModel = (model: THREE.Group, patternUrl: string, meshName?: string) => {
     const textureLoader = new THREE.TextureLoader();
-  
-    model.traverse((child: THREE.Object3D) => {
-      if (isMesh(child)) {
-        const mesh = child as THREE.Mesh;
-        const material = mesh.material as THREE.MeshStandardMaterial;
-        material.opacity = 0.5;
-        material.needsUpdate = true;
-      }
-    });
-    renderScene();
-  
+
     textureLoader.load(
       patternUrl,
       (texture) => {
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.set(8, 8);
         texture.colorSpace = THREE.SRGBColorSpace;
-  
+
         const newMaterial = new THREE.MeshStandardMaterial({
           map: texture,
           roughness: 0.5,
@@ -686,58 +701,34 @@ const FilterPageUI: React.FC = () => {
           transparent: true,
           opacity: 1,
         });
-  
+
         let textureApplied = false;
         let targetMesh: THREE.Mesh | null = null;
-  
+
         if (meshName) {
           model.traverse((child: THREE.Object3D) => {
-            if (isMesh(child)) { // Ensure type guard is recognized
-              const mesh = child as THREE.Mesh; // Explicit assertion
-              if (mesh.name === meshName) {
-                targetMesh = mesh;
-                targetMesh.material = newMaterial;
-                targetMesh.material.needsUpdate = true;
-                textureApplied = true;
-                console.log(`Texture applied to specific mesh: ${meshName}`);
-              }
+            if (isMesh(child) && child.name === meshName) {
+              targetMesh = child as THREE.Mesh;
+              targetMesh.material = newMaterial;
+              targetMesh.material.needsUpdate = true;
+              textureApplied = true;
             }
           });
         }
-  
+
         if (!textureApplied) {
           model.traverse((child: THREE.Object3D) => {
             if (isMesh(child) && !textureApplied) {
-              const mesh = child as THREE.Mesh; // Explicit assertion
-              if (mesh.geometry && !targetMesh) {
-                targetMesh = mesh;
+              targetMesh = child as THREE.Mesh;
+              if (targetMesh.geometry) {
+                targetMesh.material = newMaterial;
+                targetMesh.material.needsUpdate = true;
+                textureApplied = true;
               }
             }
           });
-  
-          if (targetMesh) {
-            const mesh = targetMesh as THREE.Mesh;
-            mesh.material = newMaterial;
-            mesh.material.needsUpdate = true;
-            textureApplied = true;
-            console.log(`Texture applied to primary mesh: ${mesh.name || "unnamed"}`);
-          }
-          
         }
-  //updated code with nothing much 
-  
-        if (!textureApplied) {
-          console.warn(`No suitable mesh found for texture in model. Pattern: ${patternUrl}`);
-          const meshNames: string[] = [];
-          model.traverse((child: THREE.Object3D) => {
-            if (isMesh(child)) {
-              const mesh = child as THREE.Mesh; // Explicit assertion
-              meshNames.push(mesh.name || "unnamed");
-            }
-          });
-          console.log(`Available meshes in model: ${meshNames.join(", ")}`);
-        }
-  
+
         renderScene();
       },
       undefined,
@@ -765,46 +756,136 @@ const FilterPageUI: React.FC = () => {
   };
 
   const saveImage = async () => {
-    if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !capturedImage) return;
-
-    setShowBlindMenu(false);
-    saveButtonRef.current?.style.setProperty("display", "none");
-
-    const { innerWidth: width, innerHeight: height } = window;
-    rendererRef.current.setSize(width, height);
-    rendererRef.current.render(sceneRef.current, cameraRef.current);
-
-    const canvas = document.createElement("canvas");
-    const material = backgroundPlaneRef.current?.material as THREE.MeshBasicMaterial | undefined;
-    const texture = material?.map;
-    canvas.width = texture?.image.width || width;
-    canvas.height = texture?.image.height || height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const [backgroundImg, renderImg, logoImg] = [new Image(), new Image(), new Image()];
-    const loadImage = (img: HTMLImageElement, src: string) => new Promise<void>((resolve) => {
-      img.onload = () => resolve();
-      img.src = src;
+    console.log("Save Image clicked:", {
+      renderer: !!rendererRef.current,
+      scene: !!sceneRef.current,
+      camera: !!cameraRef.current,
+      capturedImage: !!capturedImage,
+      backgroundPlane: !!backgroundPlaneRef.current,
     });
 
-    await loadImage(backgroundImg, capturedImage);
-    ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+    if (!rendererRef.current || !sceneRef.current || !cameraRef.current) {
+      setTemporaryInstruction("Rendering setup incomplete. Please try again.");
+      console.error("Missing Three.js elements for saving image.");
+      return;
+    }
 
-    renderImg.src = rendererRef.current.domElement.toDataURL("image/png");
-    await loadImage(renderImg, renderImg.src);
-    ctx.drawImage(renderImg, 0, 0, canvas.width, canvas.height);
+    if (!backgroundPlaneRef.current) {
+      setTemporaryInstruction("No background image available to save.");
+      console.error("No background plane available.");
+      return;
+    }
 
-    await loadImage(logoImg, "/images/baelogoN.png");
-    ctx.drawImage(logoImg, (canvas.width - 96) / 2, 16, 96, 96);
+    const permission = confirm("Would you like to download the customized image?");
+    if (!permission) {
+      setTemporaryInstruction("Download cancelled.");
+      return;
+    }
 
-    const link = document.createElement("a");
-    link.download = "custom_blind_image.png";
-    link.href = canvas.toDataURL("image/png");
-    link.click();
+    setIsLoading(true);
+    setShowBlindMenu(false);
+    saveButtonRef.current?.classList.add("hidden");
 
-    setShowBlindMenu(true);
-    saveButtonRef.current?.style.setProperty("display", "block");
+    try {
+      // Get original image dimensions from the background plane
+      const material = backgroundPlaneRef.current.material as THREE.MeshBasicMaterial;
+      const texture = material.map;
+      const originalWidth = texture?.image.width || window.innerWidth;
+      const originalHeight = texture?.image.height || window.innerHeight;
+
+      console.log("Original dimensions:", originalWidth, originalHeight);
+
+      // Set renderer to original image dimensions for high-quality output
+      rendererRef.current.setSize(originalWidth, originalHeight);
+      cameraRef.current.aspect = originalWidth / originalHeight;
+      cameraRef.current.updateProjectionMatrix();
+
+      // Adjust background plane to match original dimensions
+      adjustBackgroundPlane(originalWidth, originalHeight);
+
+      // Render the scene with the background and 3D model
+      console.log("Rendering 3D scene...");
+      rendererRef.current.render(sceneRef.current, cameraRef.current);
+
+      // Create canvas with original dimensions
+      const canvas = document.createElement("canvas");
+      canvas.width = originalWidth;
+      canvas.height = originalHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Failed to get 2D context");
+
+      // Function to load an image and return a promise
+      const loadImage = (src: string): Promise<HTMLImageElement> => {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = "Anonymous"; // Handle potential CORS issues
+          img.onload = () => resolve(img);
+          img.onerror = (err) => reject(new Error(`Failed to load image: ${src}, Error: ${err}`));
+          img.src = src;
+        });
+      };
+
+      // Use capturedImage if available, otherwise extract from background plane
+      let backgroundSrc = capturedImage;
+      if (!backgroundSrc && texture) {
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = texture.image.width;
+        tempCanvas.height = texture.image.height;
+        const tempCtx = tempCanvas.getContext("2d");
+        if (tempCtx) {
+          tempCtx.drawImage(texture.image, 0, 0);
+          backgroundSrc = tempCanvas.toDataURL("image/png");
+        }
+      }
+
+      if (!backgroundSrc) {
+        throw new Error("No background image source available.");
+      }
+
+      // Draw the background image
+      console.log("Drawing background image...");
+      const backgroundImg = await loadImage(backgroundSrc);
+      ctx.drawImage(backgroundImg, 0, 0, originalWidth, originalHeight);
+
+      // Draw the 3D scene on top
+      console.log("Drawing 3D scene...");
+      const renderData = rendererRef.current.domElement.toDataURL("image/png");
+      const renderImg = await loadImage(renderData);
+      ctx.drawImage(renderImg, 0, 0, originalWidth, originalHeight);
+
+      // Draw the logo overlay on top
+      console.log("Drawing logo overlay...");
+      const logoImg = await loadImage("/images/baelogoN.png");
+      const logoSize = Math.min(originalWidth, originalHeight) * 0.1; // 10% of smallest dimension
+      const logoX = (originalWidth - logoSize) / 2; // Center horizontally
+      const logoY = 16; // 16px from top
+      ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+
+      // Generate and trigger download
+      console.log("Generating download...");
+      const dataUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.download = "custom_blind_image.png";
+      link.href = dataUrl;
+      link.click();
+
+      console.log("Image saved successfully!");
+      setTemporaryInstruction("Image downloaded successfully!");
+    } catch (error) {
+      console.error("Error saving image:", error);
+      setTemporaryInstruction("Failed to save image. Check console for details.");
+    } finally {
+      // Reset renderer to window size
+      const { innerWidth, innerHeight } = window;
+      rendererRef.current.setSize(innerWidth, innerHeight);
+      cameraRef.current.aspect = innerWidth / innerHeight;
+      cameraRef.current.updateProjectionMatrix();
+      adjustBackgroundPlane(innerWidth, innerHeight);
+
+      setShowBlindMenu(true);
+      saveButtonRef.current?.classList.remove("hidden");
+      setIsLoading(false);
+    }
   };
 
   const submitAndShowMenu = () => {
@@ -998,7 +1079,7 @@ const FilterPageUI: React.FC = () => {
             <div className="md:hidden w-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
               <div className="options-menu p-2 bg-white rounded shadow">
                 <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
-                <div className="grid-container grid grid-cols-2 gap-2 mx-5 text-[13px]">
+                <div className="grid-container grid grid-cols-2clf gap-2 mx-5 text-[13px]">
                   {["red", "blue", "green", "smooth", "patterned"].map((filter) => (
                     <div key={filter} className="option-row flex items-center gap-2">
                       <label className="flex items-center gap-2 cursor-pointer">
