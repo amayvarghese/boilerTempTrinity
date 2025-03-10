@@ -436,7 +436,6 @@ const FilterPageUI: React.FC = () => {
       sceneRef.current!.add(plane);
       updateCameraPosition(width, height);
 
-      // Ensure capturedImage is set to the background image data
       setCapturedImage(imageData);
       localStorage.setItem("capturedImage", imageData);
     });
@@ -448,7 +447,7 @@ const FilterPageUI: React.FC = () => {
     selectionBoxRef.current = document.createElement("div");
     selectionBoxRef.current.className = "absolute border-2 border-dashed border-[#2F3526] bg-[#2F3526] bg-opacity-20 pointer-events-auto";
     selectionBoxRef.current.style.zIndex = "25";
-    selectionBoxRef.current.style.willChange = "width, height, left, top";
+    selectionBoxRef.current.style.transition = "none"; // Disable transitions to prevent flickering
     mountRef.current.appendChild(selectionBoxRef.current);
 
     let startX = 0, startY = 0, isDragging = false;
@@ -472,13 +471,19 @@ const FilterPageUI: React.FC = () => {
     const updateSelection = (x: number, y: number) => {
       if (!isDragging || !selectionBoxRef.current) return;
 
-      const currentX = Math.max(0, Math.min(x, mountRef.current!.clientWidth));
-      const currentY = Math.max(0, Math.min(y, mountRef.current!.clientHeight));
+      const rect = mountRef.current!.getBoundingClientRect();
+      const currentX = Math.max(0, Math.min(x, rect.width));
+      const currentY = Math.max(0, Math.min(y, rect.height));
 
-      selectionBoxRef.current.style.width = `${Math.abs(currentX - startX)}px`;
-      selectionBoxRef.current.style.height = `${Math.abs(currentY - startY)}px`;
-      selectionBoxRef.current.style.left = `${Math.min(startX, currentX)}px`;
-      selectionBoxRef.current.style.top = `${Math.min(startY, currentY)}px`;
+      // Use requestAnimationFrame to batch DOM updates and reduce flickering
+      requestAnimationFrame(() => {
+        if (selectionBoxRef.current) {
+          selectionBoxRef.current.style.width = `${Math.abs(currentX - startX)}px`;
+          selectionBoxRef.current.style.height = `${Math.abs(currentY - startY)}px`;
+          selectionBoxRef.current.style.left = `${Math.min(startX, currentX)}px`;
+          selectionBoxRef.current.style.top = `${Math.min(startY, currentY)}px`;
+        }
+      });
 
       lastMousePosition.current = { x: currentX, y: currentY };
     };
@@ -495,19 +500,25 @@ const FilterPageUI: React.FC = () => {
       mousedown: (e: MouseEvent) => {
         if (!hasSelectionBox.current && e.button === 0) {
           e.preventDefault();
-          startSelection(e.offsetX, e.offsetY);
+          e.stopPropagation(); // Prevent event bubbling
+          const rect = mountRef.current!.getBoundingClientRect();
+          startSelection(e.clientX - rect.left, e.clientY - rect.top);
         }
       },
       mousemove: (e: MouseEvent) => {
         if (isDragging) {
           e.preventDefault();
-          updateSelection(e.offsetX, e.offsetY);
+          e.stopPropagation(); // Prevent event bubbling
+          const rect = mountRef.current!.getBoundingClientRect();
+          updateSelection(e.clientX - rect.left, e.clientY - rect.top);
         }
       },
       mouseup: (e: MouseEvent) => {
         if (isDragging) {
           e.preventDefault();
-          endSelection(e.offsetX, e.offsetY);
+          e.stopPropagation(); // Prevent event bubbling
+          const rect = mountRef.current!.getBoundingClientRect();
+          endSelection(e.clientX - rect.left, e.clientY - rect.top);
         }
       },
       touchstart: (e: TouchEvent) => {
@@ -764,21 +775,15 @@ const FilterPageUI: React.FC = () => {
       backgroundPlane: !!backgroundPlaneRef.current,
     });
 
-    if (!rendererRef.current || !sceneRef.current || !cameraRef.current) {
+    if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !backgroundPlaneRef.current) {
       setTemporaryInstruction("Rendering setup incomplete. Please try again.");
       console.error("Missing Three.js elements for saving image.");
       return;
     }
 
-    if (!backgroundPlaneRef.current) {
-      setTemporaryInstruction("No background image available to save.");
-      console.error("No background plane available.");
-      return;
-    }
-
-    const permission = confirm("Would you like to download the customized image?");
+    const permission = confirm("Would you like to save the customized image?");
     if (!permission) {
-      setTemporaryInstruction("Download cancelled.");
+      setTemporaryInstruction("Save cancelled.");
       return;
     }
 
@@ -787,45 +792,33 @@ const FilterPageUI: React.FC = () => {
     saveButtonRef.current?.classList.add("hidden");
 
     try {
-      // Get original image dimensions from the background plane
       const material = backgroundPlaneRef.current.material as THREE.MeshBasicMaterial;
       const texture = material.map;
       const originalWidth = texture?.image.width || window.innerWidth;
       const originalHeight = texture?.image.height || window.innerHeight;
 
-      console.log("Original dimensions:", originalWidth, originalHeight);
-
-      // Set renderer to original image dimensions for high-quality output
       rendererRef.current.setSize(originalWidth, originalHeight);
       cameraRef.current.aspect = originalWidth / originalHeight;
       cameraRef.current.updateProjectionMatrix();
-
-      // Adjust background plane to match original dimensions
       adjustBackgroundPlane(originalWidth, originalHeight);
-
-      // Render the scene with the background and 3D model
-      console.log("Rendering 3D scene...");
       rendererRef.current.render(sceneRef.current, cameraRef.current);
 
-      // Create canvas with original dimensions
       const canvas = document.createElement("canvas");
       canvas.width = originalWidth;
       canvas.height = originalHeight;
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("Failed to get 2D context");
 
-      // Function to load an image and return a promise
       const loadImage = (src: string): Promise<HTMLImageElement> => {
         return new Promise((resolve, reject) => {
           const img = new Image();
-          img.crossOrigin = "Anonymous"; // Handle potential CORS issues
+          img.crossOrigin = "Anonymous";
           img.onload = () => resolve(img);
           img.onerror = (err) => reject(new Error(`Failed to load image: ${src}, Error: ${err}`));
           img.src = src;
         });
       };
 
-      // Use capturedImage if available, otherwise extract from background plane
       let backgroundSrc = capturedImage;
       if (!backgroundSrc && texture) {
         const tempCanvas = document.createElement("canvas");
@@ -838,44 +831,46 @@ const FilterPageUI: React.FC = () => {
         }
       }
 
-      if (!backgroundSrc) {
-        throw new Error("No background image source available.");
-      }
+      if (!backgroundSrc) throw new Error("No background image source available.");
 
-      // Draw the background image
-      console.log("Drawing background image...");
       const backgroundImg = await loadImage(backgroundSrc);
       ctx.drawImage(backgroundImg, 0, 0, originalWidth, originalHeight);
 
-      // Draw the 3D scene on top
-      console.log("Drawing 3D scene...");
       const renderData = rendererRef.current.domElement.toDataURL("image/png");
       const renderImg = await loadImage(renderData);
       ctx.drawImage(renderImg, 0, 0, originalWidth, originalHeight);
 
-      // Draw the logo overlay on top
-      console.log("Drawing logo overlay...");
       const logoImg = await loadImage("/images/baelogoN.png");
-      const logoSize = Math.min(originalWidth, originalHeight) * 0.1; // 10% of smallest dimension
-      const logoX = (originalWidth - logoSize) / 2; // Center horizontally
-      const logoY = 16; // 16px from top
+      const logoSize = Math.min(originalWidth, originalHeight) * 0.1;
+      const logoX = (originalWidth - logoSize) / 2;
+      const logoY = 16;
       ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
 
-      // Generate and trigger download
-      console.log("Generating download...");
       const dataUrl = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.download = "custom_blind_image.png";
-      link.href = dataUrl;
-      link.click();
 
-      console.log("Image saved successfully!");
-      setTemporaryInstruction("Image downloaded successfully!");
+      if (navigator.share && navigator.canShare) {
+        const response = await fetch(dataUrl);
+        const blob = await response.blob();
+        const file = new File([blob], "custom_blind_image.png", { type: "image/png" });
+
+        try {
+          await navigator.share({
+            files: [file],
+            title: "Custom Blind Image",
+            text: "Check out my custom blind design!",
+          });
+          setTemporaryInstruction("Image shared successfully! Check Photos or your share destination.");
+        } catch (shareError) {
+          console.warn("Web Share API failed:", shareError);
+          triggerDownload(dataUrl);
+        }
+      } else {
+        triggerDownload(dataUrl);
+      }
     } catch (error) {
       console.error("Error saving image:", error);
       setTemporaryInstruction("Failed to save image. Check console for details.");
     } finally {
-      // Reset renderer to window size
       const { innerWidth, innerHeight } = window;
       rendererRef.current.setSize(innerWidth, innerHeight);
       cameraRef.current.aspect = innerWidth / innerHeight;
@@ -886,6 +881,14 @@ const FilterPageUI: React.FC = () => {
       saveButtonRef.current?.classList.remove("hidden");
       setIsLoading(false);
     }
+  };
+
+  const triggerDownload = (dataUrl: string) => {
+    const link = document.createElement("a");
+    link.download = "custom_blind_image.png";
+    link.href = dataUrl;
+    link.click();
+    setTemporaryInstruction("Image downloaded! On iPhone, open it and tap 'Save to Photos'.");
   };
 
   const submitAndShowMenu = () => {
