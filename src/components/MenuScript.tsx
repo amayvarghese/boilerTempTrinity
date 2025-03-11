@@ -19,19 +19,19 @@ const MenuScript: React.FC = () => {
     <div className="relative w-screen h-screen font-poppins">
       {activeComponent === "none" ? (
         <div className="w-full h-full flex flex-col items-center justify-center bg-[url('/images/backgroundBlindNew.png')] bg-cover bg-center">
-          {/* Overlay for text readability */}
-          <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+          {/* Darker overlay for background */}
+          <div className="absolute inset-0 bg-black bg-opacity-60"></div>
 
           {/* Logo */}
           <div className="relative mb-8 sm:mb-12">
             <img
-              src="/images/baelogoN.png" // Adjust the path as needed
+              src="/images/baelogoN.png"
               alt="Logo"
               className="w-24 h-24 sm:w-32 sm:h-32 object-contain"
               onError={(e) => {
                 console.error("Logo failed to load");
                 (e.target as HTMLImageElement).src =
-                  "https://via.placeholder.com/128?text=Logo+Not+Found"; // Fallback image
+                  "https://via.placeholder.com/128?text=Logo+Not+Found";
               }}
             />
           </div>
@@ -41,34 +41,34 @@ const MenuScript: React.FC = () => {
             How would you like to customize your blinds?
           </div>
 
-          {/* Buttons */}
-          <div className="relative flex flex-col gap-4 sm:gap-6 w-full max-w-xs sm:max-w-md px-4 sm:px-0">
+          {/* Larger Buttons */}
+          <div className="relative flex flex-col gap-6 sm:gap-8 w-full max-w-md sm:max-w-lg px-4 sm:px-0">
             <button
-              className="flex items-center py-4 sm:py-6 px-4 sm:px-6 bg-white text-gray-800 text-lg sm:text-xl font-light rounded-xl shadow-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-400 transition duration-300 w-full font-poppins"
+              className="flex items-center py-6 sm:py-8 px-6 sm:px-8 bg-white text-gray-800 text-xl sm:text-2xl font-light rounded-xl shadow-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-400 transition duration-300 w-full font-poppins"
               onClick={handleButton1Click}
             >
               <img
-                src="/images/button1.png" // Replace with your image path
+                src="/images/button1.png"
                 alt="Virtual Room Icon"
-                className="w-10 h-10 sm:w-12 sm:h-12 mr-3 sm:mr-4 object-contain"
+                className="w-12 h-12 sm:w-16 sm:h-16 mr-4 sm:mr-6 object-contain"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src =
-                    "https://via.placeholder.com/48?text=Icon+1"; // Fallback
+                    "https://via.placeholder.com/48?text=Icon+1";
                 }}
               />
               <span className="text-left">Virtual Room</span>
             </button>
             <button
-              className="flex items-center py-4 sm:py-6 px-4 sm:px-6 bg-white text-gray-800 text-lg sm:text-xl font-light rounded-xl shadow-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-400 transition duration-300 w-full font-poppins"
+              className="flex items-center py-6 sm:py-8 px-6 sm:px-8 bg-white text-gray-800 text-xl sm:text-2xl font-light rounded-xl shadow-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-400 transition duration-300 w-full font-poppins"
               onClick={handleButton2Click}
             >
               <img
-                src="/images/button2.png" // Replace with your image path
+                src="/images/button2.png"
                 alt="Own Room Icon"
-                className="w-10 h-10 sm:w-12 sm:h-12 mr-3 sm:mr-4 object-contain"
+                className="w-12 h-12 sm:w-16 sm:h-16 mr-4 sm:mr-6 object-contain"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src =
-                    "https://via.placeholder.com/48?text=Icon+2"; // Fallback
+                    "https://via.placeholder.com/48?text=Icon+2";
                 }}
               />
               <span className="text-left">Capture your room</span>
