@@ -16,14 +16,27 @@ const BlindCustomizeThreeJs: React.FC = () => {
   const solidColorLayerRef = useRef<HTMLDivElement>(null); // Ref for the background color element
 
   const patterns = [
-    { name: "Beige", image: "/images/ICONSforMaterial/beige.png", price: "200$", filterTags: ["smooth"], patternUrl: "/images/ICONSforMaterial/beige.png" },
-    { name: "Sunday Blue", image: "/images/ICONSforMaterial/blue1.png", price: "200$", filterTags: ["blue", "smooth"], patternUrl: "/images/ICONSforMaterial/blue1.png" },
-    { name: "Stripes Colorful", image: "/images/ICONSforMaterial/pattern4.png", price: "200$", filterTags: ["patterned"], patternUrl: "/images/ICONSforMaterial/pattern4.png" },
-    { name: "Navy Blue", image: "/images/ICONSforMaterial/blue2.png", price: "Option B", filterTags: ["smooth"], patternUrl: "/images/ICONSforMaterial/blue2.png" },
-    { name: "Green", image: "/images/ICONSforMaterial/green.png", price: "200$", filterTags: ["green", "smooth"], patternUrl: "/images/ICONSforMaterial/green.png" },
-    { name: "Caramel Cream", image: "/images/ICONSforMaterial/kaki.png", price: "200$", filterTags: ["smooth"], patternUrl: "/images/ICONSforMaterial/kaki.png" },
-    { name: "Circle Mandala", image: "/images/ICONSforMaterial/patterncir.png", price: "200$", filterTags: ["patterned"], patternUrl: "/images/ICONSforMaterial/patterncir.png" },
-    { name: "Leaf Pattern", image: "/images/ICONSforMaterial/patternleaf.png", price: "Option B", filterTags: ["blue", "smooth"], patternUrl: "/images/ICONSforMaterial/patternleaf.png" },
+    { name: "Beige", image: "/materials/beige.png", price: "$10", filterTags: ["solid"], patternUrl: "/materials/beige.png" },
+    { name: "Blanche", image: "/materials/Blanche.png", price: "$67", filterTags: ["pattern"], patternUrl: "/materials/Blanche.png" },
+    { name: "Cerrulean", image: "/materials/cerulean.png", price: "$10", filterTags: ["pattern"], patternUrl: "/materials/cerulean.png" },
+    { name: "Chestnut", image: "/materials/chestnut.png", price: "$100", filterTags: ["kids", "pattern"], patternUrl: "/materials/chestnut.png" },
+    { name: "Driftwood", image: "/materials/driftwood.png", price: "$100", filterTags: ["pattern"], patternUrl: "/materials/driftwood.png" },
+    { name: "Driftwood Sand", image: "/materials/driftwoodsand.png", price: "$100", filterTags: ["pattern"], patternUrl: "/materials/driftwoodsand.png" },
+    { name: "Iron", image: "/materials/iron.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/iron.png" },
+    { name: "Ivory", image: "/materials/ivory.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/ivory.png" },
+    { name: "Kaki", image: "/materials/kaki.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/kaki.png" },
+    { name: "Mocha", image: "/materials/mocha.png", price: "$45", filterTags: ["pattern", "natural"], patternUrl: "/materials/mocha.png" },
+    { name: "Noir", image: "/materials/noir.png", price: "$150", filterTags: ["pattern", "natural"], patternUrl: "/materials/noir.png" },
+    { name: "Oatmeal", image: "/materials/oatmeal.png", price: "$150", filterTags: ["natural", "pattern"], patternUrl: "/materials/oatmeal.png" },
+    { name: "Slate", image: "/materials/slate.png", price: "$100", filterTags: ["pattern"], patternUrl: "/materials/slate.png" },
+    { name: "Silver", image: "/materials/SolarSilver.png", price: "$100", filterTags: ["solid", "solar"], patternUrl: "/materials/SolarSilver.png" },
+    { name: "Steel", image: "/materials/steel.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/steel.png" },
+    { name: "Taupe", image: "/materials/taupe.png", price: "$45", filterTags: ["solid", "pattern"], patternUrl: "/materials/taupe.png" },
+    { name: "Taupe", image: "/materials/taupeSolar.png", price: "$100", filterTags: ["solar"], patternUrl: "/materials/taupeSolar.png" },
+    { name: "Tea Leaves Brown", image: "/materials/tealeaves_brown.png", price: "$150", filterTags: ["pattern", "pattern"], patternUrl: "/materials/tealeaves_brown.png" },
+    { name: "Tea Leaves White", image: "/materials/tealeaves_white.png", price: "$150", filterTags: ["patterned"], patternUrl: "/materials/tealeaves_white.png" },
+    { name: "Toast", image: "/materials/toast.png", price: "$45", filterTags: ["pattern"], patternUrl: "/materials/toast.png" },
+    { name: "White", image: "/materials/white.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/white.png" },
   ];
 
   const blindTypes = [
@@ -38,9 +51,9 @@ const BlindCustomizeThreeJs: React.FC = () => {
     { 
       type: 'roller', 
       buttonImage: '/images/windowTypeIcons/image 11.png', 
-      modelUrl: '/models/plantationShutter.glb', 
+      modelUrl: '/models/shutterBlind.glb', 
       rotation: { x: 0, y: 0, z: 0 }, 
-      baseScale: { x: 1.6, y: 2, z: 1 }, 
+      baseScale: { x: 1.5, y: 2, z: 1 }, 
       basePosition: { x: -45, y: -30, z: 5 }
     },
     { 
@@ -273,7 +286,12 @@ const BlindCustomizeThreeJs: React.FC = () => {
   }, []);
 
   return (
-    <div className="container max-w-7xl mx-auto min-h-screen p-4 md:p-8" style={{ fontFamily: 'Poppins, sans-serif' }}>
+    <div className="w-screen h-screen bg-white text-black container max-w-7xl mx-auto min-h-screen p-4 md:p-8" style={{ fontFamily: 'Poppins, sans-serif' }}>
+      <img
+        src="/images/baelogoN.png" // Replace with your actual logo path
+        alt="Logo"
+        className="mx-auto h-16 w-auto mt-4"
+      />
       <section className="roman-shades flex flex-col md:flex-row items-start justify-center my-5 bg-gray-100 p-4 rounded gap-4">
         <div className="blind-type-menu w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col h-[calc(100%+5rem)]">
           <h3 className="bg-gray-100 p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Select Type of Blind</h3>
@@ -313,7 +331,7 @@ const BlindCustomizeThreeJs: React.FC = () => {
               <div className="options-menu p-2 bg-gray-100 rounded shadow">
                 <h3 className="mb-2 text-sm text-gray-700 text-left h-12">Filter Options</h3>
                 <div className="grid-container grid grid-cols-2 gap-2 mx-5 text-[13px]">
-                  {['red', 'blue', 'green', 'smooth', 'patterned'].map((filter) => (
+                  {['solid', 'natural', 'solar', 'pattern', 'kids'].map((filter) => (
                     <div key={filter} className="option-row flex items-center gap-2">
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
