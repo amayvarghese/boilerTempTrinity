@@ -65,7 +65,6 @@ const FilterPageUI: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const selectionBoxRef = useRef<HTMLDivElement | null>(null);
   const overlayImageRef = useRef<HTMLImageElement | null>(null);
-  const horizonLevelRef = useRef<HTMLDivElement | null>(null); // Ref for horizon level line
   const controlButtonRef = useRef<HTMLButtonElement | null>(null);
   const uploadButtonRef = useRef<HTMLButtonElement | null>(null);
   const saveButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -96,7 +95,7 @@ const FilterPageUI: React.FC = () => {
 
   const patterns: Pattern[] = [
     { name: "Beige", image: "/materials/beige.png", price: "$10", filterTags: ["solid"], patternUrl: "/materials/beige.png" },
-    { name: "Blanche", image: "/materials/Blanche.png", price: "$67", filterTags: ["pattern"], patternUrl: "/materials/Blanche.png" },
+    { name: "Blanche", image: "/materials/Blanche.png", price: "$67", filterTags: [ "pattern"], patternUrl: "/materials/Blanche.png" },
     { name: "Cerrulean", image: "/materials/cerulean.png", price: "$10", filterTags: ["pattern"], patternUrl: "/materials/cerulean.png" },
     { name: "Chestnut", image: "/materials/chestnut.png", price: "$100", filterTags: ["kids", "pattern"], patternUrl: "/materials/chestnut.png" },
     { name: "Driftwood", image: "/materials/driftwood.png", price: "$100", filterTags: ["pattern"], patternUrl: "/materials/driftwood.png" },
@@ -108,8 +107,8 @@ const FilterPageUI: React.FC = () => {
     { name: "Noir", image: "/materials/noir.png", price: "$150", filterTags: ["pattern", "natural"], patternUrl: "/materials/noir.png" },
     { name: "Oatmeal", image: "/materials/oatmeal.png", price: "$150", filterTags: ["natural", "pattern"], patternUrl: "/materials/oatmeal.png" },
     { name: "Slate", image: "/materials/slate.png", price: "$100", filterTags: ["pattern"], patternUrl: "/materials/slate.png" },
-    { name: "Silver", image: "/materials/SolarSilver.png", price: "$100", filterTags: ["solid", "solar"], patternUrl: "/materials/SolarSilver.png" },
-    { name: "Steel", image: "/materials/steel.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/steel.png" },
+    { name: "Silver", image: "/materials/SolarSilver.png", price: "$100", filterTags: ["solid","solar" ], patternUrl: "/materials/SolarSilver.png" }
+    ,{ name: "Steel", image: "/materials/steel.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/steel.png" },
     { name: "Taupe", image: "/materials/taupe.png", price: "$45", filterTags: ["pattern"], patternUrl: "/materials/taupe.png" },
     { name: "Taupe", image: "/materials/taupeSolar.png", price: "$100", filterTags: ["solar"], patternUrl: "/materials/taupeSolar.png" },
     { name: "Tea Leaves Brown", image: "/materials/tealeaves_brown.png", price: "$150", filterTags: ["pattern", "pattern"], patternUrl: "/materials/tealeaves_brown.png" },
@@ -278,12 +277,6 @@ const FilterPageUI: React.FC = () => {
     videoRef.current.className = "absolute inset-0 w-full h-full object-cover z-[10]";
     mount.appendChild(videoRef.current);
 
-    // Create horizon level line element
-    horizonLevelRef.current = document.createElement("div");
-    horizonLevelRef.current.className = "absolute left-0 w-full h-[2px] bg-green-500 z-[16] hidden";
-    horizonLevelRef.current.style.top = "50%";
-    mount.appendChild(horizonLevelRef.current);
-
     controlButtonRef.current = document.createElement("button");
     controlButtonRef.current.id = "controlButton";
     controlButtonRef.current.textContent = "Start Camera";
@@ -308,7 +301,6 @@ const FilterPageUI: React.FC = () => {
     return () => {
       if (overlayImageRef.current && mount) mount.removeChild(overlayImageRef.current);
       if (videoRef.current && mount) mount.removeChild(videoRef.current);
-      if (horizonLevelRef.current && mount) mount.removeChild(horizonLevelRef.current); // Cleanup horizon level
       [controlButtonRef, uploadButtonRef, saveButtonRef].forEach(ref => {
         if (ref.current && document.body.contains(ref.current)) {
           document.body.removeChild(ref.current);
@@ -349,7 +341,6 @@ const FilterPageUI: React.FC = () => {
         videoRef.current.play().then(() => {
           videoRef.current!.onloadedmetadata = () => adjustVideoAspect();
           overlayImageRef.current?.classList.remove("hidden");
-          horizonLevelRef.current?.classList.remove("hidden"); // Show horizon level when camera starts
           controlButtonRef.current!.textContent = "Capture";
           updateCameraPosition(window.innerWidth, window.innerHeight);
         });
@@ -423,7 +414,6 @@ const FilterPageUI: React.FC = () => {
       videoRef.current!.srcObject = null;
       videoRef.current!.classList.add("hidden");
       overlayImageRef.current?.classList.add("hidden");
-      horizonLevelRef.current?.classList.add("hidden"); // Hide horizon level when camera stops
     }
   };
 
