@@ -559,9 +559,10 @@ const FilterPageUI: React.FC = () => {
 
   // **New: Request permission for device orientation (required on some devices like iOS)**
   const requestOrientationPermission = async () => {
-    if (typeof DeviceOrientationEvent.requestPermission === "function") {
+    const DeviceOrientationEventWithPermission = DeviceOrientationEvent as any;
+    if (typeof DeviceOrientationEventWithPermission.requestPermission === "function") {
       try {
-        const permission = await DeviceOrientationEvent.requestPermission();
+        const permission = await DeviceOrientationEventWithPermission.requestPermission();
         if (permission === "granted") {
           window.addEventListener("deviceorientation", handleDeviceOrientation);
         }
@@ -572,7 +573,7 @@ const FilterPageUI: React.FC = () => {
       window.addEventListener("deviceorientation", handleDeviceOrientation);
     }
   };
-
+  
   const handleButtonClick = () => {
     const button = controlButtonRef.current;
     if (!button) return;
