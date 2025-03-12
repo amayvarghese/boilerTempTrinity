@@ -89,7 +89,7 @@ const FilterPageUI: React.FC = () => {
   const uploadButtonRef = useRef<HTMLButtonElement | null>(null);
   const saveButtonRef = useRef<HTMLButtonElement | null>(null);
   const redoButtonRef = useRef<HTMLButtonElement | null>(null);
-  const levelIndicatorRef = useRef<HTMLDivElement | null>(null); // New ref for level indicator
+  const levelIndicatorRef = useRef<HTMLDivElement | null>(null);
   const mixersRef = useRef<THREE.AnimationMixer[]>([]);
   const defaultModelRef = useRef<ModelData | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
@@ -100,9 +100,7 @@ const FilterPageUI: React.FC = () => {
   const initialModelParamsRef = useRef<InitialModelParams | null>(null);
   const selectionBoxCleanupRef = useRef<(() => void) | null>(null);
   const isProcessingRef = useRef(false);
-  const changeQueueRef = useRef<{ type: "blind" | "pattern"; value: string }[]>(
-    []
-  );
+  const changeQueueRef = useRef<{ type: "blind" | "pattern"; value: string }[]>([]);
   const preloadedModelsRef = useRef<Map<string, ModelData>>(new Map());
   const lastMousePosition = useRef<{ x: number; y: number } | null>(null);
 
@@ -428,7 +426,7 @@ const FilterPageUI: React.FC = () => {
         rendererRef.current.dispose();
       }
       window.removeEventListener("resize", handleResize);
-      window.removeEventListener("deviceorientation", handleDeviceOrientation); // Cleanup orientation listener
+      window.removeEventListener("deviceorientation", handleDeviceOrientation);
     };
   }, [isCustomizerView]);
 
@@ -492,7 +490,7 @@ const FilterPageUI: React.FC = () => {
     controlButtonRef.current.id = "controlButton";
     controlButtonRef.current.textContent = "Start Camera";
     controlButtonRef.current.className =
-      "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300";
+      "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white font-poppins-light rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300";
     document.body.appendChild(controlButtonRef.current);
     controlButtonRef.current.addEventListener("click", handleButtonClick);
 
@@ -516,16 +514,35 @@ const FilterPageUI: React.FC = () => {
 
     redoButtonRef.current = document.createElement("button");
     redoButtonRef.current.id = "redoButton";
-    redoButtonRef.current.textContent = "Redo Selection";
     redoButtonRef.current.className =
-      "fixed bottom-12 right-5 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300 hidden";
+      "fixed bottom-12 right-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300 hidden";
+    const redoIcon = document.createElement("img");
+    redoIcon.src = "/images/retryButtonImg.png"; // Replace with your actual redo icon path
+    redoIcon.alt = "Redo Selection";
+    redoIcon.className = "h-6 w-6";
+    redoButtonRef.current.appendChild(redoIcon);
     document.body.appendChild(redoButtonRef.current);
     redoButtonRef.current.addEventListener("click", handleRedoSelection);
 
-    // **New: Create level indicator element**
+    const backButton = document.createElement("button");
+    backButton.id = "backButton";
+    backButton.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+    `;
+    backButton.className =
+      "absolute top-5 left-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] focus:outline-none focus:ring-2 focus:ring-[#2F3526] z-[100] transition duration-300";
+    document.body.appendChild(backButton);
+    backButton.addEventListener("click", () => {
+      window.location.href = "/"; // Replace with your home route
+    });
+
     levelIndicatorRef.current = document.createElement("div");
     levelIndicatorRef.current.className =
-      "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-1 bg-red-500 z-[30] hidden";
+      "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-2 bg-red-500 rounded-full z-[100] hidden";
+    levelIndicatorRef.current.style.transition = "background-color 0.3s ease, border 0.3s ease";
+    levelIndicatorRef.current.style.border = "none";
     mount.appendChild(levelIndicatorRef.current);
 
     return () => {
@@ -533,7 +550,7 @@ const FilterPageUI: React.FC = () => {
         mount.removeChild(overlayImageRef.current);
       if (videoRef.current && mount) mount.removeChild(videoRef.current);
       if (levelIndicatorRef.current && mount)
-        mount.removeChild(levelIndicatorRef.current); // Cleanup level indicator
+        mount.removeChild(levelIndicatorRef.current);
       [controlButtonRef, uploadButtonRef, saveButtonRef, redoButtonRef].forEach(
         (ref) => {
           if (ref.current && document.body.contains(ref.current)) {
@@ -541,28 +558,34 @@ const FilterPageUI: React.FC = () => {
           }
         }
       );
+      if (backButton && document.body.contains(backButton)) {
+        document.body.removeChild(backButton);
+      }
     };
   }, []);
 
-  // **New: Handle device orientation to update level indicator**
   const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
     if (!levelIndicatorRef.current) return;
-    const beta = event.beta || 0; // Front-to-back tilt
-    const gamma = event.gamma || 0; // Left-to-right tilt
-    const threshold = 2; // Acceptable tilt range in degrees
+    const beta = event.beta || 0;
+    const gamma = event.gamma || 0;
+    const threshold = 2;
     if (Math.abs(beta) < threshold && Math.abs(gamma) < threshold) {
-      levelIndicatorRef.current.style.backgroundColor = "green"; // Device is level
+      levelIndicatorRef.current.style.backgroundColor = "white";
+      levelIndicatorRef.current.style.border = "2px solid black";
     } else {
-      levelIndicatorRef.current.style.backgroundColor = "red"; // Device is not level
+      levelIndicatorRef.current.style.backgroundColor = "red";
+      levelIndicatorRef.current.style.border = "none";
     }
   };
 
-  // **New: Request permission for device orientation (required on some devices like iOS)**
   const requestOrientationPermission = async () => {
     const DeviceOrientationEventWithPermission = DeviceOrientationEvent as any;
-    if (typeof DeviceOrientationEventWithPermission.requestPermission === "function") {
+    if (
+      typeof DeviceOrientationEventWithPermission.requestPermission === "function"
+    ) {
       try {
-        const permission = await DeviceOrientationEventWithPermission.requestPermission();
+        const permission =
+          await DeviceOrientationEventWithPermission.requestPermission();
         if (permission === "granted") {
           window.addEventListener("deviceorientation", handleDeviceOrientation);
         }
@@ -573,7 +596,7 @@ const FilterPageUI: React.FC = () => {
       window.addEventListener("deviceorientation", handleDeviceOrientation);
     }
   };
-  
+
   const handleButtonClick = () => {
     const button = controlButtonRef.current;
     if (!button) return;
@@ -606,9 +629,9 @@ const FilterPageUI: React.FC = () => {
           controlButtonRef.current!.textContent = "Capture";
           updateCameraPosition(window.innerWidth, window.innerHeight);
           uploadButtonRef.current?.style.setProperty("display", "none");
-          // **New: Show level indicator and start orientation tracking**
           if (levelIndicatorRef.current) {
             levelIndicatorRef.current.classList.remove("hidden");
+            levelIndicatorRef.current.style.display = "block";
           }
           requestOrientationPermission();
         });
@@ -688,9 +711,9 @@ const FilterPageUI: React.FC = () => {
     loadTextureAndCreatePlane(imageData, window.innerWidth, window.innerHeight);
     initSelectionBox();
     controlButtonRef.current!.textContent = "Submit";
-    // **New: Hide level indicator and remove orientation listener**
     if (levelIndicatorRef.current) {
       levelIndicatorRef.current.classList.add("hidden");
+      levelIndicatorRef.current.style.display = "none";
     }
     window.removeEventListener("deviceorientation", handleDeviceOrientation);
   };
@@ -1121,14 +1144,6 @@ const FilterPageUI: React.FC = () => {
   };
 
   const saveImage = async () => {
-    console.log("Save Image clicked:", {
-      renderer: !!rendererRef.current,
-      scene: !!sceneRef.current,
-      camera: !!cameraRef.current,
-      capturedImage: !!capturedImage,
-      backgroundPlane: !!backgroundPlaneRef.current,
-    });
-
     if (
       !rendererRef.current ||
       !sceneRef.current ||
@@ -1444,7 +1459,7 @@ const FilterPageUI: React.FC = () => {
             ? "url('/images/background.jpg')"
             : "none",
         backgroundColor:
-          capturedImage || isCustomizerView ? "#F5F5DC" : "transparent",
+          capturedImage || isCustomizerView ? "#FFFFFF" : "transparent",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}

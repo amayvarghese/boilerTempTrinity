@@ -78,22 +78,12 @@ const MenuScript: React.FC = () => {
       ) : activeComponent === "blindCustomize" ? (
         <div className="w-screen h-screen bg-gray-100">
           <BlindCustomizeThreeJs />
-          <button
-            className="absolute top-4 left-4 py-2 px-4 bg-white text-gray-800 rounded-lg shadow-md hover:bg-gray-200 transition duration-300 font-poppins"
-            onClick={() => setActiveComponent("none")}
-          >
-            Back to Menu
-          </button>
+         
         </div>
       ) : (
         <div className="w-screen h-screen bg-gray-100">
           <FilterPageUI />
-          <button
-            className="absolute top-4 left-4 py-2 px-4 bg-white text-gray-800 rounded-lg shadow-md hover:bg-gray-200 transition duration-300 font-poppins"
-            onClick={() => setActiveComponent("none")}
-          >
-            Back to Menu
-          </button>
+
         </div>
       )}
     </div>
