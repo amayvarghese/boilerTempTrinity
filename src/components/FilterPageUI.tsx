@@ -116,7 +116,7 @@ const FilterPageUI: React.FC = () => {
     {
       type: "roller",
       buttonImage: "/images/windowTypeIcons/image 11.png",
-      modelUrl: "/models/plantationShutter.glb",
+      modelUrl: "/models/Plantation.glb",
       rotation: { x: 0, y: 0, z: 0 },
       baseScale: { x: 1.6, y: 2, z: 1 },
       basePosition: { x: 0, y: 0, z: 0.1 },
@@ -133,7 +133,7 @@ const FilterPageUI: React.FC = () => {
     {
       type: "plantationShutter",
       buttonImage: "/images/windowTypeIcons/image 15.png",
-      modelUrl: "/models/ShutterNew.glb",
+      modelUrl: "/models/Plantation.glb",
       rotation: { x: 0, y: 0, z: 0 },
       baseScale: { x: 1.6, y: 2, z: 1 },
       basePosition: { x: 0, y: 0, z: 0.1 },
@@ -158,7 +158,7 @@ const FilterPageUI: React.FC = () => {
     {
       type: "cellularBlinds",
       buttonImage: "/images/windowTypeIcons/image 18.png",
-      modelUrl: "/models/shadeBake.glb",
+      modelUrl: "/models/ShutterNew.glb",
       meshName: "polySurface1",
       rotation: { x: 0, y: 0, z: 0 },
       baseScale: { x: 1.6, y: 2, z: 1 },

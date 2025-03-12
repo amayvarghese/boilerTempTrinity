@@ -16,78 +16,99 @@ const MenuScript: React.FC = () => {
   };
 
   return (
-    <div className="relative w-screen h-screen font-poppins">
-      {activeComponent === "none" ? (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-[url('/images/backgroundBlindNew.png')] bg-cover bg-center">
-          {/* Darker overlay for background */}
-          <div className="absolute inset-0 bg-black bg-opacity-60"></div>
+    <div className="relative w-screen h-screen font-poppins bg-[url('/images/backgroundBlindNew.png')] bg-cover bg-center">
+      {/* Darker overlay for background */}
+      <div className="absolute inset-0 bg-black bg-opacity-60"></div>
 
+      {/* Top logo */}
+      <div className="absolute top-10 left-1/2 -translate-x-1/2">
+        <img
+          src="/images/baelogoN.png"
+          alt="Logo"
+          className="w-16 h-16 object-contain"
+          onError={(e) => {
+            console.error("Logo failed to load");
+            (e.target as HTMLImageElement).src =
+              "https://via.placeholder.com/48?text=Logo+Not+Found";
+          }}
+        />
+      </div>
+
+      {/* Container box */}
+      <div className="w-full h-full flex flex-col items-center justify-center">
+        <div className="bg-white rounded-3xl shadow-2xl p-4 sm:p-6 max-w-sm sm:max-w-md w-full relative">
           {/* Logo */}
-          <div className="relative mb-8 sm:mb-12">
+          <div className="relative mb-4 sm:mb-6">
             <img
-              src="/images/baelogoN.png"
+              src="/images/baeLogoLong.png"
               alt="Logo"
-              className="w-24 h-24 sm:w-32 sm:h-32 object-contain"
+              className="py-2 w-35 h-14 sm:w-20 sm:h-20 object-contain mx-auto"
               onError={(e) => {
                 console.error("Logo failed to load");
                 (e.target as HTMLImageElement).src =
-                  "https://via.placeholder.com/128?text=Logo+Not+Found";
+                  "https://via.placeholder.com/64?text=Logo+Not+Found";
               }}
             />
           </div>
 
           {/* Title */}
-          <div className="relative text-center text-white text-xl sm:text-2xl mb-6 sm:mb-8 font-semibold px-4">
+          <div className="relative text-center text-gray-800 text-lg sm:text-xl mb-2 sm:mb-4 font-semibold">
             How would you like to customize your blinds?
           </div>
 
           {/* Larger Buttons */}
-          <div className="relative flex flex-col gap-6 sm:gap-8 w-full max-w-md sm:max-w-lg px-4 sm:px-0">
+          <div className="relative flex flex-col gap-4 sm:gap-6 w-full">
             <button
-              className="flex items-center py-6 sm:py-8 px-6 sm:px-8 bg-white text-gray-800 text-xl sm:text-2xl font-light rounded-xl shadow-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-400 transition duration-300 w-full font-poppins"
+              className="flex items-center py-5 sm:py-10 px-4 sm:px-10 bg-black text-white text-lg sm:text-lg font-light rounded-xl shadow-md hover:bg-purple-900 focus:outline-none focus:ring-2 focus:ring-green-400 transition duration-300 w-full font-poppins"
               onClick={handleButton1Click}
             >
               <img
-                src="/images/button1.png"
+                src="/images/blindVirtual.png"
                 alt="Virtual Room Icon"
-                className="w-12 h-12 sm:w-16 sm:h-16 mr-4 sm:mr-6 object-contain"
+                className="w-8 h-8 sm:w-12 sm:h-12 mr-2 sm:mr-4 object-contain"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src =
-                    "https://via.placeholder.com/48?text=Icon+1";
+                    "https://via.placeholder.com/32?text=Icon+1";
                 }}
               />
               <span className="text-left">Virtual Room</span>
             </button>
             <button
-              className="flex items-center py-6 sm:py-8 px-6 sm:px-8 bg-white text-gray-800 text-xl sm:text-2xl font-light rounded-xl shadow-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-400 transition duration-300 w-full font-poppins"
+              className="flex items-center py-5 sm:py-10 px-4 sm:px-10 bg-black text-white text-lg sm:text-lg font-light rounded-xl shadow-md hover:bg-purple-900 focus:outline-none focus:ring-2 focus:ring-green-400 transition duration-300 w-full font-poppins"
               onClick={handleButton2Click}
             >
               <img
-                src="/images/button2.png"
+                src="/images/room.png"
                 alt="Own Room Icon"
-                className="w-12 h-12 sm:w-16 sm:h-16 mr-4 sm:mr-6 object-contain"
+                className="w-8 h-8 sm:w-12 sm:h-12 mr-2 sm:mr-4 object-contain"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src =
-                    "https://via.placeholder.com/48?text=Icon+2";
+                    "https://via.placeholder.com/32?text=Icon+2";
                 }}
               />
               <span className="text-left">Capture your room</span>
             </button>
           </div>
-        </div>
-      ) : activeComponent === "blindCustomize" ? (
-        <div className="w-screen h-screen bg-gray-100">
-          <BlindCustomizeThreeJs />
-         
-        </div>
-      ) : (
-        <div className="w-screen h-screen bg-gray-100">
-          <FilterPageUI />
 
+          {/* Application name and version */}
+          <div className="px-2 py-2 flex justify-between items-center mt-2">
+            <span className="text-gray-600 text-sm">Bae Furnishing</span> 
+            <span className="text-gray-600 text-sm">v1.0.0</span>
+          </div>
         </div>
-      )}
-    </div>
-  );
+      </div>
+
+      {activeComponent === "blindCustomize"? (
+        <div className="w-screen h-screen bg-gray-100 absolute top-0 left-0">
+          <BlindCustomizeThreeJs />
+        </div>
+      ) : activeComponent === "filterPage"? (
+        <div className="w-screen h-screen bg-gray-100 absolute top-0 left-0">
+          <FilterPageUI />
+        </div>
+      ) : null}
+    </div> 
+  ); 
 };
 
 export default MenuScript;
