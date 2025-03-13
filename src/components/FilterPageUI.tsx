@@ -116,7 +116,7 @@ const FilterPageUI: React.FC = () => {
     {
       type: "roller",
       buttonImage: "/images/windowTypeIcons/image 11.png",
-      modelUrl: "/models/Plantation.glb",
+      modelUrl: "/models/ROLLER_SHADES.glb",
       rotation: { x: 0, y: 0, z: 0 },
       baseScale: { x: 1.6, y: 2, z: 1 },
       basePosition: { x: 0, y: 0, z: 0.1 },
@@ -395,10 +395,10 @@ const FilterPageUI: React.FC = () => {
       touch-action: ${isCustomizerView ? "auto" : "none"};
     `;
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+    const ambientLight = new THREE.AmbientLight(0xffffff, .5);
     sceneRef.current.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight.position.set(0, 5, 5);
     directionalLight.castShadow = true;
     sceneRef.current.add(directionalLight);
@@ -1074,14 +1074,16 @@ const FilterPageUI: React.FC = () => {
     meshName?: string
   ) => {
     const textureLoader = new THREE.TextureLoader();
-
+  
+    // Load the diffuse texture (color map)
     textureLoader.load(
       patternUrl,
       (texture) => {
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.set(8, 8);
         texture.colorSpace = THREE.SRGBColorSpace;
-
+  
+        // Define the material with the diffuse texture
         const newMaterial = new THREE.MeshStandardMaterial({
           map: texture,
           roughness: 0.5,
@@ -1089,34 +1091,37 @@ const FilterPageUI: React.FC = () => {
           transparent: true,
           opacity: 1,
         });
-
-        let textureApplied = false;
-        let targetMesh: THREE.Mesh | null = null;
-
-        if (meshName) {
-          model.traverse((child: THREE.Object3D) => {
-            if (isMesh(child) && child.name === meshName) {
-              targetMesh = child as THREE.Mesh;
-              targetMesh.material = newMaterial;
-              targetMesh.material.needsUpdate = true;
-              textureApplied = true;
+  
+        // Check if the model is the "roller" type (ROLLER_SHADES.glb)
+        const isRollerModel =
+          blindTypes.find((b) => b.type === selectedBlindType)?.modelUrl ===
+          "/models/ROLLER_SHADES.glb";
+  
+        if (isRollerModel) {
+          // Load the normal map for the roller model
+          textureLoader.load(
+            "/models/normals/NormalRoller.jpg", // Replace with the actual path to your normal map
+            (normalTexture) => {
+              normalTexture.wrapS = normalTexture.wrapT = THREE.RepeatWrapping;
+              normalTexture.repeat.set(.5, .5); // Match the repeat settings of the diffuse texture
+              newMaterial.normalMap = normalTexture;
+              newMaterial.normalScale = new THREE.Vector2(1, 1); // Adjust strength of normal map (default is 1,1)
+              newMaterial.needsUpdate = true;
+              // Apply the material to the model
+              applyMaterialToModel(model, newMaterial, meshName);
+            },
+            undefined,
+            (error) => {
+              console.error("Error loading normal map:", error);
+              // Apply the material without the normal map if loading fails
+              applyMaterialToModel(model, newMaterial, meshName);
             }
-          });
+          );
+        } else {
+          // Apply the material without a normal map for other models
+          applyMaterialToModel(model, newMaterial, meshName);
         }
-
-        if (!textureApplied) {
-          model.traverse((child: THREE.Object3D) => {
-            if (isMesh(child) && !textureApplied) {
-              targetMesh = child as THREE.Mesh;
-              if (targetMesh.geometry) {
-                targetMesh.material = newMaterial;
-                targetMesh.material.needsUpdate = true;
-                textureApplied = true;
-              }
-            }
-          });
-        }
-
+  
         renderScene();
       },
       undefined,
@@ -1126,6 +1131,39 @@ const FilterPageUI: React.FC = () => {
         renderScene();
       }
     );
+  };
+  
+  // Helper function to apply the material to the model
+  const applyMaterialToModel = (
+    model: THREE.Group,
+    material: THREE.MeshStandardMaterial,
+    meshName?: string
+  ) => {
+    let textureApplied = false;
+  
+    if (meshName) {
+      model.traverse((child: THREE.Object3D) => {
+        if (isMesh(child) && child.name === meshName) {
+          const mesh = child as THREE.Mesh;
+          mesh.material = material;
+          mesh.material.needsUpdate = true;
+          textureApplied = true;
+        }
+      });
+    }
+  
+    if (!textureApplied) {
+      model.traverse((child: THREE.Object3D) => {
+        if (isMesh(child) && !textureApplied) {
+          const mesh = child as THREE.Mesh;
+          if (mesh.geometry) {
+            mesh.material = material;
+            mesh.material.needsUpdate = true;
+            textureApplied = true;
+          }
+        }
+      });
+    }
   };
 
   const disposeModel = (model: THREE.Group) => {
