@@ -548,7 +548,7 @@ const FilterPageUI: React.FC = () => {
       const intersects = raycaster.intersectObjects(modelsRef.current.map(m => m.model), true);
       if (intersects.length > 0) {
         const intersected = intersects[0].object;
-        const model = findParentModel(intertected);
+        const model = findParentModel(intersected);
         if (model && model.userData.isDraggable) {
           draggingModelRef.current = model;
         }
