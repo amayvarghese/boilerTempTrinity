@@ -368,60 +368,94 @@ const FilterPageUI: React.FC = () => {
       style: { zIndex: "25", transition: "none" },
     });
     mountRef.current.appendChild(selectionBoxRef.current);
-
-    let startX = 0, startY = 0, isDragging = false;
-
+  
+    let startX = 0, startY = 0, endX = 0, endY = 0, isDragging = false;
+  
+    const getClientPosition = (event: MouseEvent | Touch) => {
+      const rect = mountRef.current!.getBoundingClientRect();
+      return {
+        x: Math.max(0, Math.min(event.clientX - rect.left, rect.width)),
+        y: Math.max(0, Math.min(event.clientY - rect.top, rect.height))
+      };
+    };
+  
     const startSelection = (e: MouseEvent | Touch) => {
       if (isSelectionBoxUsed) return;
-      const rect = mountRef.current!.getBoundingClientRect();
-      startX = e.clientX - rect.left;
-      startY = e.clientY - rect.top;
+      const pos = getClientPosition(e);
+      startX = pos.x;
+      startY = pos.y;
+      endX = pos.x;
+      endY = pos.y;
       if (selectionBoxRef.current) {
-        Object.assign(selectionBoxRef.current.style, { left: `${startX}px`, top: `${startY}px`, width: "0px", height: "0px", display: "block" });
+        Object.assign(selectionBoxRef.current.style, {
+          left: `${startX}px`,
+          top: `${startY}px`,
+          width: "0px",
+          height: "0px",
+          display: "block"
+        });
         isDragging = true;
       }
     };
-
+  
     const updateSelection = (e: MouseEvent | Touch) => {
       if (!isDragging || !selectionBoxRef.current) return;
-      const rect = mountRef.current!.getBoundingClientRect();
-      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-      const y = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+      const pos = getClientPosition(e);
+      endX = pos.x;
+      endY = pos.y;
+      
       requestAnimationFrame(() => {
         if (selectionBoxRef.current) {
+          const width = Math.abs(endX - startX);
+          const height = Math.abs(endY - startY);
+          const left = Math.min(startX, endX);
+          const top = Math.min(startY, endY);
+          
           Object.assign(selectionBoxRef.current.style, {
-            width: `${Math.abs(x - startX)}px`,
-            height: `${Math.abs(y - startY)}px`,
-            left: `${Math.min(startX, x)}px`,
-            top: `${Math.min(startY, y)}px`,
+            width: `${width}px`,
+            height: `${height}px`,
+            left: `${left}px`,
+            top: `${top}px`,
           });
         }
       });
     };
-
+  
     const endSelection = (e: MouseEvent | Touch) => {
       if (!isDragging || !selectionBoxRef.current) return;
       selectionBoxRef.current.style.display = "none";
       isDragging = false;
-      const rect = mountRef.current!.getBoundingClientRect();
-      createDefaultModel(startX, startY, e.clientX - rect.left, e.clientY - rect.top);
-      setIsSelectionBoxUsed(true);
+      
+      // Only create model if selection has valid size
+      if (Math.abs(endX - startX) > 5 && Math.abs(endY - startY) > 5) {
+        createDefaultModel(startX, startY, endX, endY);
+        setIsSelectionBoxUsed(true);
+      }
       cleanupSelectionBox();
     };
-
+  
     const handlers = {
       mousedown: (e: MouseEvent) => { if (e.button === 0) startSelection(e); },
       mousemove: (e: MouseEvent) => updateSelection(e),
       mouseup: (e: MouseEvent) => endSelection(e),
-      touchstart: (e: TouchEvent) => startSelection(e.touches[0]),
-      touchmove: (e: TouchEvent) => updateSelection(e.touches[0]),
-      touchend: (e: TouchEvent) => endSelection(e.changedTouches[0]),
+      touchstart: (e: TouchEvent) => {
+        e.preventDefault();
+        startSelection(e.touches[0]);
+      },
+      touchmove: (e: TouchEvent) => {
+        e.preventDefault();
+        updateSelection(e.touches[0]);
+      },
+      touchend: (e: TouchEvent) => {
+        e.preventDefault();
+        endSelection(e.changedTouches[0]);
+      },
     };
-
+  
     Object.entries(handlers).forEach(([event, handler]) =>
       mountRef.current!.addEventListener(event, handler as EventListener, { passive: false })
     );
-
+  
     const cleanupSelectionBox = () => {
       Object.entries(handlers).forEach(([event, handler]) =>
         mountRef.current?.removeEventListener(event, handler as EventListener)
@@ -437,57 +471,84 @@ const FilterPageUI: React.FC = () => {
     if (isProcessingRef.current || !sceneRef.current || !cameraRef.current) return;
     isProcessingRef.current = true;
     setIsLoading(true);
-
+  
+    // Convert screen coordinates to world coordinates at plane depth (-0.1)
     const worldStart = screenToWorld(startX, startY, -0.1);
     const worldEnd = screenToWorld(endX, endY, -0.1);
+    
+    // Calculate dimensions and center in world space
+    const targetWidth = Math.abs(worldEnd.x - worldStart.x);
+    const targetHeight = Math.abs(worldEnd.y - worldStart.y);
+    const centerX = (worldStart.x + worldEnd.x) / 2;
+    const centerY = (worldStart.y + worldEnd.y) / 2;
+  
     selectionBoxParamsRef.current = {
-      targetWidth: Math.abs(worldEnd.x - worldStart.x),
-      targetHeight: Math.abs(worldEnd.y - worldStart.y),
+      targetWidth,
+      targetHeight,
       worldStart,
       worldEnd,
     };
-
+  
     const defaultBlindType = BLIND_TYPES[0];
     let modelData = preloadedModelsRef.current.get(defaultBlindType.modelUrl);
     if (!modelData) {
       modelData = await loadModel(defaultBlindType.modelUrl);
       preloadedModelsRef.current.set(defaultBlindType.modelUrl, modelData);
     }
-
+  
     const model = modelData.model.clone();
     applyTextureToModel(model, selectedPattern || "/materials/beige.png", defaultBlindType);
-
+  
+    // Calculate model scale based on selection box
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
-
-    const scale = new THREE.Vector3(
-      selectionBoxParamsRef.current.targetWidth / size.x,
-      selectionBoxParamsRef.current.targetHeight / size.y,
-      0.01
-    );
+    
+    // Calculate separate scale factors for width and height
+    const scaleX = targetWidth / size.x;
+    const scaleY = targetHeight / size.y;
+    // Use a small constant for Z to keep it flat but visible
+    const scaleZ = 0.01;
+  
+    const scale = new THREE.Vector3(scaleX, scaleY, scaleZ);
     model.scale.copy(scale);
-
-    const targetX = (worldStart.x + worldEnd.x) / 2 - center.x * scale.x;
-    const targetY = (worldStart.y + worldEnd.y) / 2 - center.y * scale.y;
-    model.position.set(targetX, targetY, 0.1);
+  
+    // Adjust position to account for model center and place at selection center
+    const scaledCenterOffsetX = center.x * scaleX;
+    const scaledCenterOffsetY = center.y * scaleY;
+    model.position.set(
+      centerX - scaledCenterOffsetX,
+      centerY - scaledCenterOffsetY,
+      0 // Place just in front of background plane
+    );
+  
     initialModelParamsRef.current = { scale, position: model.position.clone() };
-
+  
+    // Ensure model is visible and properly initialized
     model.traverse((child) => {
-      if (isMesh(child)) child.visible = true;
+      if (isMesh(child)) {
+        child.visible = true;
+        child.geometry.computeBoundingBox();
+      }
     });
-
+  
     sceneRef.current.add(model);
     modelsRef.current.push({ model, gltf: modelData.gltf });
     if (!isCustomizerView) addWindowButtonRef.current?.classList.remove("hidden");
-
+  
     fadeInModel(model);
     renderScene();
-
+  
     isProcessingRef.current = false;
     setIsLoading(false);
     completeCurrentProcess();
     redoButtonRef.current?.classList.remove("hidden");
+  
+    // Debug logging to verify dimensions
+    const finalBox = new THREE.Box3().setFromObject(model);
+    const finalSize = finalBox.getSize(new THREE.Vector3());
+    console.log('Target dimensions:', { width: targetWidth, height: targetHeight });
+    console.log('Model dimensions:', { width: finalSize.x, height: finalSize.y });
   };
 
   const addAnotherWindow = () => {
@@ -704,57 +765,88 @@ const FilterPageUI: React.FC = () => {
     if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !backgroundPlaneRef.current) return;
     setNewProcess("save", "Saving image... Please wait.");
     if (!confirm("Would you like to save the customized image?")) return;
-
+  
     setIsLoading(true);
     setShowBlindMenu(false);
     saveButtonRef.current?.classList.add("hidden");
-
+  
+    // Get original dimensions from the captured image
     const texture = (backgroundPlaneRef.current.material as THREE.MeshBasicMaterial).map;
     const width = texture?.image.width || window.innerWidth;
     const height = texture?.image.height || window.innerHeight;
-
+  
+    // Set renderer to full resolution
     rendererRef.current.setSize(width, height);
     cameraRef.current.aspect = width / height;
     cameraRef.current.updateProjectionMatrix();
     adjustBackgroundPlane(width, height);
+  
+    // Render the scene with models
     rendererRef.current.render(sceneRef.current, cameraRef.current);
-
+    const sceneDataUrl = rendererRef.current.domElement.toDataURL("image/png");
+  
+    // Create canvas for final composition
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
+  
+    // Load and draw images
     const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve) => {
       const img = new Image();
       img.crossOrigin = "Anonymous";
       img.onload = () => resolve(img);
+      img.onerror = () => console.error(`Failed to load image: ${src}`);
       img.src = src;
     });
-
-    ctx.drawImage(await loadImage(capturedImage || rendererRef.current.domElement.toDataURL("image/png")), 0, 0, width, height);
-    ctx.drawImage(await loadImage(rendererRef.current.domElement.toDataURL("image/png")), 0, 0, width, height);
-    ctx.drawImage(await loadImage("/images/baelogoN.png"), (width - height * 0.1) / 2, 16, height * 0.1, height * 0.1);
-
-    const dataUrl = canvas.toDataURL("image/png");
-    if (navigator.share && navigator.canShare({ files: [new File([await (await fetch(dataUrl)).blob()], "custom_blind_image.png", { type: "image/png" })] })) {
-      await navigator.share({
-        files: [new File([await (await fetch(dataUrl)).blob()], "custom_blind_image.png", { type: "image/png" })],
-        title: "Custom Blind Image",
-        text: "Check out my custom blind design!",
-      });
-    } else {
-      triggerDownload(dataUrl);
+  
+    try {
+      // Draw background image first
+      if (capturedImage) {
+        const backgroundImg = await loadImage(capturedImage);
+        ctx.drawImage(backgroundImg, 0, 0, width, height);
+      }
+  
+      // Draw the rendered scene with models
+      const sceneImg = await loadImage(sceneDataUrl);
+      ctx.drawImage(sceneImg, 0, 0, width, height);
+  
+      // Draw logo overlay
+      const logoImg = await loadImage("/images/baelogoN.png");
+      const logoSize = height * 0.1; // 10% of height
+      const logoX = (width - logoSize) / 2; // Center horizontally
+      const logoY = 16; // Small padding from top
+      ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+  
+      // Export the final image
+      const finalDataUrl = canvas.toDataURL("image/png");
+  
+      // Try web share API first
+      if (navigator.share && navigator.canShare({ files: [new File([await (await fetch(finalDataUrl)).blob()], "custom_blind_image.png", { type: "image/png" })] })) {
+        await navigator.share({
+          files: [new File([await (await fetch(finalDataUrl)).blob()], "custom_blind_image.png", { type: "image/png" })],
+          title: "Custom Blind Image",
+          text: "Check out my custom blind design!",
+        });
+      } else {
+        triggerDownload(finalDataUrl);
+      }
+    } catch (error) {
+      console.error("Error saving image:", error);
+      setNewProcess("save-error", "Failed to save image. Please try again.");
+    } finally {
+      // Restore original renderer size
+      rendererRef.current.setSize(window.innerWidth, window.innerHeight);
+      cameraRef.current.aspect = window.innerWidth / window.innerHeight;
+      cameraRef.current.updateProjectionMatrix();
+      adjustBackgroundPlane(window.innerWidth, window.innerHeight);
+  
+      setShowBlindMenu(true);
+      saveButtonRef.current?.classList.remove("hidden");
+      setIsLoading(false);
+      completeCurrentProcess();
     }
-
-    rendererRef.current.setSize(window.innerWidth, window.innerHeight);
-    cameraRef.current.aspect = window.innerWidth / window.innerHeight;
-    cameraRef.current.updateProjectionMatrix();
-    adjustBackgroundPlane(window.innerWidth, window.innerHeight);
-    setShowBlindMenu(true);
-    saveButtonRef.current?.classList.remove("hidden");
-    setIsLoading(false);
-    completeCurrentProcess();
   };
 
   // Helper Functions
@@ -774,11 +866,17 @@ const FilterPageUI: React.FC = () => {
     }
     overlayImageRef.current?.classList.add("hidden");
   };
-  const screenToWorld = (x: number, y: number, depth: number = -0.1) => {
+  const screenToWorld = (x: number, y: number, depth: number = 0) => {
     if (!cameraRef.current || !mountRef.current) return new THREE.Vector3();
+    
     const rect = mountRef.current.getBoundingClientRect();
-    const vector = new THREE.Vector3((x / rect.width) * 2 - 1, -(y / rect.height) * 2 + 1, 0);
+    // Normalize coordinates to [-1, 1] range based on actual canvas size
+    const normalizedX = ((x) / rect.width) * 2 - 1;
+    const normalizedY = -((y) / rect.height) * 2 + 1;
+    
+    const vector = new THREE.Vector3(normalizedX, normalizedY, 0.5);
     vector.unproject(cameraRef.current);
+    
     const dir = vector.sub(cameraRef.current.position).normalize();
     const distance = (depth - cameraRef.current.position.z) / dir.z;
     return cameraRef.current.position.clone().add(dir.multiplyScalar(distance));
