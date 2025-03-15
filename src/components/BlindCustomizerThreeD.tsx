@@ -8,7 +8,7 @@ const BlindCustomizerThreeD: React.FC = () => {
   const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
   const [filters, setFilters] = useState<string[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null); // Ref for the background image
+  const imageRef = useRef<HTMLImageElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -31,8 +31,8 @@ const BlindCustomizerThreeD: React.FC = () => {
   const blindTypes = [
     { 
       type: 'classicRoman', 
-      buttonImage: '/images/windowTypeIcons/image 12.png', 
-      modelUrl: '/models/classicRoman.glb', 
+      buttonImage: '/images/blindTypes/classicRoman.png', 
+      modelUrl: '/3d/classicRoman.glb', 
       rotation: { x: 0, y: 0, z: 0 }, 
       baseScale: { x: 0.5, y: 0.75, z: 0.8 }, 
       basePosition: { x: -15, y: -7.5, z: 0 } 
@@ -155,31 +155,26 @@ const BlindCustomizerThreeD: React.FC = () => {
   const updateModelScaleAndPosition = (blind: any) => {
     if (!modelRef.current || !cameraRef.current || !imageRef.current) return;
 
-    // Use image dimensions for sticking to image
     const imageWidth = imageRef.current.clientWidth;
     const imageHeight = imageRef.current.clientHeight;
 
-    // Compute the model's bounding box
     const box = new THREE.Box3().setFromObject(modelRef.current);
     const size = new THREE.Vector3();
     box.getSize(size);
     const modelWidth = size.x;
     const modelHeight = size.y;
 
-    // Calculate scale to fit within image with padding
-    const padding = 0.9; // Adjust this if needed
+    const padding = 0.9;
     const scaleX = (imageWidth * padding) / modelWidth;
     const scaleY = (imageHeight * padding) / modelHeight;
     const scaleFactor = Math.min(scaleX, scaleY);
 
-    // Apply custom baseScale adjusted by image scaleFactor
     modelRef.current.scale.set(
       blind.baseScale.x * scaleFactor,
       blind.baseScale.y * scaleFactor,
       blind.baseScale.z * scaleFactor
     );
 
-    // Center the model and apply custom basePosition relative to image
     const center = new THREE.Vector3();
     box.getCenter(center);
     modelRef.current.position.set(
@@ -188,7 +183,6 @@ const BlindCustomizerThreeD: React.FC = () => {
       blind.basePosition.z * scaleFactor
     );
 
-    // Adjust camera to fit the scaled model
     const fov = cameraRef.current.fov * (Math.PI / 180);
     const scaledWidth = modelWidth * scaleFactor * blind.baseScale.x;
     const scaledHeight = modelHeight * scaleFactor * blind.baseScale.y;
@@ -196,69 +190,37 @@ const BlindCustomizerThreeD: React.FC = () => {
     cameraRef.current.position.set(0, 0, distance);
     cameraRef.current.lookAt(0, 0, 0);
 
-    // Update renderer size to match image
     if (rendererRef.current) {
       rendererRef.current.setSize(imageWidth, imageHeight);
     }
-
-    // Enhanced debug logging
-    console.group(`Debug for ${blind.type} at Screen Size: ${window.innerWidth}x${window.innerHeight}`);
-    console.log('Image Size:', { width: imageWidth, height: imageHeight });
-    console.log('Model Raw Size:', { width: modelWidth, height: modelHeight });
-    console.log('Scale Factor (min of scaleX, scaleY):', scaleFactor.toFixed(4));
-    console.log('Scale X Factor:', scaleX.toFixed(4), 'Scale Y Factor:', scaleY.toFixed(4));
-    console.log('Base Scale:', blind.baseScale);
-    console.log('Applied Scale:', {
-      x: modelRef.current.scale.x.toFixed(4),
-      y: modelRef.current.scale.y.toFixed(4),
-      z: modelRef.current.scale.z.toFixed(4)
-    });
-    console.log('Base Position:', blind.basePosition);
-    console.log('Applied Position:', {
-      x: modelRef.current.position.x.toFixed(4),
-      y: modelRef.current.position.y.toFixed(4),
-      z: modelRef.current.position.z.toFixed(4)
-    });
-    console.log('Camera Position:', cameraRef.current.position);
-    console.groupEnd();
   };
 
   const create3DModel = (type: string) => {
     if (!canvasRef.current || !imageRef.current) return;
 
-    // Clean up previous scene
     if (sceneRef.current && modelRef.current) sceneRef.current.remove(modelRef.current);
     if (rendererRef.current) rendererRef.current.dispose();
 
-    // Initialize Scene
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    // Initialize Camera
     const aspect = imageRef.current.clientWidth / imageRef.current.clientHeight;
     const camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
-    camera.position.set(0, 0, 10); // Initial position, adjusted later
+    camera.position.set(0, 0, 10);
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
-    // Initialize Renderer
     const renderer = new THREE.WebGLRenderer({ canvas: canvasRef.current, alpha: true });
     renderer.setSize(imageRef.current.clientWidth, imageRef.current.clientHeight);
-    renderer.setClearColor(0x000000, 0); // Transparent background
+    renderer.setClearColor(0x000000, 0);
     rendererRef.current = renderer;
 
-    // Add Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
     directionalLight.position.set(5, 5, 5);
     scene.add(directionalLight);
 
-    // Removed AxesHelper to prevent gizmo display
-    // const axesHelper = new THREE.AxesHelper(5);
-    // scene.add(axesHelper);
-
-    // Load the 3D model
     const loader = new GLTFLoader();
     const blind = blindTypes.find((b) => b.type === type);
     if (blind && blind.modelUrl) {
@@ -271,7 +233,6 @@ const BlindCustomizerThreeD: React.FC = () => {
           modelRef.current.rotation.set(blind.rotation.x, blind.rotation.y, blind.rotation.z);
           sceneRef.current.add(modelRef.current);
 
-          // Apply initial scale and position
           updateModelScaleAndPosition(blind);
 
           if (selectedPattern) applyPatternToModel(selectedPattern);
@@ -281,7 +242,6 @@ const BlindCustomizerThreeD: React.FC = () => {
       );
     }
 
-    // Animation Loop
     let animationFrameId: number;
     const animate = () => {
       if (sceneRef.current && cameraRef.current && rendererRef.current) {
@@ -291,24 +251,20 @@ const BlindCustomizerThreeD: React.FC = () => {
     };
     animationFrameId = requestAnimationFrame(animate);
 
-    // Handle Resize
     const handleResize = () => {
       if (canvasRef.current && cameraRef.current && rendererRef.current && modelRef.current && imageRef.current) {
         const width = imageRef.current.clientWidth;
         const height = imageRef.current.clientHeight;
 
-        // Update renderer and camera
         rendererRef.current.setSize(width, height);
         cameraRef.current.aspect = width / height;
         cameraRef.current.updateProjectionMatrix();
 
-        // Update model scale and position with debug
         updateModelScaleAndPosition(blind);
       }
     };
     window.addEventListener('resize', handleResize);
 
-    // Cleanup
     return () => {
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
       if (rendererRef.current) rendererRef.current.dispose();
@@ -316,15 +272,21 @@ const BlindCustomizerThreeD: React.FC = () => {
     };
   };
 
+  // Debugging log
+  console.log('blindTypes length:', blindTypes.length);
+  console.log('blindTypes:', blindTypes);
+
   return (
     <div className="container max-w-7xl mx-auto min-h-screen p-4 md:p-8" style={{ fontFamily: 'Poppins, sans-serif' }}>
       <section className="roman-shades flex flex-col md:flex-row items-start justify-center my-5 bg-gray-100 p-4 rounded gap-4">
-        <div className="blind-type-menu w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col h-[calc(100%+5rem)]">
-          <h3 className="bg-gray-100 p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Select Type of Blind</h3>
-          <div className="blind-type-content grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
-            {blindTypes.map(({ type, buttonImage }) => (
+        <div className="blind-type-menu w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col min-h-[400px]">
+          <h3 className="bg-gray-100 p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
+            Select Type of Blind ({blindTypes.length})
+          </h3>
+          <div className="blind-type-content grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto max-h-[calc(100vh-200px)]">
+            {blindTypes.map(({ type, buttonImage }, index) => (
               <div
-                key={type}
+                key={type + index} // Ensure unique keys
                 className="button-container flex flex-col items-center text-center cursor-pointer px-[5px]"
                 onClick={() => selectBlindType(type)}
               >
