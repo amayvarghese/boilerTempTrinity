@@ -46,7 +46,7 @@ const BlindCustomizeThreeJs: React.FC = () => {
       modelUrl: '/3d/classicRoman.glb', 
       rotation: { x: 0, y: 0, z: 0 }, 
       baseScale: { x: 1.55, y: 2, z: 3 }, 
-      basePosition: { x: -45, y: -25, z: 10 }
+      basePosition: { x: -45, y: -25, z: 10 },
     },
     { 
       type: 'roller', 
@@ -54,7 +54,7 @@ const BlindCustomizeThreeJs: React.FC = () => {
       modelUrl: '/3d/ROLLER_SHADES.glb', 
       rotation: { x: 0, y: 0, z: 0 }, 
       baseScale: { x: 1.5, y: 2.1, z: 1 }, 
-      basePosition: { x: -45.5, y: -30, z: 5 }
+      basePosition: { x: -45.5, y: -30, z: 5 },
     },
     { 
       type: 'roman', 
@@ -62,23 +62,26 @@ const BlindCustomizeThreeJs: React.FC = () => {
       modelUrl: '/3d/ROMAN_SHADES_01.glb', 
       rotation: { x: 0, y: 0, z: 0 }, 
       baseScale: { x: 1.55, y: 2, z: 1 }, 
-      basePosition: { x: -45, y: -20, z: 5 }
+      basePosition: { x: -45, y: -20, z: 5 },
+      meshNameFabric: "polySurface1",
+      meshNameWood: "polySurface3",
     },
-    // { 
-    //   type: 'Sheet Blind', 
-    //   buttonImage: '/images/blindTypes/sheetBlindIcon.png', 
-    //   modelUrl: '/3d/sheetBlind.glb', 
-    //   rotation: { x: 0, y: 0, z: 0 }, 
-    //   baseScale: { x: 1.55, y: 2, z: 1 }, 
-    //   basePosition: { x: -45, y: -28, z: 10 }
-    // },
+    { 
+      type: 'Sheet Blind', 
+      buttonImage: '/images/blindTypes/sheetBlindIcon.png', 
+      modelUrl: '/3d/sheetBlind.glb', 
+      rotation: { x: 0, y: 0, z: 0 }, 
+      baseScale: { x: 1.55, y: 2, z: 1 }, 
+      basePosition: { x: -45, y: -28, z: 20 },
+    },
     { 
       type: 'PlantationShutter', 
       buttonImage: '/images/blindTypes/plantationShutterIcon.png', 
       modelUrl: '/3d/PLANTATION__SHUTTER.glb', 
       rotation: { x: 0, y: 0, z: 0 }, 
       baseScale: { x: 150, y: 230, z: 1 }, 
-      basePosition: { x: -46, y: -27  , z: 5 }
+      basePosition: { x: -46, y: -27, z: 5 },
+      meshNameWood: "shutterWood",
     },
     { 
       type: 'VerticalSheet', 
@@ -86,7 +89,8 @@ const BlindCustomizeThreeJs: React.FC = () => {
       modelUrl: '/3d/vertical_sheet_blinds_02.glb', 
       rotation: { x: 0, y: 0, z: 0 }, 
       baseScale: { x: 1.45, y: 2.1, z: 1 }, 
-      basePosition: { x: -45, y: -28, z: 5 }
+      basePosition: { x: -45, y: -28, z: 5 },
+      meshNameWood: "polySurface32.001",
     },
     { 
       type: 'zebraBlinds', 
@@ -94,7 +98,8 @@ const BlindCustomizeThreeJs: React.FC = () => {
       modelUrl: '/3d/zebra_blinds.glb', 
       rotation: { x: 0, y: 0, z: 0 }, 
       baseScale: { x: 1.55, y: 2, z: 1 }, 
-      basePosition: { x: -45, y: -20, z: 5 }
+      basePosition: { x: -45, y: -20, z: 5 },
+      meshNameWood: "zebra_blinds",
     },
   ];
 
@@ -141,23 +146,57 @@ const BlindCustomizeThreeJs: React.FC = () => {
   const applyPatternToModel = (patternUrl: string) => {
     if (!modelRef.current || !sceneRef.current) return;
 
+    const blindType = blindTypes.find((b) => b.type === selectedBlindType) || blindTypes[0];
     const textureLoader = new THREE.TextureLoader();
-    textureLoader.load(patternUrl, (texture) => {
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(8, 8);
 
+    const applyMaterial = (textureUrl: string, normalUrl: string | null, repeat: number, normalScale: number, roughness: number, metalness: number, meshName?: string) => {
+      const texture = textureLoader.load(textureUrl, undefined, undefined, (err) => console.error(`Texture load failed: ${textureUrl}`, err));
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(repeat, repeat);
+      texture.colorSpace = THREE.SRGBColorSpace;
+
+      const materialProps: THREE.MeshStandardMaterialParameters = {
+        map: texture,
+        roughness,
+        metalness,
+      };
+      if (normalUrl) {
+        materialProps.normalMap = textureLoader.load(normalUrl, undefined, undefined, (err) => console.error(`Normal map load failed: ${normalUrl}`, err));
+        materialProps.normalScale = new THREE.Vector2(normalScale, normalScale);
+      }
+      const material = new THREE.MeshStandardMaterial(materialProps);
+
+      let applied = false;
       modelRef.current.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          const material = child.material.clone();
-          material.map = texture;
-          material.needsUpdate = true;
-          child.material = material;
+        if (child instanceof THREE.Mesh && (!meshName || child.name === meshName)) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach((mat) => mat.dispose());
+            child.material = material; // Assign single material
+          } else {
+            child.material.dispose();
+            child.material = material; // Assign single material
+          }
+          (child.material as THREE.MeshStandardMaterial).needsUpdate = true;
+          applied = true;
         }
       });
-    }, undefined, (error) => {
-      console.error('Error loading texture:', error);
-    });
+      if (!applied) console.warn(`No meshes found for ${meshName || 'all'} in model`);
+    };
+
+    if (!blindType.meshNameFabric && !blindType.meshNameWood) {
+      applyMaterial(patternUrl, null, 8, 0, 0.5, 0.1);
+    } else {
+      if (blindType.meshNameFabric) {
+        applyMaterial(patternUrl, "/3d/normals/RollerNormal.jpg", 8, 3, 0.3, 0.1, blindType.meshNameFabric);
+      }
+      if (blindType.meshNameWood) {
+        applyMaterial("/materials/beige.png", "/3d/normals/wood_normal.jpg", 4, 0.5, 1, 0, blindType.meshNameWood);
+      }
+    }
+
+    if (rendererRef.current && cameraRef.current && sceneRef.current) {
+      rendererRef.current.render(sceneRef.current, cameraRef.current);
+    }
   };
 
   const create3DScene = () => {
@@ -214,7 +253,7 @@ const BlindCustomizeThreeJs: React.FC = () => {
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 1);
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, .1);
     directionalLight.position.set(0, 5, 5);
     scene.add(directionalLight);
 
