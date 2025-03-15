@@ -421,7 +421,8 @@ const FilterPageUI: React.FC = () => {
       });
     };
   
-    const endSelection = (e: MouseEvent | Touch) => {
+    // Removed unused 'e' parameter
+    const endSelection = () => {
       if (!isDragging || !selectionBoxRef.current) return;
       selectionBoxRef.current.style.display = "none";
       isDragging = false;
@@ -437,7 +438,7 @@ const FilterPageUI: React.FC = () => {
     const handlers = {
       mousedown: (e: MouseEvent) => { if (e.button === 0) startSelection(e); },
       mousemove: (e: MouseEvent) => updateSelection(e),
-      mouseup: (e: MouseEvent) => endSelection(e),
+      mouseup: () => endSelection(),  // Updated to not pass e
       touchstart: (e: TouchEvent) => {
         e.preventDefault();
         startSelection(e.touches[0]);
@@ -448,7 +449,7 @@ const FilterPageUI: React.FC = () => {
       },
       touchend: (e: TouchEvent) => {
         e.preventDefault();
-        endSelection(e.changedTouches[0]);
+        endSelection();  // Updated to not pass e
       },
     };
   
