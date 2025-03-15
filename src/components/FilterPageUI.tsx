@@ -65,7 +65,7 @@ const PATTERNS: Pattern[] = [
 ];
 
 // Utility Functions
-const isMesh = (object: THREE.Object3D): object is THREE.Mesh => "isMesh" in object && object.isMesh;
+const isMesh = (object: THREE.Object3D): object is THREE.Mesh => "isMesh" in object && (object.isMesh as boolean);
 
 const FilterPageUI: React.FC = () => {
   // State and Refs
