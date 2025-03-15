@@ -110,10 +110,9 @@ const FilterPageUI: React.FC = () => {
   const filteredPatterns = PATTERNS.filter(
     (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
   );
-  // Fix 1: Ensure activeProcess.completed is always boolean,,,
   const instruction = activeProcess && typeof activeProcess.completed === "boolean" 
-  ? (!activeProcess.completed ? activeProcess.instruction : "") 
-  : "";
+    ? (!activeProcess.completed ? activeProcess.instruction : "") 
+    : "";
 
   const setNewProcess = (id: string, instruction: string) =>
     setActiveProcess({ id, instruction, completed: false });
@@ -165,7 +164,7 @@ const FilterPageUI: React.FC = () => {
       window.removeEventListener("resize", handleResize);
       cleanupThreeJs();
     };
-  }, [isCustomizerView]);
+  }, []);
 
   // Preload Models
   useEffect(() => {
@@ -334,6 +333,14 @@ const FilterPageUI: React.FC = () => {
       plane.position.set(0, 0, -0.1);
       sceneRef.current.add(plane);
       updateCameraPosition(width, height);
+      // Adjust canvas size when in customizer view
+      if (isCustomizerView && rendererRef.current) {
+        const canvasWidth = window.innerWidth;
+        const canvasHeight = planeHeight * (canvasWidth / planeWidth);
+        rendererRef.current.setSize(canvasWidth, canvasHeight);
+        rendererRef.current.domElement.style.width = `${canvasWidth}px`;
+        rendererRef.current.domElement.style.height = `${canvasHeight}px`;
+      }
     });
   };
 
@@ -541,7 +548,7 @@ const FilterPageUI: React.FC = () => {
       const intersects = raycaster.intersectObjects(modelsRef.current.map(m => m.model), true);
       if (intersects.length > 0) {
         const intersected = intersects[0].object;
-        const model = findParentModel(intersected);
+        const model = findParentModel(intertected);
         if (model && model.userData.isDraggable) {
           draggingModelRef.current = model;
         }
@@ -620,7 +627,6 @@ const FilterPageUI: React.FC = () => {
     currentModels.forEach(({ position, isDraggable }) => {
       const newModel = modelData.model.clone();
       newModel.position.copy(position);
-      // Fix 2: Null check for initialModelParamsRef.current
       if (initialModelParamsRef.current) {
         newModel.scale.copy(initialModelParamsRef.current.scale);
       }
@@ -765,6 +771,7 @@ const FilterPageUI: React.FC = () => {
       completeCurrentProcess();
     }
   };
+
   // Helper Functions
   const cleanupThreeJs = () => cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
   const adjustVideoAspect = () => {
@@ -814,12 +821,11 @@ const FilterPageUI: React.FC = () => {
         if (isMesh(child) && (!meshName || child.name === meshName)) {
           if (Array.isArray(child.material)) {
             child.material.forEach((mat) => mat.dispose());
-            child.material = material; // Assign single material
+            child.material = material;
           } else {
             child.material.dispose();
-            child.material = material; // Assign single material
+            child.material = material;
           }
-          // Fix 3: Cast to MeshStandardMaterial since we just assigned it
           (child.material as THREE.MeshStandardMaterial).needsUpdate = true;
           applied = true;
         }
@@ -921,6 +927,24 @@ const FilterPageUI: React.FC = () => {
     redoButtonRef.current?.classList.add("hidden");
     saveButtonRef.current?.classList.remove("hidden");
     addWindowButtonRef.current?.classList.add("hidden");
+
+    // Adjust canvas size to match background plane and enable scrolling
+    if (rendererRef.current && backgroundPlaneRef.current) {
+      const texture = (backgroundPlaneRef.current.material as THREE.MeshBasicMaterial).map;
+      if (texture) {
+        const imgAspect = texture.image.width / texture.image.height;
+        const canvasWidth = window.innerWidth;
+        const canvasHeight = canvasWidth / imgAspect;
+        rendererRef.current.setSize(canvasWidth, canvasHeight);
+        rendererRef.current.domElement.style.width = `${canvasWidth}px`;
+        rendererRef.current.domElement.style.height = `${canvasHeight}px`;
+        rendererRef.current.domElement.style.touchAction = "auto"; // Enable touch scrolling
+        if (mountRef.current) {
+          mountRef.current.style.overflowY = "auto"; // Enable vertical scrolling
+        }
+        renderScene();
+      }
+    }
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) =>
