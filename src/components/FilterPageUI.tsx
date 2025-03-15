@@ -213,7 +213,7 @@ const FilterPageUI: React.FC = () => {
     };
 
     overlayImageRef.current = addElement<HTMLImageElement>("img", { src: "images/overlayFilter.png", className: "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70" }, mount);
-    videoRef.current = addElement<HTMLVideoElement>("video", { playsinline: true, muted: true, className: "absolute inset-0 w-full h-full object-cover z-[10]" }, mount);
+    videoRef.current = addElement<HTMLVideoElement>("video", { playsinline: true, muted: true, controls: false, className: "absolute inset-0 w-full h-full object-cover z-[10]" }, mount);
     controlButtonRef.current = addElement<HTMLButtonElement>("button", { id: "controlButton", textContent: "Start Camera", className: "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" });
     controlButtonRef.current?.addEventListener("click", handleButtonClick);
     uploadButtonRef.current = addElement<HTMLButtonElement>("button", { id: "uploadButton", textContent: "Upload Image", className: "fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" });
@@ -223,7 +223,7 @@ const FilterPageUI: React.FC = () => {
     redoButtonRef.current = addElement<HTMLButtonElement>("button", { id: "redoButton", className: "fixed bottom-12 right-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
     redoButtonRef.current?.appendChild(addElement("img", { src: "/images/retryButtonImg.png", alt: "Redo Selection", className: "h-6 w-6" }));
     redoButtonRef.current?.addEventListener("click", handleRedoSelection);
-    addWindowButtonRef.current = addElement<HTMLButtonElement>("button", { id: "addWindowButton", textContent: "Add Another Window", className: "fixed bottom-12 left-5 py-2 px-4 text-md bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
+    addWindowButtonRef.current = addElement<HTMLButtonElement>("button", { id: "addWindowButton", textContent: "Add Blind", className: "fixed bottom-12 left-5 py-2 px-4 text-md bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
     addWindowButtonRef.current?.addEventListener("click", addAnotherWindow);
     addElement("button", { id: "backButton", innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>', className: "absolute top-5 left-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" }).addEventListener("click", () => window.location.href = "/");
     levelIndicatorRef.current = addElement<HTMLDivElement>("div", { className: "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-2 bg-red-500 rounded-full z-[100] hidden", style: { transition: "background-color 0.3s ease, border 0.3s ease" } }, mount);
@@ -260,10 +260,17 @@ const FilterPageUI: React.FC = () => {
   const startCameraStream = async () => {
     setNewProcess("camera", "Point your camera and click 'Capture' to take a photo.");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: "environment", 
+          width: { ideal: 1920 }, 
+          height: { ideal: 1080 } 
+        } 
+      });
       cameraStreamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.classList.remove("hidden"); // Ensure it’s visible
         videoRef.current.play().then(() => {
           adjustVideoAspect();
           overlayImageRef.current?.classList.remove("hidden");
@@ -271,9 +278,13 @@ const FilterPageUI: React.FC = () => {
           uploadButtonRef.current?.style.setProperty("display", "none");
           levelIndicatorRef.current?.classList.remove("hidden");
           requestOrientationPermission();
+        }).catch((err) => {
+          console.error("Video play failed:", err);
+          setNewProcess("camera-error", "Failed to start camera preview.");
         });
       }
     } catch (err) {
+      console.error("Camera access failed:", err);
       setNewProcess("camera-error", "Failed to access camera. Please upload an image instead.");
     }
   };
@@ -281,24 +292,29 @@ const FilterPageUI: React.FC = () => {
   const captureImage = () => {
     if (!videoRef.current || !sceneRef.current || !cameraRef.current || !rendererRef.current) return;
     setNewProcess("capture", "Draw a box on the image to place the 3D model.");
+    
     const canvas = document.createElement("canvas");
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.drawImage(videoRef.current, 0, 0);
+    
+    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
     const imageData = canvas.toDataURL("image/png");
+    
     setCapturedImage(imageData);
     localStorage.setItem("capturedImage", imageData);
+    
+    // Immediately stop the stream after capturing
     cleanupCameraStream();
     loadTextureAndCreatePlane(imageData, window.innerWidth, window.innerHeight);
     initSelectionBox();
+    
     controlButtonRef.current!.textContent = "Submit";
     levelIndicatorRef.current?.classList.add("hidden");
     window.removeEventListener("deviceorientation", handleDeviceOrientation);
     completeCurrentProcess();
   };
-
   const handleImageUpload = (file: File) => {
     if (!sceneRef.current || !cameraRef.current || !rendererRef.current) return;
     setNewProcess("upload", "Draw a box on the image to place the 3D model.");
@@ -474,7 +490,7 @@ const FilterPageUI: React.FC = () => {
 
     const newModel = modelData.model.clone();
     newModel.position.copy(sourceModel.position);
-    newModel.position.x += 2;
+    newModel.position.x += 1;
     newModel.scale.copy(sourceModel.scale);
     newModel.userData.isDraggable = true;
 
@@ -743,6 +759,7 @@ const FilterPageUI: React.FC = () => {
   };
   const cleanupCameraStream = () => {
     cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+    cameraStreamRef.current = null;
     if (videoRef.current) {
       videoRef.current.srcObject = null;
       videoRef.current.classList.add("hidden");
