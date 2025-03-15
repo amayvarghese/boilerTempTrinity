@@ -64,21 +64,21 @@ const BlindCustomizeThreeJs: React.FC = () => {
       baseScale: { x: 1.55, y: 2, z: 1 }, 
       basePosition: { x: -45, y: -20, z: 5 }
     },
-    { 
-      type: 'Sheet Blind', 
-      buttonImage: '/images/blindTypes/sheetBlindIcon.png', 
-      modelUrl: '/3d/sheetBlind.glb', 
-      rotation: { x: 0, y: 0, z: 0 }, 
-      baseScale: { x: 1.55, y: 2, z: 1 }, 
-      basePosition: { x: -45, y: -28, z: 10 }
-    },
+    // { 
+    //   type: 'Sheet Blind', 
+    //   buttonImage: '/images/blindTypes/sheetBlindIcon.png', 
+    //   modelUrl: '/3d/sheetBlind.glb', 
+    //   rotation: { x: 0, y: 0, z: 0 }, 
+    //   baseScale: { x: 1.55, y: 2, z: 1 }, 
+    //   basePosition: { x: -45, y: -28, z: 10 }
+    // },
     { 
       type: 'PlantationShutter', 
       buttonImage: '/images/blindTypes/plantationShutterIcon.png', 
       modelUrl: '/3d/PLANTATION__SHUTTER.glb', 
       rotation: { x: 0, y: 0, z: 0 }, 
       baseScale: { x: 150, y: 230, z: 1 }, 
-      basePosition: { x: -46, y: -27, z: 5 }
+      basePosition: { x: -46, y: -27  , z: 5 }
     },
     { 
       type: 'VerticalSheet', 
@@ -212,10 +212,10 @@ const BlindCustomizeThreeJs: React.FC = () => {
       console.error('Error loading background texture:', error);
     });
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1);
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
-    directionalLight.position.set(5, 5, 5);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(0, 5, 5);
     scene.add(directionalLight);
 
     let animationFrameId: number;
