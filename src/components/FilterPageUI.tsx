@@ -723,119 +723,146 @@ canvas.addEventListener("touchend", handleTouchEnd, { passive: false });
 
   const initSelectionBox = () => {
     if (selectionBoxRef.current || hasSelectionBox.current || !mountRef.current) return;
-
+  
     selectionBoxRef.current = document.createElement("div");
     selectionBoxRef.current.className = "absolute border-2 border-dashed border-[#2F3526] bg-[#2F3526] bg-opacity-20 pointer-events-auto";
     selectionBoxRef.current.style.zIndex = "25";
     selectionBoxRef.current.style.transition = "none";
     mountRef.current.appendChild(selectionBoxRef.current);
-
-    let startX = 0, startY = 0, isDragging = false;
-
+  
+    let startX = 0;
+    let startY = 0;
+    let isDragging = false;
+  
     const startSelection = (x: number, y: number) => {
-      if (hasSelectionBox.current) return;
+      if (hasSelectionBox.current || isDragging) return;
+      
       startX = x;
       startY = y;
+      isDragging = true;
+      
       if (selectionBoxRef.current) {
-        Object.assign(selectionBoxRef.current.style, {
-          left: `${startX}px`,
-          top: `${startY}px`,
-          width: "0px",
-          height: "0px",
-          display: "block",
-        });
-        isDragging = true;
+        selectionBoxRef.current.style.left = `${startX}px`;
+        selectionBoxRef.current.style.top = `${startY}px`;
+        selectionBoxRef.current.style.width = "0px";
+        selectionBoxRef.current.style.height = "0px";
+        selectionBoxRef.current.style.display = "block";
       }
     };
-
+  
     const updateSelection = (x: number, y: number) => {
       if (!isDragging || !selectionBoxRef.current) return;
-
+  
       const rect = mountRef.current!.getBoundingClientRect();
       const currentX = Math.max(0, Math.min(x, rect.width));
       const currentY = Math.max(0, Math.min(y, rect.height));
-
+  
       requestAnimationFrame(() => {
-        if (selectionBoxRef.current) {
-          selectionBoxRef.current.style.width = `${Math.abs(currentX - startX)}px`;
-          selectionBoxRef.current.style.height = `${Math.abs(currentY - startY)}px`;
+        if (selectionBoxRef.current && isDragging) {
+          const width = Math.abs(currentX - startX);
+          const height = Math.abs(currentY - startY);
+          selectionBoxRef.current.style.width = `${width}px`;
+          selectionBoxRef.current.style.height = `${height}px`;
           selectionBoxRef.current.style.left = `${Math.min(startX, currentX)}px`;
           selectionBoxRef.current.style.top = `${Math.min(startY, currentY)}px`;
         }
       });
-
-      lastMousePosition.current = { x: currentX, y: currentY };
     };
-
+  
     const endSelection = (x: number, y: number) => {
       if (!isDragging || !selectionBoxRef.current) return;
-      selectionBoxRef.current.style.display = "none";
-      hasSelectionBox.current = true;
+  
       isDragging = false;
-      createDefaultModel(startX, startY, x, y);
+      selectionBoxRef.current.style.display = "none";
+      
+      const rect = mountRef.current!.getBoundingClientRect();
+      const endX = Math.max(0, Math.min(x, rect.width));
+      const endY = Math.max(0, Math.min(y, rect.height));
+      
+      // Only create model if selection has significant size
+      if (Math.abs(endX - startX) > 5 && Math.abs(endY - startY) > 5) {
+        hasSelectionBox.current = true;
+        createDefaultModel(startX, startY, endX, endY);
+      }
     };
-
+  
+    const handleMouseDown = (e: MouseEvent) => {
+      if (!hasSelectionBox.current && e.button === 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        const rect = mountRef.current!.getBoundingClientRect();
+        startSelection(e.clientX - rect.left, e.clientY - rect.top);
+      }
+    };
+  
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        e.preventDefault();
+        e.stopPropagation();
+        const rect = mountRef.current!.getBoundingClientRect();
+        updateSelection(e.clientX - rect.left, e.clientY - rect.top);
+      }
+    };
+  
+    const handleMouseUp = (e: MouseEvent) => {
+      if (isDragging) {
+        e.preventDefault();
+        e.stopPropagation();
+        const rect = mountRef.current!.getBoundingClientRect();
+        endSelection(e.clientX - rect.left, e.clientY - rect.top);
+      }
+    };
+  
+    const handleTouchStart = (e: TouchEvent) => {
+      if (!hasSelectionBox.current) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = mountRef.current!.getBoundingClientRect();
+        startSelection(touch.clientX - rect.left, touch.clientY - rect.top);
+      }
+    };
+  
+    const handleTouchMove = (e: TouchEvent) => {
+      if (isDragging) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = mountRef.current!.getBoundingClientRect();
+        updateSelection(touch.clientX - rect.left, touch.clientY - rect.top);
+      }
+    };
+  
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (isDragging) {
+        e.preventDefault();
+        const touch = e.changedTouches[0];
+        const rect = mountRef.current!.getBoundingClientRect();
+        endSelection(touch.clientX - rect.left, touch.clientY - rect.top);
+      }
+    };
+  
     const eventHandlers = {
-      mousedown: (e: MouseEvent) => {
-        if (!hasSelectionBox.current && e.button === 0) {
-          e.preventDefault();
-          e.stopPropagation();
-          const rect = mountRef.current!.getBoundingClientRect();
-          startSelection(e.clientX - rect.left, e.clientY - rect.top);
-        }
-      },
-      mousemove: (e: MouseEvent) => {
-        if (isDragging) {
-          e.preventDefault();
-          e.stopPropagation();
-          const rect = mountRef.current!.getBoundingClientRect();
-          updateSelection(e.clientX - rect.left, e.clientY - rect.top);
-        }
-      },
-      mouseup: (e: MouseEvent) => {
-        if (isDragging) {
-          e.preventDefault();
-          e.stopPropagation();
-          const rect = mountRef.current!.getBoundingClientRect();
-          endSelection(e.clientX - rect.left, e.clientY - rect.top);
-        }
-      },
-      touchstart: (e: TouchEvent) => {
-        if (!hasSelectionBox.current) {
-          e.preventDefault();
-          const touch = e.touches[0];
-          const rect = mountRef.current!.getBoundingClientRect();
-          startSelection(touch.clientX - rect.left, touch.clientY - rect.top);
-        }
-      },
-      touchmove: (e: TouchEvent) => {
-        if (isDragging) {
-          e.preventDefault();
-          const touch = e.touches[0];
-          const rect = mountRef.current!.getBoundingClientRect();
-          updateSelection(touch.clientX - rect.left, touch.clientY - rect.top);
-        }
-      },
-      touchend: (e: TouchEvent) => {
-        if (isDragging) {
-          e.preventDefault();
-          const touch = e.changedTouches[0];
-          const rect = mountRef.current!.getBoundingClientRect();
-          endSelection(touch.clientX - rect.left, touch.clientY - rect.top);
-        }
-      },
+      mousedown: handleMouseDown,
+      mousemove: handleMouseMove,
+      mouseup: handleMouseUp,
+      touchstart: handleTouchStart,
+      touchmove: handleTouchMove,
+      touchend: handleTouchEnd,
     };
-
+  
     Object.entries(eventHandlers).forEach(([event, handler]) =>
       mountRef.current!.addEventListener(event, handler as EventListener, { passive: false })
     );
-
+  
     selectionBoxCleanupRef.current = () => {
       Object.entries(eventHandlers).forEach(([event, handler]) =>
         mountRef.current!.removeEventListener(event, handler as EventListener)
       );
+      if (selectionBoxRef.current && mountRef.current) {
+        mountRef.current.removeChild(selectionBoxRef.current);
+        selectionBoxRef.current = null;
+      }
     };
-
+  
     return selectionBoxCleanupRef.current;
   };
 
