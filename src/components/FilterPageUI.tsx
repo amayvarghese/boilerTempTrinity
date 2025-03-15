@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-// Types and Constants (unchanged)
+// Types and Constants
 type Vector3D = { x: number; y: number; z: number };
 type BlindType = {
   type: string;
@@ -76,42 +76,46 @@ const FilterPageUI: React.FC = () => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isCustomizerView, setIsCustomizerView] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeProcess, setActiveProcess] = useState({ id: "initial", instruction: "Click 'Start Camera' or upload an image to begin.", completed: false });
+  const [activeProcess, setActiveProcess] = useState<{ id: string; instruction: string; completed: boolean }>({
+    id: "initial",
+    instruction: "Click 'Start Camera' or upload an image to begin.",
+    completed: false,
+  });
   const [isSelectionBoxUsed, setIsSelectionBoxUsed] = useState(false);
 
-  const sceneRef = useRef(new THREE.Scene());
+  const sceneRef = useRef<THREE.Scene>(new THREE.Scene());
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const mountRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const mountRef = useRef<HTMLDivElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const selectionBoxRef = useRef<HTMLDivElement | null>(null);
-  const overlayImageRef = useRef<HTMLImageElement>(null);
-  const controlButtonRef = useRef<HTMLButtonElement>(null);
-  const uploadButtonRef = useRef<HTMLButtonElement>(null);
-  const saveButtonRef = useRef<HTMLButtonElement>(null);
-  const redoButtonRef = useRef<HTMLButtonElement>(null);
-  const levelIndicatorRef = useRef<HTMLDivElement>(null);
+  const overlayImageRef = useRef<HTMLImageElement | null>(null);
+  const controlButtonRef = useRef<HTMLButtonElement | null>(null);
+  const uploadButtonRef = useRef<HTMLButtonElement | null>(null);
+  const saveButtonRef = useRef<HTMLButtonElement | null>(null);
+  const redoButtonRef = useRef<HTMLButtonElement | null>(null);
+  const levelIndicatorRef = useRef<HTMLDivElement | null>(null);
   const addWindowButtonRef = useRef<HTMLButtonElement | null>(null);
   const modelsRef = useRef<ModelData[]>([]);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const backgroundPlaneRef = useRef<THREE.Mesh | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const selectionBoxParamsRef = useRef<SelectionBoxParams | null>(null);
   const initialModelParamsRef = useRef<InitialModelParams | null>(null);
   const preloadedModelsRef = useRef<Map<string, ModelData>>(new Map());
-  const isProcessingRef = useRef(false);
+  const isProcessingRef = useRef<boolean>(false);
   const changeQueueRef = useRef<{ type: "blind" | "pattern"; value: string }[]>([]);
   const draggingModelRef = useRef<THREE.Group | null>(null);
 
   const filteredPatterns = PATTERNS.filter(
     (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
   );
-  const instruction = activeProcess && !activeProcess.completed ? activeProcess.instruction : "";
+  const instruction = !activeProcess.completed ? activeProcess.instruction : "";
 
   const setNewProcess = (id: string, instruction: string) =>
     setActiveProcess({ id, instruction, completed: false });
   const completeCurrentProcess = () =>
-    setActiveProcess((prev) => prev ? { ...prev, completed: true } : null);
+    setActiveProcess((prev) => ({ ...prev, completed: true }));
 
   // Three.js Initialization and Cleanup
   useEffect(() => {
@@ -195,27 +199,31 @@ const FilterPageUI: React.FC = () => {
     if (!mountRef.current) return;
 
     const mount = mountRef.current;
-    const addElement = (tag: keyof HTMLElementTagNameMap, props: Record<string, any>, parent: HTMLElement = document.body) => {
-      const el = Object.assign(document.createElement(tag), props);
+    const addElement = <T extends HTMLElement>(
+      tag: keyof HTMLElementTagNameMap,
+      props: Record<string, any>,
+      parent: HTMLElement = document.body
+    ): T => {
+      const el = Object.assign(document.createElement(tag), props) as T;
       parent.appendChild(el);
       return el;
     };
 
-    overlayImageRef.current = addElement("img", { src: "images/overlayFilter.png", className: "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70" }, mount);
-    videoRef.current = addElement("video", { playsinline: true, muted: true, className: "absolute inset-0 w-full h-full object-cover z-[10]" }, mount);
-    controlButtonRef.current = addElement("button", { id: "controlButton", textContent: "Start Camera", className: "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" });
-    controlButtonRef.current.addEventListener("click", handleButtonClick);
-    uploadButtonRef.current = addElement("button", { id: "uploadButton", textContent: "Upload Image", className: "fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" });
-    uploadButtonRef.current.addEventListener("click", () => fileInputRef.current?.click());
-    saveButtonRef.current = addElement("button", { id: "saveButton", textContent: "Save Image", className: "fixed bottom-16 right-5 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
-    saveButtonRef.current.addEventListener("click", saveImage);
-    redoButtonRef.current = addElement("button", { id: "redoButton", className: "fixed bottom-12 right-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
-    redoButtonRef.current.appendChild(addElement("img", { src: "/images/retryButtonImg.png", alt: "Redo Selection", className: "h-6 w-6" }));
-    redoButtonRef.current.addEventListener("click", handleRedoSelection);
-    addWindowButtonRef.current = addElement("button", { id: "addWindowButton", textContent: "Add Another Window", className: "fixed bottom-12 left-5 py-2 px-4 text-md bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
-    addWindowButtonRef.current.addEventListener("click", addAnotherWindow);
+    overlayImageRef.current = addElement<HTMLImageElement>("img", { src: "images/overlayFilter.png", className: "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70" }, mount);
+    videoRef.current = addElement<HTMLVideoElement>("video", { playsinline: true, muted: true, className: "absolute inset-0 w-full h-full object-cover z-[10]" }, mount);
+    controlButtonRef.current = addElement<HTMLButtonElement>("button", { id: "controlButton", textContent: "Start Camera", className: "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" });
+    controlButtonRef.current?.addEventListener("click", handleButtonClick);
+    uploadButtonRef.current = addElement<HTMLButtonElement>("button", { id: "uploadButton", textContent: "Upload Image", className: "fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" });
+    uploadButtonRef.current?.addEventListener("click", () => fileInputRef.current?.click());
+    saveButtonRef.current = addElement<HTMLButtonElement>("button", { id: "saveButton", textContent: "Save Image", className: "fixed bottom-16 right-5 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
+    saveButtonRef.current?.addEventListener("click", saveImage);
+    redoButtonRef.current = addElement<HTMLButtonElement>("button", { id: "redoButton", className: "fixed bottom-12 right-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
+    redoButtonRef.current?.appendChild(addElement("img", { src: "/images/retryButtonImg.png", alt: "Redo Selection", className: "h-6 w-6" }));
+    redoButtonRef.current?.addEventListener("click", handleRedoSelection);
+    addWindowButtonRef.current = addElement<HTMLButtonElement>("button", { id: "addWindowButton", textContent: "Add Another Window", className: "fixed bottom-12 left-5 py-2 px-4 text-md bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
+    addWindowButtonRef.current?.addEventListener("click", addAnotherWindow);
     addElement("button", { id: "backButton", innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>', className: "absolute top-5 left-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" }).addEventListener("click", () => window.location.href = "/");
-    levelIndicatorRef.current = addElement("div", { className: "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-2 bg-red-500 rounded-full z-[100] hidden", style: { transition: "background-color 0.3s ease, border 0.3s ease" } }, mount);
+    levelIndicatorRef.current = addElement<HTMLDivElement>("div", { className: "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-2 bg-red-500 rounded-full z-[100] hidden", style: { transition: "background-color 0.3s ease, border 0.3s ease" } }, mount);
 
     return () => {
       [overlayImageRef, videoRef, levelIndicatorRef].forEach((ref) => ref.current && mount.removeChild(ref.current));
@@ -296,12 +304,12 @@ const FilterPageUI: React.FC = () => {
       const imageData = e.target?.result as string;
       setCapturedImage(imageData);
       localStorage.setItem("capturedImage", imageData);
-      cleanupCameraStream(); // Ensure any camera stream is stopped
+      cleanupCameraStream();
       loadTextureAndCreatePlane(imageData, window.innerWidth, window.innerHeight);
       initSelectionBox();
       controlButtonRef.current!.textContent = "Submit";
       uploadButtonRef.current?.style.setProperty("display", "none");
-      redoButtonRef.current?.classList.remove("hidden"); // Ensure redo is available
+      redoButtonRef.current?.classList.remove("hidden");
       completeCurrentProcess();
     };
     reader.readAsDataURL(file);
@@ -444,7 +452,7 @@ const FilterPageUI: React.FC = () => {
 
     sceneRef.current.add(model);
     modelsRef.current.push({ model, gltf: modelData.gltf });
-    addWindowButtonRef.current?.classList.remove("hidden");
+    if (!isCustomizerView) addWindowButtonRef.current?.classList.remove("hidden");
 
     fadeInModel(model);
     renderScene();
@@ -457,13 +465,13 @@ const FilterPageUI: React.FC = () => {
 
   const addAnotherWindow = () => {
     if (modelsRef.current.length === 0) return;
-    const sourceModel = modelsRef.current[modelsRef.current.length - 1].model; // Duplicate the last model
+    const sourceModel = modelsRef.current[modelsRef.current.length - 1].model;
     const modelData = preloadedModelsRef.current.get(BLIND_TYPES.find(b => b.type === selectedBlindType)?.modelUrl || BLIND_TYPES[0].modelUrl);
     if (!modelData) return;
 
     const newModel = modelData.model.clone();
     newModel.position.copy(sourceModel.position);
-    newModel.position.x += 2; // 200 units translated to world space (assuming previous scale of 100 units = 1 world unit)
+    newModel.position.x += 2;
     newModel.scale.copy(sourceModel.scale);
     newModel.userData.isDraggable = true;
 
@@ -588,23 +596,23 @@ const FilterPageUI: React.FC = () => {
     isProcessingRef.current = true;
     setIsLoading(true);
     setSelectedBlindType(type);
-  
+
     const blindType = BLIND_TYPES.find((b) => b.type === type);
     if (!blindType || !selectionBoxParamsRef.current || !initialModelParamsRef.current) return;
-  
+
     const currentModels = modelsRef.current.map(({ model }) => ({
       position: model.position.clone(),
       isDraggable: model.userData.isDraggable || false,
     }));
-  
+
     await cleanupCurrentModel();
-  
+
     let modelData = preloadedModelsRef.current.get(blindType.modelUrl);
     if (!modelData) {
       modelData = await loadModel(blindType.modelUrl);
       preloadedModelsRef.current.set(blindType.modelUrl, modelData);
     }
-  
+
     const updatedModels: ModelData[] = [];
     currentModels.forEach(({ position, isDraggable }) => {
       const newModel = modelData.model.clone();
@@ -617,7 +625,7 @@ const FilterPageUI: React.FC = () => {
       updatedModels.push({ model: newModel, gltf: modelData.gltf });
       fadeInModel(newModel);
     });
-  
+
     if (updatedModels.length === 0) {
       const newModel = modelData.model.clone();
       newModel.scale.copy(initialModelParamsRef.current.scale);
@@ -628,11 +636,10 @@ const FilterPageUI: React.FC = () => {
       updatedModels.push({ model: newModel, gltf: modelData.gltf });
       fadeInModel(newModel);
     }
-  
+
     modelsRef.current = updatedModels;
-    // Only show "Add Another Window" button if not in customizer view
     if (!isCustomizerView) addWindowButtonRef.current?.classList.remove("hidden");
-  
+
     renderScene();
     isProcessingRef.current = false;
     setIsLoading(false);
@@ -728,8 +735,10 @@ const FilterPageUI: React.FC = () => {
   };
   const cleanupCameraStream = () => {
     cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
-    videoRef.current!.srcObject = null;
-    videoRef.current!.classList.add("hidden");
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+      videoRef.current.classList.add("hidden");
+    }
     overlayImageRef.current?.classList.add("hidden");
   };
   const screenToWorld = (x: number, y: number, depth: number = -0.1) => {
@@ -763,8 +772,13 @@ const FilterPageUI: React.FC = () => {
       let applied = false;
       model.traverse((child) => {
         if (isMesh(child) && (!meshName || child.name === meshName)) {
-          child.material.dispose();
-          child.material = material;
+          if (Array.isArray(child.material)) {
+            child.material.forEach((mat) => mat.dispose());
+            child.material = material;
+          } else {
+            child.material.dispose();
+            child.material = material;
+          }
           child.material.needsUpdate = true;
           applied = true;
         }
@@ -865,7 +879,7 @@ const FilterPageUI: React.FC = () => {
     uploadButtonRef.current && document.body.removeChild(uploadButtonRef.current);
     redoButtonRef.current?.classList.add("hidden");
     saveButtonRef.current?.classList.remove("hidden");
-    addWindowButtonRef.current?.classList.add("hidden"); // Hide "Add Another Window" button
+    addWindowButtonRef.current?.classList.add("hidden");
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) =>
