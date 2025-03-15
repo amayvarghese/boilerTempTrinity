@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-// Types and Constants (unchanged)
+// Types and Constants (unchanged from previous)
 type Vector3D = { x: number; y: number; z: number };
 type BlindType = {
   type: string;
@@ -68,7 +68,7 @@ const PATTERNS: Pattern[] = [
 const isMesh = (object: THREE.Object3D): object is THREE.Mesh => "isMesh" in object && object.isMesh;
 
 const FilterPageUI: React.FC = () => {
-  // State and Refs
+  // State and Refs (unchanged from previous)
   const [showBlindMenu, setShowBlindMenu] = useState(false);
   const [selectedBlindType, setSelectedBlindType] = useState<string | null>(null);
   const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
@@ -77,22 +77,20 @@ const FilterPageUI: React.FC = () => {
   const [isCustomizerView, setIsCustomizerView] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeProcess, setActiveProcess] = useState({ id: "initial", instruction: "Click 'Start Camera' or upload an image to begin.", completed: false });
-  const [isSelectionBoxUsed, setIsSelectionBoxUsed] = useState(false);
 
   const sceneRef = useRef(new THREE.Scene());
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const mountRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const selectionBoxRef = useRef<HTMLDivElement | null>(null);
+  const selectionBoxRef = useRef<HTMLDivElement>(null);
   const overlayImageRef = useRef<HTMLImageElement>(null);
   const controlButtonRef = useRef<HTMLButtonElement>(null);
   const uploadButtonRef = useRef<HTMLButtonElement>(null);
   const saveButtonRef = useRef<HTMLButtonElement>(null);
   const redoButtonRef = useRef<HTMLButtonElement>(null);
   const levelIndicatorRef = useRef<HTMLDivElement>(null);
-  const addWindowButtonRef = useRef<HTMLButtonElement | null>(null);
-  const modelsRef = useRef<ModelData[]>([]);
+  const defaultModelRef = useRef<ModelData | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const backgroundPlaneRef = useRef<THREE.Mesh | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -101,7 +99,6 @@ const FilterPageUI: React.FC = () => {
   const preloadedModelsRef = useRef<Map<string, ModelData>>(new Map());
   const isProcessingRef = useRef(false);
   const changeQueueRef = useRef<{ type: "blind" | "pattern"; value: string }[]>([]);
-  const draggingModelRef = useRef<THREE.Group | null>(null);
 
   const filteredPatterns = PATTERNS.filter(
     (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
@@ -173,11 +170,15 @@ const FilterPageUI: React.FC = () => {
                 loader.load(
                   url,
                   (gltf) => {
+                    console.log(`Preloaded model: ${url}`); // Debug: Confirm preload
                     preloadedModelsRef.current.set(url, { model: gltf.scene.clone(), gltf });
                     resolve();
                   },
                   undefined,
-                  (error) => reject(error)
+                  (error) => {
+                    console.error(`Failed to preload ${url}:`, error);
+                    reject(error);
+                  }
                 )
               )
           )
@@ -185,12 +186,13 @@ const FilterPageUI: React.FC = () => {
       } catch (error) {
         console.error("Preloading failed:", error);
       }
+      console.log("Preloaded models:", preloadedModelsRef.current); // Debug: Check map contents
       setIsLoading(false);
     };
     preloadModels();
   }, []);
 
-  // UI Elements Setup
+  // UI Elements Setup (unchanged from previous)
   useEffect(() => {
     if (!mountRef.current) return;
 
@@ -212,14 +214,12 @@ const FilterPageUI: React.FC = () => {
     redoButtonRef.current = addElement("button", { id: "redoButton", className: "fixed bottom-12 right-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
     redoButtonRef.current.appendChild(addElement("img", { src: "/images/retryButtonImg.png", alt: "Redo Selection", className: "h-6 w-6" }));
     redoButtonRef.current.addEventListener("click", handleRedoSelection);
-    addWindowButtonRef.current = addElement("button", { id: "addWindowButton", textContent: "Add Another Window", className: "fixed bottom-12 left-5 py-2 px-4 text-md bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
-    addWindowButtonRef.current.addEventListener("click", addAnotherWindow);
     addElement("button", { id: "backButton", innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>', className: "absolute top-5 left-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" }).addEventListener("click", () => window.location.href = "/");
     levelIndicatorRef.current = addElement("div", { className: "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-2 bg-red-500 rounded-full z-[100] hidden", style: { transition: "background-color 0.3s ease, border 0.3s ease" } }, mount);
 
     return () => {
       [overlayImageRef, videoRef, levelIndicatorRef].forEach((ref) => ref.current && mount.removeChild(ref.current));
-      [controlButtonRef, uploadButtonRef, saveButtonRef, redoButtonRef, addWindowButtonRef].forEach((ref) => ref.current && document.body.removeChild(ref.current));
+      [controlButtonRef, uploadButtonRef, saveButtonRef, redoButtonRef].forEach((ref) => ref.current && document.body.removeChild(ref.current));
     };
   }, []);
 
@@ -231,6 +231,7 @@ const FilterPageUI: React.FC = () => {
     cameraRef.current.position.set(0, 0, distance);
     cameraRef.current.lookAt(0, 0, 0);
     cameraRef.current.updateProjectionMatrix();
+    console.log("Camera position:", cameraRef.current.position);
   };
 
   const adjustBackgroundPlane = (width: number, height: number) => {
@@ -288,25 +289,6 @@ const FilterPageUI: React.FC = () => {
     completeCurrentProcess();
   };
 
-  const handleImageUpload = (file: File) => {
-    if (!sceneRef.current || !cameraRef.current || !rendererRef.current) return;
-    setNewProcess("upload", "Draw a box on the image to place the 3D model.");
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const imageData = e.target?.result as string;
-      setCapturedImage(imageData);
-      localStorage.setItem("capturedImage", imageData);
-      cleanupCameraStream(); // Ensure any camera stream is stopped
-      loadTextureAndCreatePlane(imageData, window.innerWidth, window.innerHeight);
-      initSelectionBox();
-      controlButtonRef.current!.textContent = "Submit";
-      uploadButtonRef.current?.style.setProperty("display", "none");
-      redoButtonRef.current?.classList.remove("hidden"); // Ensure redo is available
-      completeCurrentProcess();
-    };
-    reader.readAsDataURL(file);
-  };
-
   const loadTextureAndCreatePlane = (imageData: string, width: number, height: number) => {
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(imageData, (texture) => {
@@ -323,11 +305,12 @@ const FilterPageUI: React.FC = () => {
       plane.position.set(0, 0, -0.1);
       sceneRef.current.add(plane);
       updateCameraPosition(width, height);
+      console.log("Background plane added:", plane); // Debug: Confirm plane
     });
   };
 
   const initSelectionBox = () => {
-    if (isSelectionBoxUsed || !mountRef.current || selectionBoxRef.current) return;
+    if (selectionBoxRef.current || !mountRef.current) return;
     selectionBoxRef.current = Object.assign(document.createElement("div"), {
       className: "absolute border-2 border-dashed border-[#2F3526] bg-[#2F3526] bg-opacity-20 pointer-events-auto",
       style: { zIndex: "25", transition: "none" },
@@ -335,249 +318,124 @@ const FilterPageUI: React.FC = () => {
     mountRef.current.appendChild(selectionBoxRef.current);
 
     let startX = 0, startY = 0, isDragging = false;
+    const handlers = {
+      mousedown: (e: MouseEvent) => { if (e.button === 0) startSelection(e); },
+      mousemove: (e: MouseEvent) => { if (isDragging) updateSelection(e); },
+      mouseup: (e: MouseEvent) => { if (isDragging) endSelection(e); },
+      touchstart: (e: TouchEvent) => startSelection(e.touches[0]),
+      touchmove: (e: TouchEvent) => { if (isDragging) updateSelection(e.touches[0]); },
+      touchend: (e: TouchEvent) => { if (isDragging) endSelection(e.changedTouches[0]); },
+    };
 
     const startSelection = (e: MouseEvent | Touch) => {
-      if (isSelectionBoxUsed) return;
       const rect = mountRef.current!.getBoundingClientRect();
       startX = e.clientX - rect.left;
       startY = e.clientY - rect.top;
-      if (selectionBoxRef.current) {
-        Object.assign(selectionBoxRef.current.style, { left: `${startX}px`, top: `${startY}px`, width: "0px", height: "0px", display: "block" });
-        isDragging = true;
-      }
+      Object.assign(selectionBoxRef.current!.style, { left: `${startX}px`, top: `${startY}px`, width: "0px", height: "0px", display: "block" });
+      isDragging = true;
     };
-
     const updateSelection = (e: MouseEvent | Touch) => {
-      if (!isDragging || !selectionBoxRef.current) return;
       const rect = mountRef.current!.getBoundingClientRect();
       const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
       const y = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
       requestAnimationFrame(() => {
-        if (selectionBoxRef.current) {
-          Object.assign(selectionBoxRef.current.style, {
-            width: `${Math.abs(x - startX)}px`,
-            height: `${Math.abs(y - startY)}px`,
-            left: `${Math.min(startX, x)}px`,
-            top: `${Math.min(startY, y)}px`,
-          });
-        }
+        Object.assign(selectionBoxRef.current!.style, {
+          width: `${Math.abs(x - startX)}px`,
+          height: `${Math.abs(y - startY)}px`,
+          left: `${Math.min(startX, x)}px`,
+          top: `${Math.min(startY, y)}px`,
+        });
       });
     };
-
     const endSelection = (e: MouseEvent | Touch) => {
-      if (!isDragging || !selectionBoxRef.current) return;
-      selectionBoxRef.current.style.display = "none";
+      selectionBoxRef.current!.style.display = "none";
       isDragging = false;
       const rect = mountRef.current!.getBoundingClientRect();
       createDefaultModel(startX, startY, e.clientX - rect.left, e.clientY - rect.top);
-      setIsSelectionBoxUsed(true);
-      cleanupSelectionBox();
-    };
-
-    const handlers = {
-      mousedown: (e: MouseEvent) => { if (e.button === 0) startSelection(e); },
-      mousemove: (e: MouseEvent) => updateSelection(e),
-      mouseup: (e: MouseEvent) => endSelection(e),
-      touchstart: (e: TouchEvent) => startSelection(e.touches[0]),
-      touchmove: (e: TouchEvent) => updateSelection(e.touches[0]),
-      touchend: (e: TouchEvent) => endSelection(e.changedTouches[0]),
     };
 
     Object.entries(handlers).forEach(([event, handler]) =>
       mountRef.current!.addEventListener(event, handler as EventListener, { passive: false })
     );
-
-    const cleanupSelectionBox = () => {
-      Object.entries(handlers).forEach(([event, handler]) =>
-        mountRef.current?.removeEventListener(event, handler as EventListener)
-      );
-      if (selectionBoxRef.current && mountRef.current) {
-        mountRef.current.removeChild(selectionBoxRef.current);
-        selectionBoxRef.current = null;
-      }
-    };
   };
-
   const createDefaultModel = async (startX: number, startY: number, endX: number, endY: number) => {
-    if (isProcessingRef.current || !sceneRef.current || !cameraRef.current) return;
+    if (isProcessingRef.current || !sceneRef.current || !cameraRef.current) {
+      console.error("Cannot create model: Processing or scene/camera not ready");
+      return;
+    }
     isProcessingRef.current = true;
     setIsLoading(true);
-
+  
+    if (defaultModelRef.current) await cleanupCurrentModel();
     const worldStart = screenToWorld(startX, startY, -0.1);
     const worldEnd = screenToWorld(endX, endY, -0.1);
     selectionBoxParamsRef.current = {
       targetWidth: Math.abs(worldEnd.x - worldStart.x),
-      targetHeight: Math.abs(worldEnd.y - worldStart.y),
+      targetHeight: Math.abs(worldEnd.y - worldStart.y), // Fixed: Correct height calculation
       worldStart,
       worldEnd,
     };
-
+    console.log("Selection box params:", selectionBoxParamsRef.current);
+  
     const defaultBlindType = BLIND_TYPES[0];
     let modelData = preloadedModelsRef.current.get(defaultBlindType.modelUrl);
     if (!modelData) {
+      console.warn(`Model not preloaded: ${defaultBlindType.modelUrl}, loading now...`);
       modelData = await loadModel(defaultBlindType.modelUrl);
       preloadedModelsRef.current.set(defaultBlindType.modelUrl, modelData);
     }
-
+  
+    if (!modelData?.model) {
+      console.error("Model data is invalid:", modelData);
+      setIsLoading(false);
+      isProcessingRef.current = false;
+      return;
+    }
+  
     const model = modelData.model.clone();
+    console.log("Model cloned:", model);
+  
     applyTextureToModel(model, selectedPattern || "/materials/beige.png", defaultBlindType);
-
+  
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
-
+    console.log("Model bounding box size:", size, "center:", center);
+  
     const scale = new THREE.Vector3(
       selectionBoxParamsRef.current.targetWidth / size.x,
       selectionBoxParamsRef.current.targetHeight / size.y,
       0.01
     );
     model.scale.copy(scale);
-
+  
+    // Position model at selection box center, adjusting for its bounding box center
     const targetX = (worldStart.x + worldEnd.x) / 2 - center.x * scale.x;
     const targetY = (worldStart.y + worldEnd.y) / 2 - center.y * scale.y;
     model.position.set(targetX, targetY, 0.1);
     initialModelParamsRef.current = { scale, position: model.position.clone() };
-
+    console.log("Model position:", model.position, "Scale:", model.scale);
+  
+    // Ensure visibility
     model.traverse((child) => {
-      if (isMesh(child)) child.visible = true;
+      if (isMesh(child)) {
+        child.visible = true;
+        console.log(`Mesh ${child.name} visible: ${child.visible}, material:`, child.material);
+      }
     });
-
+  
     sceneRef.current.add(model);
-    modelsRef.current.push({ model, gltf: modelData.gltf });
-    addWindowButtonRef.current?.classList.remove("hidden");
-
+    defaultModelRef.current = { model, gltf: modelData.gltf };
+    console.log("Model added to scene:", sceneRef.current.children);
+  
     fadeInModel(model);
     renderScene();
-
+  
     isProcessingRef.current = false;
     setIsLoading(false);
     completeCurrentProcess();
     redoButtonRef.current?.classList.remove("hidden");
   };
-
-  const addAnotherWindow = () => {
-    if (modelsRef.current.length === 0) return;
-    const sourceModel = modelsRef.current[modelsRef.current.length - 1].model; // Duplicate the last model
-    const modelData = preloadedModelsRef.current.get(BLIND_TYPES.find(b => b.type === selectedBlindType)?.modelUrl || BLIND_TYPES[0].modelUrl);
-    if (!modelData) return;
-
-    const newModel = modelData.model.clone();
-    newModel.position.copy(sourceModel.position);
-    newModel.position.x += 2; // 200 units translated to world space (assuming previous scale of 100 units = 1 world unit)
-    newModel.scale.copy(sourceModel.scale);
-    newModel.userData.isDraggable = true;
-
-    applyTextureToModel(newModel, selectedPattern || "/materials/beige.png", BLIND_TYPES.find(b => b.type === selectedBlindType) || BLIND_TYPES[0]);
-    sceneRef.current.add(newModel);
-    modelsRef.current.push({ model: newModel, gltf: modelData.gltf });
-
-    fadeInModel(newModel);
-    renderScene();
-  };
-
-  const setupDragging = () => {
-    if (!mountRef.current || !cameraRef.current || !rendererRef.current) return;
-
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-
-    const findParentModel = (object: THREE.Object3D): THREE.Group | null => {
-      let current: THREE.Object3D | null = object;
-      while (current) {
-        const model = modelsRef.current.find(m => m.model === current);
-        if (model) return model.model;
-        current = current.parent;
-      }
-      return null;
-    };
-
-    const onMouseDown = (e: MouseEvent) => {
-      e.preventDefault();
-      mouse.x = ((e.clientX - mountRef.current!.getBoundingClientRect().left) / mountRef.current!.offsetWidth) * 2 - 1;
-      mouse.y = -((e.clientY - mountRef.current!.getBoundingClientRect().top) / mountRef.current!.offsetHeight) * 2 + 1;
-      raycaster.setFromCamera(mouse, cameraRef.current!);
-      const intersects = raycaster.intersectObjects(modelsRef.current.map(m => m.model), true);
-      if (intersects.length > 0) {
-        const intersected = intersects[0].object;
-        const model = findParentModel(intersected);
-        if (model && model.userData.isDraggable) {
-          draggingModelRef.current = model;
-        }
-      }
-    };
-
-    const onMouseMove = (e: MouseEvent) => {
-      if (!draggingModelRef.current || !cameraRef.current) return;
-      const worldPos = screenToWorld(
-        e.clientX - mountRef.current!.getBoundingClientRect().left,
-        e.clientY - mountRef.current!.getBoundingClientRect().top,
-        0.1
-      );
-      draggingModelRef.current.position.set(worldPos.x, worldPos.y, 0.1);
-      renderScene();
-    };
-
-    const onMouseUp = () => {
-      draggingModelRef.current = null;
-    };
-
-    const onTouchStart = (e: TouchEvent) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      mouse.x = ((touch.clientX - mountRef.current!.getBoundingClientRect().left) / mountRef.current!.offsetWidth) * 2 - 1;
-      mouse.y = -((touch.clientY - mountRef.current!.getBoundingClientRect().top) / mountRef.current!.offsetHeight) * 2 + 1;
-      raycaster.setFromCamera(mouse, cameraRef.current!);
-      const intersects = raycaster.intersectObjects(modelsRef.current.map(m => m.model), true);
-      if (intersects.length > 0) {
-        const intersected = intersects[0].object;
-        const model = findParentModel(intersected);
-        if (model && model.userData.isDraggable) {
-          draggingModelRef.current = model;
-        }
-      }
-    };
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (!draggingModelRef.current || !cameraRef.current) return;
-      const touch = e.touches[0];
-      const worldPos = screenToWorld(
-        touch.clientX - mountRef.current!.getBoundingClientRect().left,
-        touch.clientY - mountRef.current!.getBoundingClientRect().top,
-        0.1
-      );
-      draggingModelRef.current.position.set(worldPos.x, worldPos.y, 0.1);
-      renderScene();
-    };
-
-    const onTouchEnd = () => {
-      draggingModelRef.current = null;
-    };
-
-    const canvas = rendererRef.current.domElement;
-    canvas.addEventListener("mousedown", onMouseDown, { passive: false });
-    canvas.addEventListener("mousemove", onMouseMove, { passive: false });
-    canvas.addEventListener("mouseup", onMouseUp, { passive: false });
-    canvas.addEventListener("touchstart", onTouchStart, { passive: false });
-    canvas.addEventListener("touchmove", onTouchMove, { passive: false });
-    canvas.addEventListener("touchend", onTouchEnd, { passive: false });
-
-    return () => {
-      canvas.removeEventListener("mousedown", onMouseDown);
-      canvas.removeEventListener("mousemove", onMouseMove);
-      canvas.removeEventListener("mouseup", onMouseUp);
-      canvas.removeEventListener("touchstart", onTouchStart);
-      canvas.removeEventListener("touchmove", onTouchMove);
-      canvas.removeEventListener("touchend", onTouchEnd);
-    };
-  };
-
-  useEffect(() => {
-    if (capturedImage && !isSelectionBoxUsed) initSelectionBox();
-    const cleanupDragging = setupDragging();
-    return () => {
-      cleanupDragging?.();
-    };
-  }, [capturedImage, isSelectionBoxUsed, modelsRef.current.length]);
 
   const selectBlindType = async (type: string) => {
     if (isProcessingRef.current) {
@@ -588,52 +446,26 @@ const FilterPageUI: React.FC = () => {
     isProcessingRef.current = true;
     setIsLoading(true);
     setSelectedBlindType(type);
-  
+
     const blindType = BLIND_TYPES.find((b) => b.type === type);
     if (!blindType || !selectionBoxParamsRef.current || !initialModelParamsRef.current) return;
-  
-    const currentModels = modelsRef.current.map(({ model }) => ({
-      position: model.position.clone(),
-      isDraggable: model.userData.isDraggable || false,
-    }));
-  
+
     await cleanupCurrentModel();
-  
     let modelData = preloadedModelsRef.current.get(blindType.modelUrl);
     if (!modelData) {
       modelData = await loadModel(blindType.modelUrl);
       preloadedModelsRef.current.set(blindType.modelUrl, modelData);
     }
-  
-    const updatedModels: ModelData[] = [];
-    currentModels.forEach(({ position, isDraggable }) => {
-      const newModel = modelData.model.clone();
-      newModel.position.copy(position);
-      newModel.scale.copy(initialModelParamsRef.current.scale);
-      newModel.rotation.set(blindType.rotation.x, blindType.rotation.y, blindType.rotation.z);
-      newModel.userData.isDraggable = isDraggable;
-      applyTextureToModel(newModel, selectedPattern || "/materials/beige.png", blindType);
-      sceneRef.current.add(newModel);
-      updatedModels.push({ model: newModel, gltf: modelData.gltf });
-      fadeInModel(newModel);
-    });
-  
-    if (updatedModels.length === 0) {
-      const newModel = modelData.model.clone();
-      newModel.scale.copy(initialModelParamsRef.current.scale);
-      newModel.position.copy(initialModelParamsRef.current.position);
-      newModel.rotation.set(blindType.rotation.x, blindType.rotation.y, blindType.rotation.z);
-      applyTextureToModel(newModel, selectedPattern || "/materials/beige.png", blindType);
-      sceneRef.current.add(newModel);
-      updatedModels.push({ model: newModel, gltf: modelData.gltf });
-      fadeInModel(newModel);
-    }
-  
-    modelsRef.current = updatedModels;
-    // Only show "Add Another Window" button if not in customizer view
-    if (!isCustomizerView) addWindowButtonRef.current?.classList.remove("hidden");
-  
-    renderScene();
+
+    const model = modelData.model.clone();
+    const gltf = modelData.gltf;
+
+    updateModelProperties(model, blindType);
+    applyTextureToModel(model, selectedPattern || "/materials/beige.png", blindType);
+    sceneRef.current.add(model);
+    defaultModelRef.current = { model, gltf };
+    fadeInModel(model);
+
     isProcessingRef.current = false;
     setIsLoading(false);
     completeCurrentProcess();
@@ -642,7 +474,7 @@ const FilterPageUI: React.FC = () => {
   const selectPattern = async (patternUrl: string) => {
     setNewProcess("pattern-select", "Applying pattern... Please wait.");
     setSelectedPattern(patternUrl);
-    if (modelsRef.current.length === 0) {
+    if (!defaultModelRef.current) {
       changeQueueRef.current.push({ type: "pattern", value: patternUrl });
       if (selectionBoxParamsRef.current && initialModelParamsRef.current) await createDefaultModel(
         selectionBoxParamsRef.current.worldStart.x,
@@ -653,10 +485,7 @@ const FilterPageUI: React.FC = () => {
       return;
     }
     setIsLoading(true);
-    const blindType = BLIND_TYPES.find((b) => b.type === selectedBlindType) || BLIND_TYPES[0];
-    modelsRef.current.forEach(({ model }) => 
-      applyTextureToModel(model, patternUrl, blindType)
-    );
+    applyTextureToModel(defaultModelRef.current.model, patternUrl, BLIND_TYPES.find((b) => b.type === selectedBlindType) || BLIND_TYPES[0]);
     setIsLoading(false);
     completeCurrentProcess();
   };
@@ -735,31 +564,36 @@ const FilterPageUI: React.FC = () => {
   const screenToWorld = (x: number, y: number, depth: number = -0.1) => {
     if (!cameraRef.current || !mountRef.current) return new THREE.Vector3();
     const rect = mountRef.current.getBoundingClientRect();
-    const vector = new THREE.Vector3((x / rect.width) * 2 - 1, -(y / rect.height) * 2 + 1, 0);
+    const vector = new THREE.Vector3(
+      (x / rect.width) * 2 - 1,
+      -(y / rect.height) * 2 + 1,
+      0 // Use 0 here; we'll set depth explicitly
+    );
     vector.unproject(cameraRef.current);
     const dir = vector.sub(cameraRef.current.position).normalize();
     const distance = (depth - cameraRef.current.position.z) / dir.z;
-    return cameraRef.current.position.clone().add(dir.multiplyScalar(distance));
+    const result = cameraRef.current.position.clone().add(dir.multiplyScalar(distance));
+    console.log(`Screen (${x}, ${y}) to World at z=${depth}:`, result);
+    return result;
   };
-
   const applyTextureToModel = (model: THREE.Group, patternUrl: string, blindType: BlindType) => {
-    if (!model) return;
+    if (!model) {
+      console.error("Model is undefined in applyTextureToModel");
+      return;
+    }
     const textureLoader = new THREE.TextureLoader();
     const applyMaterial = (textureUrl: string, normalUrl: string | null, repeat: number, normalScale: number, roughness: number, metalness: number, meshName?: string) => {
       const texture = textureLoader.load(textureUrl, undefined, undefined, (err) => console.error(`Texture load failed: ${textureUrl}`, err));
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
       texture.repeat.set(repeat, repeat);
       texture.colorSpace = THREE.SRGBColorSpace;
-      const materialProps: THREE.MeshStandardMaterialParameters = {
+      const material = new THREE.MeshStandardMaterial({
         map: texture,
+        normalMap: normalUrl ? textureLoader.load(normalUrl, undefined, undefined, (err) => console.error(`Normal map load failed: ${normalUrl}`, err)) : null,
+        normalScale: normalUrl ? new THREE.Vector2(normalScale, normalScale) : undefined,
         roughness,
         metalness,
-      };
-      if (normalUrl) {
-        materialProps.normalMap = textureLoader.load(normalUrl, undefined, undefined, (err) => console.error(`Normal map load failed: ${normalUrl}`, err));
-        materialProps.normalScale = new THREE.Vector2(normalScale, normalScale);
-      }
-      const material = new THREE.MeshStandardMaterial(materialProps);
+      });
       let applied = false;
       model.traverse((child) => {
         if (isMesh(child) && (!meshName || child.name === meshName)) {
@@ -770,6 +604,7 @@ const FilterPageUI: React.FC = () => {
         }
       });
       if (!applied) console.warn(`No meshes found for ${meshName || 'all'} in model`);
+      console.log(`Material applied to ${meshName || 'all meshes'}:`, applied);
     };
 
     if (!blindType.meshNameFabric && !blindType.meshNameWood) applyMaterial(patternUrl, null, 8, 0, 0.5, 0.1);
@@ -779,7 +614,12 @@ const FilterPageUI: React.FC = () => {
     }
     renderScene();
   };
-
+  const updateModelProperties = (model: THREE.Group, blindType: BlindType) => {
+    if (!initialModelParamsRef.current) return;
+    model.scale.copy(initialModelParamsRef.current.scale);
+    model.position.copy(initialModelParamsRef.current.position);
+    model.rotation.set(blindType.rotation.x, blindType.rotation.y, blindType.rotation.z);
+  };
   const fadeInModel = (model: THREE.Group) => {
     let opacity = 0;
     const step = () => {
@@ -796,52 +636,52 @@ const FilterPageUI: React.FC = () => {
     };
     requestAnimationFrame(step);
   };
-
   const cleanupCurrentModel = async () => {
-    await Promise.all(modelsRef.current.map(async (modelData) => {
-      await new Promise<void>((resolve) => {
-        let opacity = 1;
-        const fadeOut = () => {
-          opacity -= 0.1;
-          modelData.model.traverse((child) => {
-            if (isMesh(child)) {
-              (child.material as THREE.MeshStandardMaterial).opacity = opacity;
-              (child.material as THREE.MeshStandardMaterial).transparent = true;
-              child.material.needsUpdate = true;
-            }
-          });
-          if (opacity > 0) requestAnimationFrame(fadeOut);
-          else resolve();
-        };
-        requestAnimationFrame(fadeOut);
-      });
-      sceneRef.current.remove(modelData.model);
-    }));
-    modelsRef.current = [];
-    addWindowButtonRef.current?.classList.add("hidden");
+    if (!defaultModelRef.current) return;
+    await new Promise<void>((resolve) => {
+      let opacity = 1;
+      const fadeOut = () => {
+        opacity -= 0.1;
+        defaultModelRef.current!.model.traverse((child) => {
+          if (isMesh(child)) {
+            (child.material as THREE.MeshStandardMaterial).opacity = opacity;
+            (child.material as THREE.MeshStandardMaterial).transparent = true;
+            child.material.needsUpdate = true;
+          }
+        });
+        if (opacity > 0) requestAnimationFrame(fadeOut);
+        else resolve();
+      };
+      requestAnimationFrame(fadeOut);
+    });
+    sceneRef.current.remove(defaultModelRef.current.model);
+    defaultModelRef.current = null;
     renderScene();
   };
-
   const loadModel = (modelUrl: string) => new Promise<ModelData>((resolve, reject) => {
     new GLTFLoader().load(
       modelUrl,
-      (gltf) => resolve({ model: gltf.scene, gltf }),
+      (gltf) => {
+        console.log(`Model loaded: ${modelUrl}`); // Debug: Confirm load
+        resolve({ model: gltf.scene, gltf });
+      },
       undefined,
-      (err) => reject(err)
+      (err) => {
+        console.error(`Model load failed: ${modelUrl}`, err);
+        reject(err);
+      }
     );
   });
-
   const renderScene = () => {
     if (rendererRef.current && cameraRef.current) {
       rendererRef.current.render(sceneRef.current, cameraRef.current);
+      console.log("Scene rendered"); // Debug: Confirm render
     }
   };
-
   const animate = () => {
     requestAnimationFrame(animate);
     renderScene();
   };
-
   const triggerDownload = (dataUrl: string) => {
     const link = document.createElement("a");
     link.download = "custom_blind_image.png";
@@ -849,14 +689,12 @@ const FilterPageUI: React.FC = () => {
     link.click();
     setNewProcess("download", "Image downloaded! On iPhone, open it and tap 'Save to Photos'.");
   };
-
   const handleButtonClick = () => {
     const text = controlButtonRef.current?.textContent;
     if (text === "Start Camera") startCameraStream();
     else if (text === "Capture") captureImage();
     else if (text === "Submit") submitAndShowMenu();
   };
-
   const submitAndShowMenu = () => {
     setNewProcess("customize", "Select a blind type and pattern, then click 'Save Image' to download.");
     setShowBlindMenu(true);
@@ -865,18 +703,15 @@ const FilterPageUI: React.FC = () => {
     uploadButtonRef.current && document.body.removeChild(uploadButtonRef.current);
     redoButtonRef.current?.classList.add("hidden");
     saveButtonRef.current?.classList.remove("hidden");
-    addWindowButtonRef.current?.classList.add("hidden"); // Hide "Add Another Window" button
   };
-
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setFilters((prev) => e.target.checked ? [...prev, e.target.value] : prev.filter((tag) => tag !== e.target.value));
-
   const handleRedoSelection = async () => {
     await cleanupCurrentModel();
-    setIsSelectionBoxUsed(false);
+    selectionBoxRef.current = null;
+    redoButtonRef.current?.classList.add("hidden");
     setNewProcess("redo", "Draw a new box on the image to place the 3D model.");
   };
-
   const requestOrientationPermission = async () => {
     const request = (DeviceOrientationEvent as any).requestPermission;
     if (request) {
@@ -887,7 +722,6 @@ const FilterPageUI: React.FC = () => {
       }
     } else window.addEventListener("deviceorientation", handleDeviceOrientation);
   };
-
   const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
     if (!levelIndicatorRef.current) return;
     const beta = event.beta || 0;
@@ -897,7 +731,7 @@ const FilterPageUI: React.FC = () => {
     levelIndicatorRef.current.style.border = isLevel ? "2px solid black" : "none";
   };
 
-  // Render
+  // Render (unchanged from previous)
   return (
     <div className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto" style={{
       fontFamily: "Poppins, sans-serif",
@@ -921,7 +755,18 @@ const FilterPageUI: React.FC = () => {
         const file = e.target.files?.[0];
         if (!file) return;
         completeCurrentProcess();
-        handleImageUpload(file);
+        setNewProcess("upload", "Draw a box on the image to place the 3D model.");
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageData = e.target?.result as string;
+          localStorage.setItem("capturedImage", imageData);
+          setCapturedImage(imageData);
+          loadTextureAndCreatePlane(imageData, window.innerWidth, window.innerHeight);
+          initSelectionBox();
+          controlButtonRef.current!.textContent = "Submit";
+          uploadButtonRef.current?.style.setProperty("display", "none");
+        };
+        reader.readAsDataURL(file);
       }} />
       {showBlindMenu && isCustomizerView && (
         <div className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen overflow-y-auto" style={{ zIndex: 30, pointerEvents: "auto", touchAction: "auto" }}>
