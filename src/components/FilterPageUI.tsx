@@ -269,8 +269,16 @@ const FilterPageUI: React.FC = () => {
       });
       cameraStreamRef.current = stream;
       if (videoRef.current) {
+        videoRef.current.setAttribute("playsinline", "true"); // ✅ Ensure inline playback
+        videoRef.current.setAttribute("autoplay", "true");
+        videoRef.current.setAttribute("muted", "true");
+        videoRef.current.playsInline = true;
+        videoRef.current.autoplay = true;
+        videoRef.current.muted = true;
         videoRef.current.srcObject = stream;
-        videoRef.current.classList.remove("hidden"); // Ensure it’s visible
+      
+        videoRef.current.classList.remove("hidden");
+      
         videoRef.current.play().then(() => {
           adjustVideoAspect();
           overlayImageRef.current?.classList.remove("hidden");
