@@ -110,7 +110,7 @@ const FilterPageUI: React.FC = () => {
   const filteredPatterns = PATTERNS.filter(
     (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
   );
-  // Fix 1: Ensure activeProcess.completed is always boolean
+  // Fix 1: Ensure activeProcess.completed is always boolean,,,
   const instruction = activeProcess && typeof activeProcess.completed === "boolean" 
   ? (!activeProcess.completed ? activeProcess.instruction : "") 
   : "";
