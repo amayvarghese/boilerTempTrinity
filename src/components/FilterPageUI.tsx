@@ -110,13 +110,10 @@ const FilterPageUI: React.FC = () => {
   const filteredPatterns = PATTERNS.filter(
     (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
   );
-
-  const instruction =
-    activeProcess && typeof activeProcess.completed === "boolean"
-      ? !activeProcess.completed
-        ? activeProcess.instruction
-        : ""
-      : "";
+  // Fix 1: Ensure activeProcess.completed is always boolean,,,
+  const instruction = activeProcess && typeof activeProcess.completed === "boolean" 
+  ? (!activeProcess.completed ? activeProcess.instruction : "") 
+  : "";
 
   const setNewProcess = (id: string, instruction: string) =>
     setActiveProcess({ id, instruction, completed: false });
@@ -138,10 +135,7 @@ const FilterPageUI: React.FC = () => {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.LinearToneMapping;
     rendererRef.current = renderer;
-
-    if (mountRef.current && !mountRef.current.contains(renderer.domElement)) {
-      mountRef.current.appendChild(renderer.domElement);
-    }
+    mountRef.current?.appendChild(renderer.domElement);
 
     sceneRef.current.add(new THREE.AmbientLight(0xffffff, 0.6));
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
@@ -166,9 +160,7 @@ const FilterPageUI: React.FC = () => {
     window.addEventListener("resize", handleResize);
 
     return () => {
-      if (mountRef.current && renderer.domElement && mountRef.current.contains(renderer.domElement)) {
-        mountRef.current.removeChild(renderer.domElement);
-      }
+      mountRef.current?.removeChild(renderer.domElement);
       renderer.dispose();
       window.removeEventListener("resize", handleResize);
       cleanupThreeJs();
@@ -222,31 +214,23 @@ const FilterPageUI: React.FC = () => {
 
     overlayImageRef.current = addElement<HTMLImageElement>("img", { src: "images/overlayFilter.png", className: "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70" }, mount);
     videoRef.current = addElement<HTMLVideoElement>("video", { playsinline: true, muted: true, controls: false, className: "absolute inset-0 w-full h-full object-cover z-[10]" }, mount);
-    controlButtonRef.current = addElement<HTMLButtonElement>("button", { id: "controlButton", textContent: "Start Camera", className: "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" }, document.body);
+    controlButtonRef.current = addElement<HTMLButtonElement>("button", { id: "controlButton", textContent: "Start Camera", className: "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" });
     controlButtonRef.current?.addEventListener("click", handleButtonClick);
-    uploadButtonRef.current = addElement<HTMLButtonElement>("button", { id: "uploadButton", textContent: "Upload Image", className: "fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" }, document.body);
+    uploadButtonRef.current = addElement<HTMLButtonElement>("button", { id: "uploadButton", textContent: "Upload Image", className: "fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" });
     uploadButtonRef.current?.addEventListener("click", () => fileInputRef.current?.click());
-    saveButtonRef.current = addElement<HTMLButtonElement>("button", { id: "saveButton", textContent: "Save Image", className: "fixed bottom-16 right-5 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" }, document.body);
+    saveButtonRef.current = addElement<HTMLButtonElement>("button", { id: "saveButton", textContent: "Save Image", className: "fixed bottom-16 right-5 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
     saveButtonRef.current?.addEventListener("click", saveImage);
-    redoButtonRef.current = addElement<HTMLButtonElement>("button", { id: "redoButton", className: "fixed bottom-12 right-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" }, document.body);
+    redoButtonRef.current = addElement<HTMLButtonElement>("button", { id: "redoButton", className: "fixed bottom-12 right-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
     redoButtonRef.current?.appendChild(addElement("img", { src: "/images/retryButtonImg.png", alt: "Redo Selection", className: "h-6 w-6" }));
     redoButtonRef.current?.addEventListener("click", handleRedoSelection);
-    addWindowButtonRef.current = addElement<HTMLButtonElement>("button", { id: "addWindowButton", textContent: "Add Blind", className: "fixed bottom-12 left-5 py-2 px-4 text-md bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" }, document.body);
+    addWindowButtonRef.current = addElement<HTMLButtonElement>("button", { id: "addWindowButton", textContent: "Add Blind", className: "fixed bottom-12 left-5 py-2 px-4 text-md bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
     addWindowButtonRef.current?.addEventListener("click", addAnotherWindow);
-    addElement("button", { id: "backButton", innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>', className: "absolute top-5 left-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" }, document.body).addEventListener("click", () => window.location.href = "/");
+    addElement("button", { id: "backButton", innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>', className: "absolute top-5 left-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" }).addEventListener("click", () => window.location.href = "/");
     levelIndicatorRef.current = addElement<HTMLDivElement>("div", { className: "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-2 bg-red-500 rounded-full z-[100] hidden", style: { transition: "background-color 0.3s ease, border 0.3s ease" } }, mount);
 
     return () => {
-      [overlayImageRef, videoRef, levelIndicatorRef].forEach((ref) => {
-        if (ref.current && mount.contains(ref.current)) {
-          mount.removeChild(ref.current);
-        }
-      });
-      [controlButtonRef, uploadButtonRef, saveButtonRef, redoButtonRef, addWindowButtonRef].forEach((ref) => {
-        if (ref.current && document.body.contains(ref.current)) {
-          document.body.removeChild(ref.current);
-        }
-      });
+      [overlayImageRef, videoRef, levelIndicatorRef].forEach((ref) => ref.current && mount.removeChild(ref.current));
+      [controlButtonRef, uploadButtonRef, saveButtonRef, redoButtonRef, addWindowButtonRef].forEach((ref) => ref.current && document.body.removeChild(ref.current));
     };
   }, []);
 
@@ -276,13 +260,10 @@ const FilterPageUI: React.FC = () => {
   const startCameraStream = async () => {
     setNewProcess("camera", "Point your camera and click 'Capture' to take a photo.");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } });
       cameraStreamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.classList.remove("hidden");
         videoRef.current.play().then(() => {
           adjustVideoAspect();
           overlayImageRef.current?.classList.remove("hidden");
@@ -293,7 +274,6 @@ const FilterPageUI: React.FC = () => {
         });
       }
     } catch (err) {
-      console.error("Camera access failed:", err);
       setNewProcess("camera-error", "Failed to access camera. Please upload an image instead.");
     }
   };
@@ -301,23 +281,18 @@ const FilterPageUI: React.FC = () => {
   const captureImage = () => {
     if (!videoRef.current || !sceneRef.current || !cameraRef.current || !rendererRef.current) return;
     setNewProcess("capture", "Draw a box on the image to place the 3D model.");
-
     const canvas = document.createElement("canvas");
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
-    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(videoRef.current, 0, 0);
     const imageData = canvas.toDataURL("image/png");
-
     setCapturedImage(imageData);
     localStorage.setItem("capturedImage", imageData);
-
     cleanupCameraStream();
     loadTextureAndCreatePlane(imageData, window.innerWidth, window.innerHeight);
     initSelectionBox();
-
     controlButtonRef.current!.textContent = "Submit";
     levelIndicatorRef.current?.classList.add("hidden");
     window.removeEventListener("deviceorientation", handleDeviceOrientation);
@@ -370,86 +345,53 @@ const FilterPageUI: React.FC = () => {
     });
     mountRef.current.appendChild(selectionBoxRef.current);
 
-    let startX = 0, startY = 0, endX = 0, endY = 0, isDragging = false;
-
-    const getClientPosition = (event: MouseEvent | Touch) => {
-      const rect = mountRef.current!.getBoundingClientRect();
-      return {
-        x: Math.max(0, Math.min(event.clientX - rect.left, rect.width)),
-        y: Math.max(0, Math.min(event.clientY - rect.top, rect.height)),
-      };
-    };
+    let startX = 0, startY = 0, isDragging = false;
 
     const startSelection = (e: MouseEvent | Touch) => {
       if (isSelectionBoxUsed) return;
-      const pos = getClientPosition(e);
-      startX = pos.x;
-      startY = pos.y;
-      endX = pos.x;
-      endY = pos.y;
+      const rect = mountRef.current!.getBoundingClientRect();
+      startX = e.clientX - rect.left;
+      startY = e.clientY - rect.top;
       if (selectionBoxRef.current) {
-        Object.assign(selectionBoxRef.current.style, {
-          left: `${startX}px`,
-          top: `${startY}px`,
-          width: "0px",
-          height: "0px",
-          display: "block",
-        });
+        Object.assign(selectionBoxRef.current.style, { left: `${startX}px`, top: `${startY}px`, width: "0px", height: "0px", display: "block" });
         isDragging = true;
       }
     };
 
     const updateSelection = (e: MouseEvent | Touch) => {
       if (!isDragging || !selectionBoxRef.current) return;
-      const pos = getClientPosition(e);
-      endX = pos.x;
-      endY = pos.y;
-
+      const rect = mountRef.current!.getBoundingClientRect();
+      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+      const y = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
       requestAnimationFrame(() => {
         if (selectionBoxRef.current) {
-          const width = Math.abs(endX - startX);
-          const height = Math.abs(endY - startY);
-          const left = Math.min(startX, endX);
-          const top = Math.min(startY, endY);
-
           Object.assign(selectionBoxRef.current.style, {
-            width: `${width}px`,
-            height: `${height}px`,
-            left: `${left}px`,
-            top: `${top}px`,
+            width: `${Math.abs(x - startX)}px`,
+            height: `${Math.abs(y - startY)}px`,
+            left: `${Math.min(startX, x)}px`,
+            top: `${Math.min(startY, y)}px`,
           });
         }
       });
     };
 
-    const endSelection = () => {
+    const endSelection = (e: MouseEvent | Touch) => {
       if (!isDragging || !selectionBoxRef.current) return;
       selectionBoxRef.current.style.display = "none";
       isDragging = false;
-
-      if (Math.abs(endX - startX) > 5 && Math.abs(endY - startY) > 5) {
-        createDefaultModel(startX, startY, endX, endY);
-        setIsSelectionBoxUsed(true);
-      }
+      const rect = mountRef.current!.getBoundingClientRect();
+      createDefaultModel(startX, startY, e.clientX - rect.left, e.clientY - rect.top);
+      setIsSelectionBoxUsed(true);
       cleanupSelectionBox();
     };
 
     const handlers = {
       mousedown: (e: MouseEvent) => { if (e.button === 0) startSelection(e); },
       mousemove: (e: MouseEvent) => updateSelection(e),
-      mouseup: () => endSelection(),
-      touchstart: (e: TouchEvent) => {
-        e.preventDefault();
-        startSelection(e.touches[0]);
-      },
-      touchmove: (e: TouchEvent) => {
-        e.preventDefault();
-        updateSelection(e.touches[0]);
-      },
-      touchend: (e: TouchEvent) => {
-        e.preventDefault();
-        endSelection();
-      },
+      mouseup: (e: MouseEvent) => endSelection(e),
+      touchstart: (e: TouchEvent) => startSelection(e.touches[0]),
+      touchmove: (e: TouchEvent) => updateSelection(e.touches[0]),
+      touchend: (e: TouchEvent) => endSelection(e.changedTouches[0]),
     };
 
     Object.entries(handlers).forEach(([event, handler]) =>
@@ -474,13 +416,12 @@ const FilterPageUI: React.FC = () => {
 
     const worldStart = screenToWorld(startX, startY, -0.1);
     const worldEnd = screenToWorld(endX, endY, -0.1);
-
-    const targetWidth = Math.abs(worldEnd.x - worldStart.x);
-    const targetHeight = Math.abs(worldEnd.y - worldStart.y);
-    const centerX = (worldStart.x + worldEnd.x) / 2;
-    const centerY = (worldStart.y + worldEnd.y) / 2;
-
-    selectionBoxParamsRef.current = { targetWidth, targetHeight, worldStart, worldEnd };
+    selectionBoxParamsRef.current = {
+      targetWidth: Math.abs(worldEnd.x - worldStart.x),
+      targetHeight: Math.abs(worldEnd.y - worldStart.y),
+      worldStart,
+      worldEnd,
+    };
 
     const defaultBlindType = BLIND_TYPES[0];
     let modelData = preloadedModelsRef.current.get(defaultBlindType.modelUrl);
@@ -494,25 +435,22 @@ const FilterPageUI: React.FC = () => {
 
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
-    const scaleX = targetWidth / size.x;
-    const scaleY = targetHeight / size.y;
-    const scaleZ = 0.01;
-    const scale = new THREE.Vector3(scaleX, scaleY, scaleZ);
+    const center = box.getCenter(new THREE.Vector3());
+
+    const scale = new THREE.Vector3(
+      selectionBoxParamsRef.current.targetWidth / size.x,
+      selectionBoxParamsRef.current.targetHeight / size.y,
+      0.01
+    );
     model.scale.copy(scale);
 
-    model.position.set(centerX, centerY, 0);
-    model.updateMatrixWorld();
-    const adjustedBox = new THREE.Box3().setFromObject(model);
-    const adjustedCenter = adjustedBox.getCenter(new THREE.Vector3());
-    model.position.y -= (adjustedCenter.y - centerY);
-
+    const targetX = (worldStart.x + worldEnd.x) / 2 - center.x * scale.x;
+    const targetY = (worldStart.y + worldEnd.y) / 2 - center.y * scale.y;
+    model.position.set(targetX, targetY, 0.1);
     initialModelParamsRef.current = { scale, position: model.position.clone() };
 
     model.traverse((child) => {
-      if (isMesh(child)) {
-        child.visible = true;
-        child.geometry.computeBoundingBox();
-      }
+      if (isMesh(child)) child.visible = true;
     });
 
     sceneRef.current.add(model);
@@ -531,16 +469,16 @@ const FilterPageUI: React.FC = () => {
   const addAnotherWindow = () => {
     if (modelsRef.current.length === 0) return;
     const sourceModel = modelsRef.current[modelsRef.current.length - 1].model;
-    const modelData = preloadedModelsRef.current.get(BLIND_TYPES.find((b) => b.type === selectedBlindType)?.modelUrl || BLIND_TYPES[0].modelUrl);
+    const modelData = preloadedModelsRef.current.get(BLIND_TYPES.find(b => b.type === selectedBlindType)?.modelUrl || BLIND_TYPES[0].modelUrl);
     if (!modelData) return;
 
     const newModel = modelData.model.clone();
     newModel.position.copy(sourceModel.position);
-    newModel.position.x += 1;
+    newModel.position.x += 2;
     newModel.scale.copy(sourceModel.scale);
     newModel.userData.isDraggable = true;
 
-    applyTextureToModel(newModel, selectedPattern || "/materials/beige.png", BLIND_TYPES.find((b) => b.type === selectedBlindType) || BLIND_TYPES[0]);
+    applyTextureToModel(newModel, selectedPattern || "/materials/beige.png", BLIND_TYPES.find(b => b.type === selectedBlindType) || BLIND_TYPES[0]);
     sceneRef.current.add(newModel);
     modelsRef.current.push({ model: newModel, gltf: modelData.gltf });
 
@@ -557,7 +495,7 @@ const FilterPageUI: React.FC = () => {
     const findParentModel = (object: THREE.Object3D): THREE.Group | null => {
       let current: THREE.Object3D | null = object;
       while (current) {
-        const model = modelsRef.current.find((m) => m.model === current);
+        const model = modelsRef.current.find(m => m.model === current);
         if (model) return model.model;
         current = current.parent;
       }
@@ -569,7 +507,7 @@ const FilterPageUI: React.FC = () => {
       mouse.x = ((e.clientX - mountRef.current!.getBoundingClientRect().left) / mountRef.current!.offsetWidth) * 2 - 1;
       mouse.y = -((e.clientY - mountRef.current!.getBoundingClientRect().top) / mountRef.current!.offsetHeight) * 2 + 1;
       raycaster.setFromCamera(mouse, cameraRef.current!);
-      const intersects = raycaster.intersectObjects(modelsRef.current.map((m) => m.model), true);
+      const intersects = raycaster.intersectObjects(modelsRef.current.map(m => m.model), true);
       if (intersects.length > 0) {
         const intersected = intersects[0].object;
         const model = findParentModel(intersected);
@@ -600,7 +538,7 @@ const FilterPageUI: React.FC = () => {
       mouse.x = ((touch.clientX - mountRef.current!.getBoundingClientRect().left) / mountRef.current!.offsetWidth) * 2 - 1;
       mouse.y = -((touch.clientY - mountRef.current!.getBoundingClientRect().top) / mountRef.current!.offsetHeight) * 2 + 1;
       raycaster.setFromCamera(mouse, cameraRef.current!);
-      const intersects = raycaster.intersectObjects(modelsRef.current.map((m) => m.model), true);
+      const intersects = raycaster.intersectObjects(modelsRef.current.map(m => m.model), true);
       if (intersects.length > 0) {
         const intersected = intersects[0].object;
         const model = findParentModel(intersected);
@@ -682,6 +620,7 @@ const FilterPageUI: React.FC = () => {
     currentModels.forEach(({ position, isDraggable }) => {
       const newModel = modelData.model.clone();
       newModel.position.copy(position);
+      // Fix 2: Null check for initialModelParamsRef.current
       if (initialModelParamsRef.current) {
         newModel.scale.copy(initialModelParamsRef.current.scale);
       }
@@ -730,7 +669,7 @@ const FilterPageUI: React.FC = () => {
     }
     setIsLoading(true);
     const blindType = BLIND_TYPES.find((b) => b.type === selectedBlindType) || BLIND_TYPES[0];
-    modelsRef.current.forEach(({ model }) =>
+    modelsRef.current.forEach(({ model }) => 
       applyTextureToModel(model, patternUrl, blindType)
     );
     setIsLoading(false);
@@ -826,7 +765,6 @@ const FilterPageUI: React.FC = () => {
       completeCurrentProcess();
     }
   };
-
   // Helper Functions
   const cleanupThreeJs = () => cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
   const adjustVideoAspect = () => {
@@ -837,23 +775,17 @@ const FilterPageUI: React.FC = () => {
   };
   const cleanupCameraStream = () => {
     cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
-    cameraStreamRef.current = null;
     if (videoRef.current) {
       videoRef.current.srcObject = null;
       videoRef.current.classList.add("hidden");
     }
     overlayImageRef.current?.classList.add("hidden");
   };
-  const screenToWorld = (x: number, y: number, depth: number = 0) => {
+  const screenToWorld = (x: number, y: number, depth: number = -0.1) => {
     if (!cameraRef.current || !mountRef.current) return new THREE.Vector3();
-
     const rect = mountRef.current.getBoundingClientRect();
-    const normalizedX = (x / rect.width) * 2 - 1;
-    const normalizedY = -(y / rect.height) * 2 + 1;
-
-    const vector = new THREE.Vector3(normalizedX, normalizedY, 0.5);
+    const vector = new THREE.Vector3((x / rect.width) * 2 - 1, -(y / rect.height) * 2 + 1, 0);
     vector.unproject(cameraRef.current);
-
     const dir = vector.sub(cameraRef.current.position).normalize();
     const distance = (depth - cameraRef.current.position.z) / dir.z;
     return cameraRef.current.position.clone().add(dir.multiplyScalar(distance));
@@ -882,16 +814,17 @@ const FilterPageUI: React.FC = () => {
         if (isMesh(child) && (!meshName || child.name === meshName)) {
           if (Array.isArray(child.material)) {
             child.material.forEach((mat) => mat.dispose());
-            child.material = material;
+            child.material = material; // Assign single material
           } else {
             child.material.dispose();
-            child.material = material;
+            child.material = material; // Assign single material
           }
+          // Fix 3: Cast to MeshStandardMaterial since we just assigned it
           (child.material as THREE.MeshStandardMaterial).needsUpdate = true;
           applied = true;
         }
       });
-      if (!applied) console.warn(`No meshes found for ${meshName || "all"} in model`);
+      if (!applied) console.warn(`No meshes found for ${meshName || 'all'} in model`);
     };
 
     if (!blindType.meshNameFabric && !blindType.meshNameWood) applyMaterial(patternUrl, null, 8, 0, 0.5, 0.1);
@@ -920,41 +853,38 @@ const FilterPageUI: React.FC = () => {
   };
 
   const cleanupCurrentModel = async () => {
-    await Promise.all(
-      modelsRef.current.map(async (modelData) => {
-        await new Promise<void>((resolve) => {
-          let opacity = 1;
-          const fadeOut = () => {
-            opacity -= 0.1;
-            modelData.model.traverse((child) => {
-              if (isMesh(child)) {
-                (child.material as THREE.MeshStandardMaterial).opacity = opacity;
-                (child.material as THREE.MeshStandardMaterial).transparent = true;
-                (child.material as THREE.MeshStandardMaterial).needsUpdate = true;
-              }
-            });
-            if (opacity > 0) requestAnimationFrame(fadeOut);
-            else resolve();
-          };
-          requestAnimationFrame(fadeOut);
-        });
-        sceneRef.current.remove(modelData.model);
-      })
-    );
+    await Promise.all(modelsRef.current.map(async (modelData) => {
+      await new Promise<void>((resolve) => {
+        let opacity = 1;
+        const fadeOut = () => {
+          opacity -= 0.1;
+          modelData.model.traverse((child) => {
+            if (isMesh(child)) {
+              (child.material as THREE.MeshStandardMaterial).opacity = opacity;
+              (child.material as THREE.MeshStandardMaterial).transparent = true;
+              (child.material as THREE.MeshStandardMaterial).needsUpdate = true;
+            }
+          });
+          if (opacity > 0) requestAnimationFrame(fadeOut);
+          else resolve();
+        };
+        requestAnimationFrame(fadeOut);
+      });
+      sceneRef.current.remove(modelData.model);
+    }));
     modelsRef.current = [];
     addWindowButtonRef.current?.classList.add("hidden");
     renderScene();
   };
 
-  const loadModel = (modelUrl: string) =>
-    new Promise<ModelData>((resolve, reject) => {
-      new GLTFLoader().load(
-        modelUrl,
-        (gltf) => resolve({ model: gltf.scene, gltf }),
-        undefined,
-        (err) => reject(err)
-      );
-    });
+  const loadModel = (modelUrl: string) => new Promise<ModelData>((resolve, reject) => {
+    new GLTFLoader().load(
+      modelUrl,
+      (gltf) => resolve({ model: gltf.scene, gltf }),
+      undefined,
+      (err) => reject(err)
+    );
+  });
 
   const renderScene = () => {
     if (rendererRef.current && cameraRef.current) {
@@ -972,6 +902,7 @@ const FilterPageUI: React.FC = () => {
     link.download = "custom_blind_image.png";
     link.href = dataUrl;
     link.click();
+    setNewProcess("download", "Image downloaded! On iPhone, open it and tap 'Save to Photos'.");
   };
 
   const handleButtonClick = () => {
@@ -985,36 +916,15 @@ const FilterPageUI: React.FC = () => {
     setNewProcess("customize", "Select a blind type and pattern, then click 'Save Image' to download.");
     setShowBlindMenu(true);
     setIsCustomizerView(true);
-
-    if (controlButtonRef.current && document.body.contains(controlButtonRef.current)) {
-      document.body.removeChild(controlButtonRef.current);
-      controlButtonRef.current = null;
-    }
-    if (uploadButtonRef.current && document.body.contains(uploadButtonRef.current)) {
-      document.body.removeChild(uploadButtonRef.current);
-      uploadButtonRef.current = null;
-    }
-
+    controlButtonRef.current && document.body.removeChild(controlButtonRef.current);
+    uploadButtonRef.current && document.body.removeChild(uploadButtonRef.current);
     redoButtonRef.current?.classList.add("hidden");
     saveButtonRef.current?.classList.remove("hidden");
     addWindowButtonRef.current?.classList.add("hidden");
-
-    // Ensure the Three.js scene remains visible
-    if (mountRef.current && rendererRef.current) {
-      mountRef.current.style.position = "relative";
-      mountRef.current.style.width = "100%";
-      mountRef.current.style.height = "100vh"; // Fixed height to match viewport
-      mountRef.current.style.overflowY = "auto";
-      mountRef.current.style.touchAction = "pan-y";
-      mountRef.current.style.zIndex = "0";
-      mountRef.current.style.background = "transparent"; // Prevent white background
-      rendererRef.current.setSize(window.innerWidth, window.innerHeight); // Reset renderer size
-      renderScene(); // Force re-render
-    }
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setFilters((prev) => (e.target.checked ? [...prev, e.target.value] : prev.filter((tag) => tag !== e.target.value)));
+    setFilters((prev) => e.target.checked ? [...prev, e.target.value] : prev.filter((tag) => tag !== e.target.value));
 
   const handleRedoSelection = async () => {
     await cleanupCurrentModel();
@@ -1026,7 +936,7 @@ const FilterPageUI: React.FC = () => {
     const request = (DeviceOrientationEvent as any).requestPermission;
     if (request) {
       try {
-        if ((await request()) === "granted") window.addEventListener("deviceorientation", handleDeviceOrientation);
+        if (await request() === "granted") window.addEventListener("deviceorientation", handleDeviceOrientation);
       } catch (err) {
         console.error("Orientation permission error:", err);
       }
@@ -1044,18 +954,11 @@ const FilterPageUI: React.FC = () => {
 
   // Render
   return (
-    <div
-      className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto"
-      style={{
-        fontFamily: "Poppins, sans-serif",
-        background: !capturedImage && !isCustomizerView ? "url('/images/background.jpg') center/cover" : "transparent",
-      }}
-    >
-      <div
-        ref={mountRef}
-        className="relative w-full h-full"
-        style={{ zIndex: 0, position: "relative", background: "transparent" }}
-      />
+    <div className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto" style={{
+      fontFamily: "Poppins, sans-serif",
+      background: !capturedImage && !isCustomizerView ? "url('/images/background.jpg') center/cover" : "#FFFFFF",
+    }}>
+      <div ref={mountRef} className="relative w-full h-auto min-h-screen" style={{ zIndex: isCustomizerView ? 0 : 20 }} />
       <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60]">
         <img src="/images/baelogoN.png" alt="Logo" className="w-24 h-24 object-contain" />
       </div>
@@ -1069,41 +972,21 @@ const FilterPageUI: React.FC = () => {
           <div className="text-white text-lg">Loading...</div>
         </div>
       )}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          completeCurrentProcess();
-          handleImageUpload(file);
-        }}
-      />
+      <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={(e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        completeCurrentProcess();
+        handleImageUpload(file);
+      }} />
       {showBlindMenu && isCustomizerView && (
-        <div
-          className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen overflow-y-auto"
-          style={{ zIndex: 30, pointerEvents: "auto", touchAction: "auto" }}
-        >
+        <div className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen overflow-y-auto" style={{ zIndex: 30, pointerEvents: "auto", touchAction: "auto" }}>
           <div className="w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
             <h3 className="bg-white p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Select Type of Blind</h3>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
               {BLIND_TYPES.map(({ type, buttonImage }) => (
-                <div
-                  key={type}
-                  className="flex flex-col items-center text-center cursor-pointer px-[5px]"
-                  onClick={() => selectBlindType(type)}
-                  onTouchEnd={() => selectBlindType(type)}
-                >
-                  <img
-                    src={buttonImage}
-                    alt={`${type} Blind`}
-                    className="w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
-                  />
-                  <div className="mt-1 text-gray-700 text-[11px]">
-                    {type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}
-                  </div>
+                <div key={type} className="flex flex-col items-center text-center cursor-pointer px-[5px]" onClick={() => selectBlindType(type)} onTouchEnd={() => selectBlindType(type)}>
+                  <img src={buttonImage} alt={`${type} Blind`} className="w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover" />
+                  <div className="mt-1 text-gray-700 text-[11px]">{type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}</div>
                 </div>
               ))}
             </div>
@@ -1115,13 +998,7 @@ const FilterPageUI: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2 mx-5 text-[13px]">
                   {["solid", "pattern", "solar", "kids", "natural"].map((filter) => (
                     <label key={filter} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        value={filter}
-                        checked={filters.includes(filter)}
-                        onChange={handleFilterChange}
-                        className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer"
-                      />
+                      <input type="checkbox" value={filter} checked={filters.includes(filter)} onChange={handleFilterChange} className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer" />
                       {filter.charAt(0).toUpperCase() + filter.slice(1)}
                     </label>
                   ))}
@@ -1131,17 +1008,8 @@ const FilterPageUI: React.FC = () => {
                 <h3 className="bg-white pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Available Patterns</h3>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
                   {filteredPatterns.map((pattern, index) => (
-                    <div
-                      key={index}
-                      className="flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
-                      onClick={() => selectPattern(pattern.patternUrl)}
-                      onTouchEnd={() => selectPattern(pattern.patternUrl)}
-                    >
-                      <img
-                        src={pattern.image}
-                        alt={pattern.name}
-                        className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
-                      />
+                    <div key={index} className="flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition" onClick={() => selectPattern(pattern.patternUrl)} onTouchEnd={() => selectPattern(pattern.patternUrl)}>
+                      <img src={pattern.image} alt={pattern.name} className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover" />
                       <div className="flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
                         <span className="truncate">{pattern.name}</span>
                         <span>{pattern.price}</span>
@@ -1157,13 +1025,7 @@ const FilterPageUI: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2 mx-5 text-[13px]">
                   {["solid", "pattern", "solar", "kids", "natural"].map((filter) => (
                     <label key={filter} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        value={filter}
-                        checked={filters.includes(filter)}
-                        onChange={handleFilterChange}
-                        className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer"
-                      />
+                      <input type="checkbox" value={filter} checked={filters.includes(filter)} onChange={handleFilterChange} className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer" />
                       {filter.charAt(0).toUpperCase() + filter.slice(1)}
                     </label>
                   ))}
@@ -1173,17 +1035,8 @@ const FilterPageUI: React.FC = () => {
                 <h3 className="bg-white pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Available Patterns</h3>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
                   {filteredPatterns.map((pattern, index) => (
-                    <div
-                      key={index}
-                      className="flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
-                      onClick={() => selectPattern(pattern.patternUrl)}
-                      onTouchEnd={() => selectPattern(pattern.patternUrl)}
-                    >
-                      <img
-                        src={pattern.image}
-                        alt={pattern.name}
-                        className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
-                      />
+                    <div key={index} className="flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition" onClick={() => selectPattern(pattern.patternUrl)} onTouchEnd={() => selectPattern(pattern.patternUrl)}>
+                      <img src={pattern.image} alt={pattern.name} className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover" />
                       <div className="flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
                         <span className="truncate">{pattern.name}</span>
                         <span>{pattern.price}</span>
