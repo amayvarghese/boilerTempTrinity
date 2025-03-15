@@ -1153,6 +1153,8 @@ const FilterPageUI: React.FC = () => {
         });
       }
 
+      //removed filterAI updated again.
+  
       if (blindType.meshNameWood) {
         const beigeTexture = textureLoader.load("/materials/beige.png");
         beigeTexture.wrapS = beigeTexture.wrapT = THREE.RepeatWrapping;
