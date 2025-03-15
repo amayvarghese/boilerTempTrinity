@@ -1,4 +1,3 @@
-//updated to add windows also
 import React, { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -111,7 +110,8 @@ const FilterPageUI: React.FC = () => {
   const filteredPatterns = PATTERNS.filter(
     (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
   );
-  const instruction = !activeProcess.completed ? activeProcess.instruction : "";
+  // Fix 1: Ensure activeProcess.completed is always boolean
+  const instruction = activeProcess ? (!activeProcess.completed ? activeProcess.instruction : "") : "";
 
   const setNewProcess = (id: string, instruction: string) =>
     setActiveProcess({ id, instruction, completed: false });
@@ -618,7 +618,10 @@ const FilterPageUI: React.FC = () => {
     currentModels.forEach(({ position, isDraggable }) => {
       const newModel = modelData.model.clone();
       newModel.position.copy(position);
-      newModel.scale.copy(initialModelParamsRef.current.scale);
+      // Fix 2: Null check for initialModelParamsRef.current
+      if (initialModelParamsRef.current) {
+        newModel.scale.copy(initialModelParamsRef.current.scale);
+      }
       newModel.rotation.set(blindType.rotation.x, blindType.rotation.y, blindType.rotation.z);
       newModel.userData.isDraggable = isDraggable;
       applyTextureToModel(newModel, selectedPattern || "/materials/beige.png", blindType);
@@ -629,8 +632,10 @@ const FilterPageUI: React.FC = () => {
 
     if (updatedModels.length === 0) {
       const newModel = modelData.model.clone();
-      newModel.scale.copy(initialModelParamsRef.current.scale);
-      newModel.position.copy(initialModelParamsRef.current.position);
+      if (initialModelParamsRef.current) {
+        newModel.scale.copy(initialModelParamsRef.current.scale);
+        newModel.position.copy(initialModelParamsRef.current.position);
+      }
       newModel.rotation.set(blindType.rotation.x, blindType.rotation.y, blindType.rotation.z);
       applyTextureToModel(newModel, selectedPattern || "/materials/beige.png", blindType);
       sceneRef.current.add(newModel);
@@ -775,12 +780,13 @@ const FilterPageUI: React.FC = () => {
         if (isMesh(child) && (!meshName || child.name === meshName)) {
           if (Array.isArray(child.material)) {
             child.material.forEach((mat) => mat.dispose());
-            child.material = material;
+            child.material = material; // Assign single material
           } else {
             child.material.dispose();
-            child.material = material;
+            child.material = material; // Assign single material
           }
-          child.material.needsUpdate = true;
+          // Fix 3: Cast to MeshStandardMaterial since we just assigned it
+          (child.material as THREE.MeshStandardMaterial).needsUpdate = true;
           applied = true;
         }
       });
@@ -803,7 +809,7 @@ const FilterPageUI: React.FC = () => {
         if (isMesh(child)) {
           (child.material as THREE.MeshStandardMaterial).opacity = opacity;
           (child.material as THREE.MeshStandardMaterial).transparent = opacity < 1;
-          child.material.needsUpdate = true;
+          (child.material as THREE.MeshStandardMaterial).needsUpdate = true;
         }
       });
       if (opacity < 1) requestAnimationFrame(step);
@@ -822,7 +828,7 @@ const FilterPageUI: React.FC = () => {
             if (isMesh(child)) {
               (child.material as THREE.MeshStandardMaterial).opacity = opacity;
               (child.material as THREE.MeshStandardMaterial).transparent = true;
-              child.material.needsUpdate = true;
+              (child.material as THREE.MeshStandardMaterial).needsUpdate = true;
             }
           });
           if (opacity > 0) requestAnimationFrame(fadeOut);
