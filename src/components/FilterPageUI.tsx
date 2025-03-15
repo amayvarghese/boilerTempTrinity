@@ -1135,7 +1135,7 @@ const FilterPageUI: React.FC = () => {
           map: fabricTexture,
           normalMap: fabricNormalTexture,
           normalScale: new THREE.Vector2(3, 3),
-          roughness: 1,
+          roughness: 0.3,
           metalness: 0.1,
           transparent: false,
           opacity: 1,
