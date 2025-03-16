@@ -267,7 +267,7 @@ const FilterPageUI: React.FC = () => {
     updateCameraPosition(width, height);
   };
 
-const startCameraStream = async () => {
+  const startCameraStream = async () => {
     setNewProcess("camera", "Point your camera and click 'Capture' to take a photo.");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -287,20 +287,48 @@ const startCameraStream = async () => {
           const ctx = canvas.getContext("2d");
           if (!ctx) return;
 
-          canvas.width = videoRef.current!.videoWidth;
-          canvas.height = videoRef.current!.videoHeight;
+          // Set canvas to screen size
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
           canvas.classList.remove("hidden");
 
-          adjustCanvasAspect();
+          adjustCanvasAspect(); // This will now adjust video positioning within screen-sized canvas
 
           const drawFrame = () => {
             if (!videoRef.current || !canvasRef.current || !ctx) return;
-            ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+            
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Calculate video dimensions to maintain aspect ratio
+            const videoAspect = videoRef.current!.videoWidth / videoRef.current!.videoHeight;
+            const canvasAspect = canvas.width / canvas.height;
+            let drawWidth, drawHeight, offsetX, offsetY;
+
+            if (videoAspect > canvasAspect) {
+              // Video is wider than canvas
+              drawWidth = canvas.width;
+              drawHeight = canvas.width / videoAspect;
+              offsetX = 0;
+              offsetY = (canvas.height - drawHeight) / 2;
+            } else {
+              // Video is taller than canvas
+              drawWidth = canvas.height * videoAspect;
+              drawHeight = canvas.height;
+              offsetX = (canvas.width - drawWidth) / 2;
+              offsetY = 0;
+            }
+
+            // Draw video centered on the canvas
+            ctx.drawImage(videoRef.current, offsetX, offsetY, drawWidth, drawHeight);
+
+            // Draw overlay to fit entire screen
             if (overlayImage.current) {
               ctx.globalAlpha = 0.7; // Set opacity for overlay
               ctx.drawImage(overlayImage.current, 0, 0, canvas.width, canvas.height);
               ctx.globalAlpha = 1.0; // Reset alpha
             }
+
             requestAnimationFrame(drawFrame);
           };
 
@@ -327,9 +355,25 @@ const startCameraStream = async () => {
     if (!canvasRef.current || !sceneRef.current || !cameraRef.current || !rendererRef.current) return;
     setNewProcess("capture", "Draw a box on the image to place the 3D model.");
     const ctx = canvasRef.current.getContext("2d");
-    if (ctx) {
-      // Draw only the video frame without the overlay
-      ctx.drawImage(videoRef.current!, 0, 0, canvasRef.current.width, canvasRef.current.height);
+    if (ctx && videoRef.current) {
+      // Redraw only the video frame without the overlay
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      const videoAspect = videoRef.current.videoWidth / videoRef.current.videoHeight;
+      const canvasAspect = canvasRef.current.width / canvasRef.current.height;
+      let drawWidth, drawHeight, offsetX, offsetY;
+
+      if (videoAspect > canvasAspect) {
+        drawWidth = canvasRef.current.width;
+        drawHeight = canvasRef.current.width / videoAspect;
+        offsetX = 0;
+        offsetY = (canvasRef.current.height - drawHeight) / 2;
+      } else {
+        drawWidth = canvasRef.current.height * videoAspect;
+        drawHeight = canvasRef.current.height;
+        offsetX = (canvasRef.current.width - drawWidth) / 2;
+        offsetY = 0;
+      }
+      ctx.drawImage(videoRef.current, offsetX, offsetY, drawWidth, drawHeight);
     }
     const imageData = canvasRef.current.toDataURL("image/png");
     setCapturedImage(imageData);
@@ -835,10 +879,8 @@ const startCameraStream = async () => {
   const adjustCanvasAspect = () => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
-    const videoAspect = canvas.width / canvas.height;
-    const screenAspect = window.innerWidth / window.innerHeight;
-    canvas.style.width = videoAspect > screenAspect ? "100%" : "auto";
-    canvas.style.height = videoAspect > screenAspect ? "auto" : "100%";
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
   };
   const cleanupCameraStream = () => {
     cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
