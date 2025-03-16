@@ -91,7 +91,6 @@ const FilterPageUI: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const selectionBoxRef = useRef<HTMLDivElement | null>(null);
-  const overlayImageRef = useRef<HTMLImageElement | null>(null);
   const controlButtonRef = useRef<HTMLButtonElement | null>(null);
   const uploadButtonRef = useRef<HTMLButtonElement | null>(null);
   const saveButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -108,6 +107,7 @@ const FilterPageUI: React.FC = () => {
   const isProcessingRef = useRef<boolean>(false);
   const changeQueueRef = useRef<{ type: "blind" | "pattern"; value: string }[]>([]);
   const draggingModelRef = useRef<THREE.Group | null>(null);
+  const overlayImage = useRef<HTMLImageElement | null>(null); // Preload overlay image once
 
   const filteredPatterns = PATTERNS.filter(
     (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
@@ -120,6 +120,13 @@ const FilterPageUI: React.FC = () => {
     setActiveProcess({ id, instruction, completed: false });
   const completeCurrentProcess = () =>
     setActiveProcess((prev) => ({ ...prev, completed: true }));
+
+  // Preload Overlay Image Once
+  useEffect(() => {
+    const img = new Image();
+    img.src = "/images/overlayFilter.png";
+    img.onload = () => (overlayImage.current = img);
+  }, []);
 
   // Three.js Initialization and Cleanup
   useEffect(() => {
@@ -213,7 +220,6 @@ const FilterPageUI: React.FC = () => {
       return el;
     };
 
-    overlayImageRef.current = addElement<HTMLImageElement>("img", { src: "/images/overlayFilter.png", className: "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70" }, mount);
     videoRef.current = addElement<HTMLVideoElement>("video", { playsinline: true, muted: true, controls: false, className: "hidden" }, mount);
     canvasRef.current = addElement<HTMLCanvasElement>("canvas", { className: "absolute inset-0 w-full h-full object-cover z-[10]" }, mount);
     controlButtonRef.current = addElement<HTMLButtonElement>("button", { id: "controlButton", textContent: "Start Camera", className: "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" });
@@ -232,7 +238,7 @@ const FilterPageUI: React.FC = () => {
     const mobileOverlayRef = addElement<HTMLDivElement>("div", { id: "mobileOverlay", className: "fixed inset-0 z-[35] pointer-events-none hidden md:hidden" }, mount);
 
     return () => {
-      [overlayImageRef, videoRef, canvasRef, levelIndicatorRef].forEach((ref) => ref.current && mount.removeChild(ref.current));
+      [videoRef, canvasRef, levelIndicatorRef].forEach((ref) => ref.current && mount.removeChild(ref.current));
       [controlButtonRef, uploadButtonRef, saveButtonRef, redoButtonRef, addWindowButtonRef].forEach((ref) => ref.current && document.body.removeChild(ref.current));
       mobileOverlayRef && mount.removeChild(mobileOverlayRef);
     };
@@ -261,7 +267,7 @@ const FilterPageUI: React.FC = () => {
     updateCameraPosition(width, height);
   };
 
-  const startCameraStream = async () => {
+const startCameraStream = async () => {
     setNewProcess("camera", "Point your camera and click 'Capture' to take a photo.");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -275,7 +281,7 @@ const FilterPageUI: React.FC = () => {
       });
       cameraStreamRef.current = stream;
       if (videoRef.current && canvasRef.current && controlButtonRef.current) {
-        videoRef.current!.srcObject = stream; // Non-null assertion
+        videoRef.current!.srcObject = stream;
         videoRef.current!.play().then(() => {
           const canvas = canvasRef.current!;
           const ctx = canvas.getContext("2d");
@@ -288,18 +294,19 @@ const FilterPageUI: React.FC = () => {
           adjustCanvasAspect();
 
           const drawFrame = () => {
-            if (!videoRef.current || !canvasRef.current) return;
+            if (!videoRef.current || !canvasRef.current || !ctx) return;
             ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-            if (overlayImageRef.current && !overlayImageRef.current.classList.contains("hidden")) {
-              ctx.drawImage(overlayImageRef.current, 0, 0, canvas.width, canvas.height);
+            if (overlayImage.current) {
+              ctx.globalAlpha = 0.7; // Set opacity for overlay
+              ctx.drawImage(overlayImage.current, 0, 0, canvas.width, canvas.height);
+              ctx.globalAlpha = 1.0; // Reset alpha
             }
             requestAnimationFrame(drawFrame);
           };
 
-          overlayImageRef.current?.classList.remove("hidden");
-          controlButtonRef.current!.textContent = "Capture"; // Non-null assertion
-          controlButtonRef.current!.classList.remove("hidden"); // Non-null assertion
-          controlButtonRef.current!.style.zIndex = "100"; // Non-null assertion
+          controlButtonRef.current!.textContent = "Capture";
+          controlButtonRef.current!.classList.remove("hidden");
+          controlButtonRef.current!.style.zIndex = "100";
           uploadButtonRef.current?.style.setProperty("display", "none");
           levelIndicatorRef.current?.classList.remove("hidden");
           requestOrientationPermission();
@@ -319,6 +326,11 @@ const FilterPageUI: React.FC = () => {
   const captureImage = () => {
     if (!canvasRef.current || !sceneRef.current || !cameraRef.current || !rendererRef.current) return;
     setNewProcess("capture", "Draw a box on the image to place the 3D model.");
+    const ctx = canvasRef.current.getContext("2d");
+    if (ctx) {
+      // Draw only the video frame without the overlay
+      ctx.drawImage(videoRef.current!, 0, 0, canvasRef.current.width, canvasRef.current.height);
+    }
     const imageData = canvasRef.current.toDataURL("image/png");
     setCapturedImage(imageData);
     localStorage.setItem("capturedImage", imageData);
@@ -834,9 +846,10 @@ const FilterPageUI: React.FC = () => {
       videoRef.current.srcObject = null;
     }
     if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext("2d");
+      if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height); // Clear canvas
       canvasRef.current.classList.add("hidden");
     }
-    overlayImageRef.current?.classList.add("hidden");
   };
   const screenToWorld = (x: number, y: number, depth: number = -0.1) => {
     if (!cameraRef.current || !mountRef.current) return new THREE.Vector3();
