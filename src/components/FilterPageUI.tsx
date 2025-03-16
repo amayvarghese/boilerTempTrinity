@@ -124,7 +124,7 @@ const FilterPageUI: React.FC = () => {
   // Preload Overlay Image Once
   useEffect(() => {
     const img = new Image();
-    img.src = "/images/overlayFilter.png";
+    img.src = "/images/overlayFilterMAR.png";
     img.onload = () => (overlayImage.current = img);
   }, []);
 
@@ -268,7 +268,7 @@ const FilterPageUI: React.FC = () => {
   };
 
   const startCameraStream = async () => {
-    setNewProcess("camera", "Point your camera and click 'Capture' to take a photo.");
+    setNewProcess("camera", "Place the center of your window to this dot");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
@@ -1103,7 +1103,7 @@ const FilterPageUI: React.FC = () => {
   return (
     <div className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto" style={{
       fontFamily: "Poppins, sans-serif",
-      background: !capturedImage && !isCustomizerView ? "url('/images/background.jpg') center/cover" : "#FFFFFF",
+      background: !capturedImage && !isCustomizerView ? "url('/images/unsplashMain.jpeg') center/cover" : "#FFFFFF",
       touchAction: isCustomizerView ? "pan-y" : "auto",
     }}>
       <div ref={mountRef} className="relative w-full h-auto min-h-screen" style={{ 
