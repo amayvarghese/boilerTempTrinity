@@ -76,6 +76,7 @@ const FilterPageUI: React.FC = () => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isCustomizerView, setIsCustomizerView] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [activeProcess, setActiveProcess] = useState<{ id: string; instruction: string; completed: boolean }>({
     id: "initial",
     instruction: "Click 'Start Camera' or upload an image to begin.",
@@ -226,10 +227,15 @@ const FilterPageUI: React.FC = () => {
     addWindowButtonRef.current?.addEventListener("click", addAnotherWindow);
     addElement("button", { id: "backButton", innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>', className: "absolute top-5 left-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" }).addEventListener("click", () => window.location.href = "/");
     levelIndicatorRef.current = addElement<HTMLDivElement>("div", { className: "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-2 bg-red-500 rounded-full z-[100] hidden", style: { transition: "background-color 0.3s ease, border 0.3s ease" } }, mount);
+    const mobileOverlayRef = addElement<HTMLDivElement>("div", {
+      id: "mobileOverlay",
+      className: "fixed inset-0 z-[35] pointer-events-none hidden md:hidden",
+    }, mount);
 
     return () => {
       [overlayImageRef, videoRef, levelIndicatorRef].forEach((ref) => ref.current && mount.removeChild(ref.current));
       [controlButtonRef, uploadButtonRef, saveButtonRef, redoButtonRef, addWindowButtonRef].forEach((ref) => ref.current && document.body.removeChild(ref.current));
+      mobileOverlayRef && mount.removeChild(mobileOverlayRef);
     };
   }, []);
 
@@ -261,15 +267,16 @@ const FilterPageUI: React.FC = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          facingMode: "environment", 
-          width: { ideal: 1920 }, 
-          height: { ideal: 1080 } 
+          facingMode: "environment",
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          advanced: [{ torch: false }, { photo: true }],
         } 
       });
       cameraStreamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.classList.remove("hidden"); // Ensure it’s visible
+        videoRef.current.classList.remove("hidden");
         videoRef.current.play().then(() => {
           adjustVideoAspect();
           overlayImageRef.current?.classList.remove("hidden");
@@ -344,7 +351,6 @@ const FilterPageUI: React.FC = () => {
       plane.position.set(0, 0, -0.1);
       sceneRef.current.add(plane);
       updateCameraPosition(width, height);
-      // Adjust canvas size when in customizer view
       if (isCustomizerView && rendererRef.current) {
         const canvasWidth = window.innerWidth;
         const canvasHeight = planeHeight * (canvasWidth / planeWidth);
@@ -432,8 +438,15 @@ const FilterPageUI: React.FC = () => {
     isProcessingRef.current = true;
     setIsLoading(true);
 
-    const worldStart = screenToWorld(startX, startY, -0.1);
-    const worldEnd = screenToWorld(endX, endY, -0.1);
+    const rect = mountRef.current!.getBoundingClientRect();
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    const adjustedStartY = isMobile ? startY - rect.top : startY;
+    const adjustedEndY = isMobile ? endY - rect.top : endY;
+
+    const worldStart = screenToWorld(startX, adjustedStartY, -0.1);
+    const worldEnd = screenToWorld(endX, adjustedEndY, -0.1);
+    
     selectionBoxParamsRef.current = {
       targetWidth: Math.abs(worldEnd.x - worldStart.x),
       targetHeight: Math.abs(worldEnd.y - worldStart.y),
@@ -464,12 +477,16 @@ const FilterPageUI: React.FC = () => {
 
     const targetX = (worldStart.x + worldEnd.x) / 2 - center.x * scale.x;
     const targetY = (worldStart.y + worldEnd.y) / 2 - center.y * scale.y;
-    model.position.set(targetX, targetY, 0.1);
+    
+    const yOffset = isMobile ? -0.5 : 0;
+    model.position.set(targetX, targetY + yOffset, 0.1);
     initialModelParamsRef.current = { scale, position: model.position.clone() };
 
     model.traverse((child) => {
       if (isMesh(child)) child.visible = true;
     });
+
+    model.userData.isDraggable = !isSubmitted;
 
     sceneRef.current.add(model);
     modelsRef.current.push({ model, gltf: modelData.gltf });
@@ -494,7 +511,7 @@ const FilterPageUI: React.FC = () => {
     newModel.position.copy(sourceModel.position);
     newModel.position.x += 2;
     newModel.scale.copy(sourceModel.scale);
-    newModel.userData.isDraggable = true;
+    newModel.userData.isDraggable = !isSubmitted;
 
     applyTextureToModel(newModel, selectedPattern || "/materials/beige.png", BLIND_TYPES.find(b => b.type === selectedBlindType) || BLIND_TYPES[0]);
     sceneRef.current.add(newModel);
@@ -505,7 +522,7 @@ const FilterPageUI: React.FC = () => {
   };
 
   const setupDragging = () => {
-    if (!mountRef.current || !cameraRef.current || !rendererRef.current) return;
+    if (!mountRef.current || !cameraRef.current || !rendererRef.current || isSubmitted) return;
 
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
@@ -606,7 +623,7 @@ const FilterPageUI: React.FC = () => {
     return () => {
       cleanupDragging?.();
     };
-  }, [capturedImage, isSelectionBoxUsed, modelsRef.current.length]);
+  }, [capturedImage, isSelectionBoxUsed, modelsRef.current.length, isSubmitted]);
 
   const selectBlindType = async (type: string) => {
     if (isProcessingRef.current) {
@@ -933,13 +950,14 @@ const FilterPageUI: React.FC = () => {
     setNewProcess("customize", "Select a blind type and pattern, then click 'Save Image' to download.");
     setShowBlindMenu(true);
     setIsCustomizerView(true);
+    setIsSubmitted(true);
+    
     controlButtonRef.current && document.body.removeChild(controlButtonRef.current);
     uploadButtonRef.current && document.body.removeChild(uploadButtonRef.current);
     redoButtonRef.current?.classList.add("hidden");
     saveButtonRef.current?.classList.remove("hidden");
     addWindowButtonRef.current?.classList.add("hidden");
 
-    // Adjust canvas size to match background plane and enable scrolling
     if (rendererRef.current && backgroundPlaneRef.current) {
       const texture = (backgroundPlaneRef.current.material as THREE.MeshBasicMaterial).map;
       if (texture) {
@@ -949,12 +967,19 @@ const FilterPageUI: React.FC = () => {
         rendererRef.current.setSize(canvasWidth, canvasHeight);
         rendererRef.current.domElement.style.width = `${canvasWidth}px`;
         rendererRef.current.domElement.style.height = `${canvasHeight}px`;
-        rendererRef.current.domElement.style.touchAction = "auto"; // Enable touch scrolling
+        rendererRef.current.domElement.style.touchAction = "pan-y";
         if (mountRef.current) {
-          mountRef.current.style.overflowY = "auto"; // Enable vertical scrolling
+          mountRef.current.style.overflowY = "auto";
+          mountRef.current.style.touchAction = "pan-y";
         }
         renderScene();
       }
+    }
+
+    const mobileOverlay = document.getElementById("mobileOverlay");
+    if (mobileOverlay) {
+      mobileOverlay.classList.remove("hidden");
+      mobileOverlay.style.pointerEvents = "none";
     }
   };
 
@@ -992,8 +1017,12 @@ const FilterPageUI: React.FC = () => {
     <div className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto" style={{
       fontFamily: "Poppins, sans-serif",
       background: !capturedImage && !isCustomizerView ? "url('/images/background.jpg') center/cover" : "#FFFFFF",
+      touchAction: isCustomizerView ? "pan-y" : "auto",
     }}>
-      <div ref={mountRef} className="relative w-full h-auto min-h-screen" style={{ zIndex: isCustomizerView ? 0 : 20 }} />
+      <div ref={mountRef} className="relative w-full h-auto min-h-screen" style={{ 
+        zIndex: isCustomizerView ? 0 : 20,
+        touchAction: isCustomizerView ? "pan-y" : "auto",
+      }} />
       <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60]">
         <img src="/images/baelogoN.png" alt="Logo" className="w-24 h-24 object-contain" />
       </div>
@@ -1014,7 +1043,11 @@ const FilterPageUI: React.FC = () => {
         handleImageUpload(file);
       }} />
       {showBlindMenu && isCustomizerView && (
-        <div className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen overflow-y-auto" style={{ zIndex: 30, pointerEvents: "auto", touchAction: "auto" }}>
+        <div className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen overflow-y-auto" style={{ 
+          zIndex: 30, 
+          pointerEvents: "auto",
+          touchAction: "pan-y",
+        }}>
           <div className="w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
             <h3 className="bg-white p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Select Type of Blind</h3>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
