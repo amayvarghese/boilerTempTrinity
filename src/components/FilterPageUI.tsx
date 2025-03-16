@@ -124,7 +124,7 @@ const FilterPageUI: React.FC = () => {
   // Preload Overlay Image Once
   useEffect(() => {
     const img = new Image();
-    img.src = "/images/overlayFilterMAR.png";
+    img.src = "/images/overlayFilterGPT.png";
     img.onload = () => (overlayImage.current = img);
   }, []);
 
