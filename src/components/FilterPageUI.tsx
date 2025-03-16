@@ -270,7 +270,8 @@ const FilterPageUI: React.FC = () => {
           facingMode: "environment",
           width: { ideal: 1920 },
           height: { ideal: 1080 },
-          advanced: [{ torch: false }, { photo: true }],
+          aspectRatio: { ideal: 16 / 9 },
+          frameRate: { ideal: 30 },
         } 
       });
       cameraStreamRef.current = stream;
