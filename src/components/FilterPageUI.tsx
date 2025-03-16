@@ -788,56 +788,64 @@ const FilterPageUI: React.FC = () => {
     if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !backgroundPlaneRef.current) return;
     setNewProcess("save", "Saving image... Please wait.");
     if (!confirm("Would you like to save the customized image?")) return;
-
+  
     setIsLoading(true);
     setShowBlindMenu(false);
     saveButtonRef.current?.classList.add("hidden");
-
+  
+    // Get the captured image dimensions from the background plane texture
     const texture = (backgroundPlaneRef.current.material as THREE.MeshBasicMaterial).map;
-    const width = texture?.image.width || window.innerWidth;
-    const height = texture?.image.height || window.innerHeight;
-
+    if (!texture || !capturedImage) return;
+    const width = texture.image.width;
+    const height = texture.image.height;
+  
+    // Adjust renderer and camera to match captured image dimensions
     rendererRef.current.setSize(width, height);
     cameraRef.current.aspect = width / height;
     cameraRef.current.updateProjectionMatrix();
     adjustBackgroundPlane(width, height);
-
+  
+    // Render the scene with 3D models
     rendererRef.current.render(sceneRef.current, cameraRef.current);
     const sceneDataUrl = rendererRef.current.domElement.toDataURL("image/png");
-
+  
+    // Create a canvas to combine background, scene, and logo
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
-    const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve) => {
+  
+    const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = "Anonymous";
       img.onload = () => resolve(img);
-      img.onerror = () => console.error(`Failed to load image: ${src}`);
+      img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
       img.src = src;
     });
-
+  
     try {
-      if (capturedImage) {
-        const backgroundImg = await loadImage(capturedImage);
-        ctx.drawImage(backgroundImg, 0, 0, width, height);
-      }
-
+      // Draw the captured/uploaded image as the background
+      const backgroundImg = await loadImage(capturedImage);
+      ctx.drawImage(backgroundImg, 0, 0, width, height);
+  
+      // Draw the 3D scene (with models) over the background
       const sceneImg = await loadImage(sceneDataUrl);
       ctx.drawImage(sceneImg, 0, 0, width, height);
-
+  
+      // Draw the logo centered horizontally, near the top
       const logoImg = await loadImage("/images/baelogoN.png");
-      const logoSize = height * 0.1;
-      const logoX = (width - logoSize) / 2;
-      const logoY = 16;
+      const logoSize = height * 0.1; // Logo height is 10% of image height
+      const logoX = (width - logoSize) / 2; // Center horizontally
+      const logoY = 16; // Fixed offset from top
       ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
-
+  
+      // Generate the final image
       const finalDataUrl = canvas.toDataURL("image/png");
       const blob = await (await fetch(finalDataUrl)).blob();
       const file = new File([blob], "custom_blind_image.png", { type: "image/png" });
-
+  
+      // Attempt to share or download
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
@@ -862,11 +870,13 @@ const FilterPageUI: React.FC = () => {
       console.error("Error saving image:", error);
       setNewProcess("save-error", "Failed to save image. Please try again.");
     } finally {
+      // Restore renderer and camera to screen size
       rendererRef.current.setSize(window.innerWidth, window.innerHeight);
       cameraRef.current.aspect = window.innerWidth / window.innerHeight;
       cameraRef.current.updateProjectionMatrix();
       adjustBackgroundPlane(window.innerWidth, window.innerHeight);
-
+      renderScene(); // Re-render at screen size
+  
       setShowBlindMenu(true);
       saveButtonRef.current?.classList.remove("hidden");
       setIsLoading(false);
