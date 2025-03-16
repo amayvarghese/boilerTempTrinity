@@ -89,6 +89,7 @@ const FilterPageUI: React.FC = () => {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const mountRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const selectionBoxRef = useRef<HTMLDivElement | null>(null);
   const overlayImageRef = useRef<HTMLImageElement | null>(null);
   const controlButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -212,67 +213,30 @@ const FilterPageUI: React.FC = () => {
       return el;
     };
 
-    overlayImageRef.current = addElement<HTMLImageElement>("img", { 
-      src: "images/overlayFilter.png", 
-      className: "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70" 
-    }, mount);
-    videoRef.current = addElement<HTMLVideoElement>("video", { 
-      playsinline: true, 
-      muted: true, 
-      controls: false, // Explicitly disable native controls
-      className: "absolute inset-0 w-full h-full object-cover z-[10]" 
-    }, mount);
-    controlButtonRef.current = addElement<HTMLButtonElement>("button", { 
-      id: "controlButton", 
-      textContent: "Start Camera", 
-      className: "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" 
-    });
+    overlayImageRef.current = addElement<HTMLImageElement>("img", { src: "/images/overlayFilter.png", className: "absolute inset-0 w-full h-full object-fill z-[15] hidden opacity-70" }, mount);
+    videoRef.current = addElement<HTMLVideoElement>("video", { playsinline: true, muted: true, controls: false, className: "hidden" }, mount);
+    canvasRef.current = addElement<HTMLCanvasElement>("canvas", { className: "absolute inset-0 w-full h-full object-cover z-[10]" }, mount);
+    controlButtonRef.current = addElement<HTMLButtonElement>("button", { id: "controlButton", textContent: "Start Camera", className: "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" });
     controlButtonRef.current?.addEventListener("click", handleButtonClick);
-    uploadButtonRef.current = addElement<HTMLButtonElement>("button", { 
-      id: "uploadButton", 
-      textContent: "Upload Image", 
-      className: "fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" 
-    });
+    uploadButtonRef.current = addElement<HTMLButtonElement>("button", { id: "uploadButton", textContent: "Upload Image", className: "fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" });
     uploadButtonRef.current?.addEventListener("click", () => fileInputRef.current?.click());
-    saveButtonRef.current = addElement<HTMLButtonElement>("button", { 
-      id: "saveButton", 
-      textContent: "Save Image", 
-      className: "fixed bottom-16 right-5 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" 
-    });
+    saveButtonRef.current = addElement<HTMLButtonElement>("button", { id: "saveButton", textContent: "Save Image", className: "fixed bottom-16 right-5 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
     saveButtonRef.current?.addEventListener("click", saveImage);
-    redoButtonRef.current = addElement<HTMLButtonElement>("button", { 
-      id: "redoButton", 
-      className: "fixed bottom-12 right-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" 
-    });
+    redoButtonRef.current = addElement<HTMLButtonElement>("button", { id: "redoButton", className: "fixed bottom-12 right-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
     redoButtonRef.current?.appendChild(addElement("img", { src: "/images/retryButtonImg.png", alt: "Redo Selection", className: "h-6 w-6" }));
     redoButtonRef.current?.addEventListener("click", handleRedoSelection);
-    addWindowButtonRef.current = addElement<HTMLButtonElement>("button", { 
-      id: "addWindowButton", 
-      textContent: "Add Blind", 
-      className: "fixed bottom-12 left-5 py-2 px-4 text-md bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" 
-    });
+    addWindowButtonRef.current = addElement<HTMLButtonElement>("button", { id: "addWindowButton", textContent: "Add Blind", className: "fixed bottom-12 left-5 py-2 px-4 text-md bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
     addWindowButtonRef.current?.addEventListener("click", addAnotherWindow);
-    addElement("button", { 
-      id: "backButton", 
-      innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>', 
-      className: "absolute top-5 left-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" 
-    }).addEventListener("click", () => window.location.href = "/");
-    levelIndicatorRef.current = addElement<HTMLDivElement>("div", { 
-      className: "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-2 bg-red-500 rounded-full z-[100] hidden", 
-      style: { transition: "background-color 0.3s ease, border 0.3s ease" } 
-    }, mount);
-    const mobileOverlayRef = addElement<HTMLDivElement>("div", {
-      id: "mobileOverlay",
-      className: "fixed inset-0 z-[35] pointer-events-none hidden md:hidden",
-    }, mount);
+    addElement("button", { id: "backButton", innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>', className: "absolute top-5 left-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" }).addEventListener("click", () => window.location.href = "/");
+    levelIndicatorRef.current = addElement<HTMLDivElement>("div", { className: "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-2 bg-red-500 rounded-full z-[100] hidden", style: { transition: "background-color 0.3s ease, border 0.3s ease" } }, mount);
+    const mobileOverlayRef = addElement<HTMLDivElement>("div", { id: "mobileOverlay", className: "fixed inset-0 z-[35] pointer-events-none hidden md:hidden" }, mount);
 
     return () => {
-      [overlayImageRef, videoRef, levelIndicatorRef].forEach((ref) => ref.current && mount.removeChild(ref.current));
+      [overlayImageRef, videoRef, canvasRef, levelIndicatorRef].forEach((ref) => ref.current && mount.removeChild(ref.current));
       [controlButtonRef, uploadButtonRef, saveButtonRef, redoButtonRef, addWindowButtonRef].forEach((ref) => ref.current && document.body.removeChild(ref.current));
       mobileOverlayRef && mount.removeChild(mobileOverlayRef);
     };
   }, []);
-
 
   // Core Functions
   const updateCameraPosition = (width: number, height: number) => {
@@ -297,7 +261,6 @@ const FilterPageUI: React.FC = () => {
     updateCameraPosition(width, height);
   };
 
-// Modified startCameraStream for normal camera and immediate Capture button
   const startCameraStream = async () => {
     setNewProcess("camera", "Point your camera and click 'Capture' to take a photo.");
     try {
@@ -311,19 +274,37 @@ const FilterPageUI: React.FC = () => {
         } 
       });
       cameraStreamRef.current = stream;
-      if (videoRef.current && controlButtonRef.current) {
+      if (videoRef.current && canvasRef.current && controlButtonRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.classList.remove("hidden");
-        videoRef.current.controls = false; // Ensure no native controls
         videoRef.current.play().then(() => {
-          adjustVideoAspect();
+          const canvas = canvasRef.current!;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return;
+
+          canvas.width = videoRef.current.videoWidth;
+          canvas.height = videoRef.current.videoHeight;
+          canvas.classList.remove("hidden");
+
+          adjustCanvasAspect();
+
+          const drawFrame = () => {
+            if (!videoRef.current || !canvasRef.current) return;
+            ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+            if (overlayImageRef.current && !overlayImageRef.current.classList.contains("hidden")) {
+              ctx.drawImage(overlayImageRef.current, 0, 0, canvas.width, canvas.height);
+            }
+            requestAnimationFrame(drawFrame);
+          };
+
           overlayImageRef.current?.classList.remove("hidden");
-          controlButtonRef.current!.textContent = "Capture";
-          controlButtonRef.current!.classList.remove("hidden"); // Ensure button is visible
-          controlButtonRef.current!.style.zIndex = "100"; // High z-index to stay on top
+          controlButtonRef.current.textContent = "Capture";
+          controlButtonRef.current.classList.remove("hidden");
+          controlButtonRef.current.style.zIndex = "100";
           uploadButtonRef.current?.style.setProperty("display", "none");
           levelIndicatorRef.current?.classList.remove("hidden");
           requestOrientationPermission();
+
+          drawFrame();
         }).catch((err) => {
           console.error("Video play failed:", err);
           setNewProcess("camera-error", "Failed to start camera preview.");
@@ -336,15 +317,9 @@ const FilterPageUI: React.FC = () => {
   };
 
   const captureImage = () => {
-    if (!videoRef.current || !sceneRef.current || !cameraRef.current || !rendererRef.current) return;
+    if (!canvasRef.current || !sceneRef.current || !cameraRef.current || !rendererRef.current) return;
     setNewProcess("capture", "Draw a box on the image to place the 3D model.");
-    const canvas = document.createElement("canvas");
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.drawImage(videoRef.current, 0, 0);
-    const imageData = canvas.toDataURL("image/png");
+    const imageData = canvasRef.current.toDataURL("image/png");
     setCapturedImage(imageData);
     localStorage.setItem("capturedImage", imageData);
     cleanupCameraStream();
@@ -845,17 +820,21 @@ const FilterPageUI: React.FC = () => {
 
   // Helper Functions
   const cleanupThreeJs = () => cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
-  const adjustVideoAspect = () => {
-    if (!videoRef.current) return;
-    const videoAspect = videoRef.current.videoWidth / videoRef.current.videoHeight;
+  const adjustCanvasAspect = () => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const videoAspect = canvas.width / canvas.height;
     const screenAspect = window.innerWidth / window.innerHeight;
-    videoRef.current.style.cssText = `width: ${videoAspect > screenAspect ? "100%" : "auto"}; height: ${videoAspect > screenAspect ? "auto" : "100%"};`;
+    canvas.style.width = videoAspect > screenAspect ? "100%" : "auto";
+    canvas.style.height = videoAspect > screenAspect ? "auto" : "100%";
   };
   const cleanupCameraStream = () => {
     cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
     if (videoRef.current) {
       videoRef.current.srcObject = null;
-      videoRef.current.classList.add("hidden");
+    }
+    if (canvasRef.current) {
+      canvasRef.current.classList.add("hidden");
     }
     overlayImageRef.current?.classList.add("hidden");
   };
@@ -984,13 +963,9 @@ const FilterPageUI: React.FC = () => {
 
   const handleButtonClick = () => {
     const text = controlButtonRef.current?.textContent;
-    if (text === "Start Camera") {
-      startCameraStream();
-    } else if (text === "Capture") {
-      captureImage();
-    } else if (text === "Submit") {
-      submitAndShowMenu();
-    }
+    if (text === "Start Camera") startCameraStream();
+    else if (text === "Capture") captureImage();
+    else if (text === "Submit") submitAndShowMenu();
   };
 
   const submitAndShowMenu = () => {
