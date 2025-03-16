@@ -259,10 +259,17 @@ const FilterPageUI: React.FC = () => {
   const startCameraStream = async () => {
     setNewProcess("camera", "Point your camera and click 'Capture' to take a photo.");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: "environment", 
+          width: { ideal: 1920 }, 
+          height: { ideal: 1080 } 
+        } 
+      });
       cameraStreamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.classList.remove("hidden"); // Ensure it’s visible
         videoRef.current.play().then(() => {
           adjustVideoAspect();
           overlayImageRef.current?.classList.remove("hidden");
@@ -270,9 +277,13 @@ const FilterPageUI: React.FC = () => {
           uploadButtonRef.current?.style.setProperty("display", "none");
           levelIndicatorRef.current?.classList.remove("hidden");
           requestOrientationPermission();
+        }).catch((err) => {
+          console.error("Video play failed:", err);
+          setNewProcess("camera-error", "Failed to start camera preview.");
         });
       }
     } catch (err) {
+      console.error("Camera access failed:", err);
       setNewProcess("camera-error", "Failed to access camera. Please upload an image instead.");
     }
   };
