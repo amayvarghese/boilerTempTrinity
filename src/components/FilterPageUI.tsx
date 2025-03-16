@@ -275,14 +275,14 @@ const FilterPageUI: React.FC = () => {
       });
       cameraStreamRef.current = stream;
       if (videoRef.current && canvasRef.current && controlButtonRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play().then(() => {
+        videoRef.current!.srcObject = stream; // Non-null assertion
+        videoRef.current!.play().then(() => {
           const canvas = canvasRef.current!;
           const ctx = canvas.getContext("2d");
           if (!ctx) return;
 
-          canvas.width = videoRef.current.videoWidth;
-          canvas.height = videoRef.current.videoHeight;
+          canvas.width = videoRef.current!.videoWidth;
+          canvas.height = videoRef.current!.videoHeight;
           canvas.classList.remove("hidden");
 
           adjustCanvasAspect();
@@ -297,9 +297,9 @@ const FilterPageUI: React.FC = () => {
           };
 
           overlayImageRef.current?.classList.remove("hidden");
-          controlButtonRef.current.textContent = "Capture";
-          controlButtonRef.current.classList.remove("hidden");
-          controlButtonRef.current.style.zIndex = "100";
+          controlButtonRef.current!.textContent = "Capture"; // Non-null assertion
+          controlButtonRef.current!.classList.remove("hidden"); // Non-null assertion
+          controlButtonRef.current!.style.zIndex = "100"; // Non-null assertion
           uploadButtonRef.current?.style.setProperty("display", "none");
           levelIndicatorRef.current?.classList.remove("hidden");
           requestOrientationPermission();
