@@ -35,7 +35,7 @@ const MenuScript: React.FC = () => {
       </div>
 
       {/* Container box */}
-      <div className="w-full h-full flex flex-col items-center justify-center">
+      <div className="w-full h-full flex flex-col p-10 items-center justify-center">
         <div className="bg-white rounded-3xl shadow-2xl p-4 sm:p-6 max-w-sm sm:max-w-md w-full relative">
           {/* Logo */}
           <div className="relative mb-4 sm:mb-6">
@@ -71,7 +71,7 @@ const MenuScript: React.FC = () => {
                     "https://via.placeholder.com/32?text=Icon+1";
                 }}
               />
-              <span className="text-left">Virtual Room</span>
+              <span className="text-left">Sample Room</span>
             </button>
             <button
               className="flex items-center py-5 sm:py-10 px-4 sm:px-10 bg-black text-white text-lg sm:text-lg font-light rounded-xl shadow-md hover:bg-purple-900 focus:outline-none focus:ring-2 focus:ring-green-400 transition duration-300 w-full font-poppins"
@@ -86,7 +86,7 @@ const MenuScript: React.FC = () => {
                     "https://via.placeholder.com/32?text=Icon+2";
                 }}
               />
-              <span className="text-left">Capture your room</span>
+              <span className="text-left">Room In My House</span>
             </button>
           </div>
 
