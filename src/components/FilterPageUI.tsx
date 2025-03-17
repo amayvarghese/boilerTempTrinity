@@ -331,9 +331,11 @@ const FilterPageUI: React.FC = () => {
             requestAnimationFrame(drawFrame);
           };
   
-          controlButtonRef.current.textContent = "Capture";
-          controlButtonRef.current.classList.remove("hidden");
-          controlButtonRef.current.style.zIndex = "100";
+          if (controlButtonRef.current) {
+            controlButtonRef.current.textContent = "Capture";
+            controlButtonRef.current.classList.remove("hidden");
+            controlButtonRef.current.style.zIndex = "100";
+          }
           uploadButtonRef.current?.style.setProperty("display", "none");
           levelIndicatorRef.current?.classList.remove("hidden");
           requestOrientationPermission();
