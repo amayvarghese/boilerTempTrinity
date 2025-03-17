@@ -13,6 +13,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    
 
     /* Linting */
     "strict": true,
@@ -20,7 +21,8 @@
     "noUnusedLocals": false,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "typeRoots": ["./src/types", "./node_modules/@types"]
   },
   "include": ["src", "src/components/Layouts/.tsx"],
   "references": [{ "path": "./tsconfig.node.json" }]

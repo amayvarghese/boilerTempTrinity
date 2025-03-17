@@ -151,7 +151,7 @@ const FilterPageUI: React.FC = () => {
     directionalLight.castShadow = true;
     sceneRef.current.add(directionalLight);
 
-    const secondaryLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    const secondaryLight = new THREE.DirectionalLight(0xffffff, 1);
     secondaryLight.position.set(-5, 5, -5);
     sceneRef.current.add(secondaryLight);
 

@@ -93,7 +93,7 @@ const MenuScript: React.FC = () => {
           {/* Application name and version */}
           <div className="px-2 py-2 flex justify-between items-center mt-2">
             <span className="text-gray-600 text-sm">Bae Furnishing</span> 
-            <span className="text-gray-600 text-sm">v1.0.0</span>
+            <span className="text-gray-600 text-sm">v1.2.2</span>
           </div>
         </div>
       </div>
