@@ -330,9 +330,9 @@ const BlindCustomizeThreeJs: React.FC = () => {
 
   const loadModel = (type: string) => {
     if (!sceneRef.current || !cameraRef.current) return;
-
+  
     if (modelRef.current) sceneRef.current.remove(modelRef.current);
-
+  
     const loader = new GLTFLoader();
     const blind = blindTypes.find((b) => b.type === type);
     if (blind && blind.modelUrl) {
@@ -343,7 +343,17 @@ const BlindCustomizeThreeJs: React.FC = () => {
           modelRef.current.rotation.set(blind.rotation.x, blind.rotation.y, blind.rotation.z);
           sceneRef.current.add(modelRef.current);
           updateScene(blind);
-          if (selectedPattern) applyPatternToModel(selectedPattern);
+  
+          // Apply a default material if no pattern is selected
+          if (!selectedPattern) {
+            applyPatternToModel('/materials/mocha.png'); // Define default pattern URL here
+          } else {
+            applyPatternToModel(selectedPattern);
+          }
+  
+          if (rendererRef.current && cameraRef.current && sceneRef.current) {
+            rendererRef.current.render(sceneRef.current, cameraRef.current);
+          }
         },
         undefined,
         (error) => console.error('Loading error:', error)

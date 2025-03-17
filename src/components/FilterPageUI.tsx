@@ -33,8 +33,10 @@ type InitialModelParams = { scale: THREE.Vector3; position: THREE.Vector3 };
 const BLIND_TYPES: BlindType[] = [
   { type: "classicRoman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/classicRoman.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: -45, y: -25, z: 10 } },
   { type: "roller", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/3d/ROLLER_SHADES.glb", meshNameFabric: "ROLLER_SHADES", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2.1, z: 1 }, basePosition: { x: -45.5, y: -30, z: 5 } },
+  { type: "classicRoman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/classicRoman.glb",meshNameFabric:"Gray_2_Blind" , rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: -45, y: -25, z: 10 } },
+  { type: "roller", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/3d/ROLLER_SHADES.glb",meshNameFabric:"ROLLER_SHADES" ,rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2.1, z: 1 }, basePosition: { x: -45.5, y: -30, z: 5 } },
   { type: "roman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/ROMAN_SHADES_01.glb", meshNameFabric: "polySurface1", meshNameWood: "polySurface3", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
-  { type: "Sheet Blind", buttonImage: "/images/blindTypes/sheetBlindIcon.png", modelUrl: "/3d/sheetBlind.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -28, z: 10 } },
+  { type: "Sheet Blind", buttonImage: "/images/blindTypes/sheetBlindIcon.png", modelUrl: "/3d/sheetBlind.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 2 }, basePosition: { x: -45, y: -28, z: 10 } },
   { type: "PlantationShutter", buttonImage: "/images/blindTypes/plantationShutterIcon.png", modelUrl: "/3d/PlantationShutter.glb", meshNameWood: "PLANTATION__SHUTTER", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2, z: 1 }, basePosition: { x: -46, y: -27, z: 5 } },
   { type: "VerticalBlind", buttonImage: "/images/blindTypes/verticalSheetBlindIcon.png", modelUrl: "/3d/vertical_sheet_blinds_02.glb", meshNameWood: "polySurface32.001", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.45, y: 2.1, z: 1 }, basePosition: { x: -45, y: -28, z: 5 } },
   { type: "zebraBlinds", buttonImage: "/images/blindTypes/zebraBlindIcon.png", modelUrl: "/3d/zebra_blinds.glb", meshNameWood: "zebra_blinds", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
@@ -145,8 +147,8 @@ const FilterPageUI: React.FC = () => {
     rendererRef.current = renderer;
     mountRef.current?.appendChild(renderer.domElement);
 
-    sceneRef.current.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    sceneRef.current.add(new THREE.AmbientLight(0xffffff, 2));
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
     directionalLight.position.set(5, 10, 5);
     directionalLight.castShadow = true;
     sceneRef.current.add(directionalLight);
@@ -273,72 +275,69 @@ const FilterPageUI: React.FC = () => {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: "environment",
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
+          width: { min: 1280, ideal: 1920, max: 3840 }, // Enforce a minimum, aim for 1080p or 4K
+          height: { min: 720, ideal: 1080, max: 2160 },
           aspectRatio: { ideal: 16 / 9 },
-          frameRate: { ideal: 30 },
-        }
+
+          frameRate: { ideal: 30, max: 60 }, // Higher frame rate can improve clarity
+        },
       });
       cameraStreamRef.current = stream;
       if (videoRef.current && canvasRef.current && controlButtonRef.current) {
-        videoRef.current!.srcObject = stream;
-        videoRef.current!.play().then(() => {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().then(() => {
           const canvas = canvasRef.current!;
           const ctx = canvas.getContext("2d");
           if (!ctx) return;
-
-          // Set canvas to screen size
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
+  
+          // Initially set canvas to screen size for preview
+          canvas.width = window.innerWidth * window.devicePixelRatio;
+          canvas.height = window.innerHeight * window.devicePixelRatio;
+          canvas.style.width = `${window.innerWidth}px`;
+          canvas.style.height = `${window.innerHeight}px`;
           canvas.classList.remove("hidden");
-
-          adjustCanvasAspect(); // This will now adjust video positioning within screen-sized canvas
-
+  
+          adjustCanvasAspect();
+  
           const drawFrame = () => {
             if (!videoRef.current || !canvasRef.current || !ctx) return;
 
-            // Clear the canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Calculate video dimensions to maintain aspect ratio
-            const videoAspect = videoRef.current!.videoWidth / videoRef.current!.videoHeight;
+  
+            const videoAspect = videoRef.current.videoWidth / videoRef.current.videoHeight;
             const canvasAspect = canvas.width / canvas.height;
             let drawWidth, drawHeight, offsetX, offsetY;
-
+  
             if (videoAspect > canvasAspect) {
-              // Video is wider than canvas
               drawWidth = canvas.width;
               drawHeight = canvas.width / videoAspect;
               offsetX = 0;
               offsetY = (canvas.height - drawHeight) / 2;
             } else {
-              // Video is taller than canvas
               drawWidth = canvas.height * videoAspect;
               drawHeight = canvas.height;
               offsetX = (canvas.width - drawWidth) / 2;
               offsetY = 0;
             }
-
-            // Draw video centered on the canvas
+  
             ctx.drawImage(videoRef.current, offsetX, offsetY, drawWidth, drawHeight);
-
-            // Draw overlay to fit entire screen
+  
             if (overlayImage.current) {
-              ctx.globalAlpha = 0.7; // Set opacity for overlay
+              ctx.globalAlpha = 0.7;
               ctx.drawImage(overlayImage.current, 0, 0, canvas.width, canvas.height);
-              ctx.globalAlpha = 1.0; // Reset alpha
+              ctx.globalAlpha = 1.0;
             }
-
+  
             requestAnimationFrame(drawFrame);
           };
-
-          controlButtonRef.current!.textContent = "Capture";
-          controlButtonRef.current!.classList.remove("hidden");
-          controlButtonRef.current!.style.zIndex = "100";
+  
+          controlButtonRef.current.textContent = "Capture";
+          controlButtonRef.current.classList.remove("hidden");
+          controlButtonRef.current.style.zIndex = "100";
           uploadButtonRef.current?.style.setProperty("display", "none");
           levelIndicatorRef.current?.classList.remove("hidden");
           requestOrientationPermission();
-
+  
           drawFrame();
         }).catch((err) => {
           console.error("Video play failed:", err);
@@ -352,32 +351,34 @@ const FilterPageUI: React.FC = () => {
   };
 
   const captureImage = () => {
-    if (!canvasRef.current || !sceneRef.current || !cameraRef.current || !rendererRef.current) return;
+    if (!canvasRef.current || !sceneRef.current || !cameraRef.current || !rendererRef.current || !videoRef.current) return;
     setNewProcess("capture", "Draw a box on the image to place the 3D model.");
-    const ctx = canvasRef.current.getContext("2d");
-    if (ctx && videoRef.current) {
-      // Redraw only the video frame without the overlay
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-      const videoAspect = videoRef.current.videoWidth / videoRef.current.videoHeight;
-      const canvasAspect = canvasRef.current.width / canvasRef.current.height;
-      let drawWidth, drawHeight, offsetX, offsetY;
-
-      if (videoAspect > canvasAspect) {
-        drawWidth = canvasRef.current.width;
-        drawHeight = canvasRef.current.width / videoAspect;
-        offsetX = 0;
-        offsetY = (canvasRef.current.height - drawHeight) / 2;
-      } else {
-        drawWidth = canvasRef.current.height * videoAspect;
-        drawHeight = canvasRef.current.height;
-        offsetX = (canvasRef.current.width - drawWidth) / 2;
-        offsetY = 0;
-      }
-      ctx.drawImage(videoRef.current, offsetX, offsetY, drawWidth, drawHeight);
-    }
-    const imageData = canvasRef.current.toDataURL("image/png");
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+  
+    // Set canvas to the video's native resolution for capture
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.style.width = `${video.videoWidth}px`; // Optional, for debugging
+    canvas.style.height = `${video.videoHeight}px`;
+  
+    // Draw the video frame at full resolution without overlay
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  
+    // Capture the image
+    const imageData = canvas.toDataURL("image/png");
     setCapturedImage(imageData);
     localStorage.setItem("capturedImage", imageData);
+  
+    // Reset canvas to screen size for display
+    canvas.width = window.innerWidth * window.devicePixelRatio;
+    canvas.height = window.innerHeight * window.devicePixelRatio;
+    canvas.style.width = `${window.innerWidth}px`;
+    canvas.style.height = `${window.innerHeight}px`;
+  
     cleanupCameraStream();
     loadTextureAndCreatePlane(imageData, window.innerWidth, window.innerHeight);
     initSelectionBox();
@@ -536,7 +537,7 @@ const FilterPageUI: React.FC = () => {
     }
 
     const model = modelData.model.clone();
-    applyTextureToModel(model, selectedPattern || "/materials/beige.png", defaultBlindType);
+    applyTextureToModel(model, selectedPattern || "/materials/mocha.png", defaultBlindType);
 
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
@@ -587,7 +588,7 @@ const FilterPageUI: React.FC = () => {
     newModel.scale.copy(sourceModel.scale);
     newModel.userData.isDraggable = !isSubmitted;
 
-    applyTextureToModel(newModel, selectedPattern || "/materials/beige.png", BLIND_TYPES.find(b => b.type === selectedBlindType) || BLIND_TYPES[0]);
+    applyTextureToModel(newModel, selectedPattern || "/materials/mocha.png", BLIND_TYPES.find(b => b.type === selectedBlindType) || BLIND_TYPES[0]);
     sceneRef.current.add(newModel);
     modelsRef.current.push({ model: newModel, gltf: modelData.gltf });
 
@@ -734,7 +735,7 @@ const FilterPageUI: React.FC = () => {
       }
       newModel.rotation.set(blindType.rotation.x, blindType.rotation.y, blindType.rotation.z);
       newModel.userData.isDraggable = isDraggable;
-      applyTextureToModel(newModel, selectedPattern || "/materials/beige.png", blindType);
+      applyTextureToModel(newModel, selectedPattern || "/materials/mocha.png", blindType);
       sceneRef.current.add(newModel);
       updatedModels.push({ model: newModel, gltf: modelData.gltf });
       fadeInModel(newModel);
