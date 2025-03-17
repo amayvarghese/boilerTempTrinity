@@ -133,7 +133,7 @@ const BlindCustomizerSection = () => {
               style={getBlindOverlayStyle(selectedPattern)}
             />
             {/* Overlay for Filter Options and Available Patterns (Desktop Only) */}
-            <div className="hidden md:block viewport absolute top-0 right-0 w-1/3 h-[calc(100%+5rem)] bg-white bg-opacity-90 shadow-lg rounded flex flex-col z-40">
+            <div className="  md:block viewport absolute top-0 right-0 w-1/3 h-[calc(100%+5rem)] bg-white bg-opacity-90 shadow-lg rounded flex flex-col z-40">
               <div className="options-menu p-2 bg-gray-100 rounded shadow">
                 <h3 className="mb-2 text-sm text-gray-700 text-left h-12">Filter Options</h3>
                 <div className="grid-container grid grid-cols-2 gap-2 mx-5 text-[13px]">
