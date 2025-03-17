@@ -126,7 +126,7 @@ const FilterPageUI: React.FC = () => {
   // Preload Overlay Image Once
   useEffect(() => {
     const img = new Image();
-    img.src = "/images/overlayFilterGPT.png";
+    img.src = "/images/overlayFilter.png";
     img.onload = () => (overlayImage.current = img);
   }, []);
 
@@ -786,39 +786,50 @@ const FilterPageUI: React.FC = () => {
     setIsLoading(false);
     completeCurrentProcess();
   };
-
   const saveImage = async () => {
-    if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !backgroundPlaneRef.current) return;
+    if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !backgroundPlaneRef.current) {
+      console.error("Required Three.js components are missing");
+      return;
+    }
     setNewProcess("save", "Saving image... Please wait.");
     if (!confirm("Would you like to save the customized image?")) return;
-
+  
     setIsLoading(true);
     setShowBlindMenu(false);
     saveButtonRef.current?.classList.add("hidden");
-
-    // Get the captured image dimensions from the background plane texture
+  
     const texture = (backgroundPlaneRef.current.material as THREE.MeshBasicMaterial).map;
-    if (!texture || !capturedImage) return;
+    if (!texture || !capturedImage) {
+      console.error("Texture or captured image is missing");
+      return;
+    }
     const width = texture.image.width;
     const height = texture.image.height;
-
+    console.log("Captured image state:", capturedImage);
+    console.log("Background plane:", backgroundPlaneRef.current);
+    console.log("Texture:", texture);
+  
     // Adjust renderer and camera to match captured image dimensions
     rendererRef.current.setSize(width, height);
     cameraRef.current.aspect = width / height;
     cameraRef.current.updateProjectionMatrix();
     adjustBackgroundPlane(width, height);
-
-    // Render the scene with 3D models
+  
+    // Render the scene
     rendererRef.current.render(sceneRef.current, cameraRef.current);
     const sceneDataUrl = rendererRef.current.domElement.toDataURL("image/png");
-
-    // Create a canvas to combine background, scene, and logo
+    console.log("Scene rendered, data URL length:", sceneDataUrl.length);
+  
+    // Create canvas to combine images
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
+    if (!ctx) {
+      console.error("Failed to get 2D context for canvas");
+      return;
+    }
+  
     const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = "Anonymous";
@@ -826,28 +837,33 @@ const FilterPageUI: React.FC = () => {
       img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
       img.src = src;
     });
-
+  
     try {
-      // Draw the captured/uploaded image as the background
+      // Draw background image
       const backgroundImg = await loadImage(capturedImage);
       ctx.drawImage(backgroundImg, 0, 0, width, height);
-
-      // Draw the 3D scene (with models) over the background
+      console.log("Background image drawn");
+  
+      // Draw 3D scene
       const sceneImg = await loadImage(sceneDataUrl);
       ctx.drawImage(sceneImg, 0, 0, width, height);
-
-      // Draw the logo centered horizontally, near the top
+      console.log("Scene image drawn");
+  
+      // Draw logo
       const logoImg = await loadImage("/images/baelogoN.png");
-      const logoSize = height * 0.1; // Logo height is 10% of image height
-      const logoX = (width - logoSize) / 2; // Center horizontally
-      const logoY = 16; // Fixed offset from top
+      const logoSize = height * 0.1;
+      const logoX = (width - logoSize) / 2;
+      const logoY = 16;
       ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
-
-      // Generate the final image
+      console.log("Logo drawn");
+  
+      // Generate final image
       const finalDataUrl = canvas.toDataURL("image/png");
+      console.log("Final data URL length:", finalDataUrl.length);
+  
       const blob = await (await fetch(finalDataUrl)).blob();
       const file = new File([blob], "custom_blind_image.png", { type: "image/png" });
-
+  
       // Attempt to share or download
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
@@ -878,15 +894,14 @@ const FilterPageUI: React.FC = () => {
       cameraRef.current.aspect = window.innerWidth / window.innerHeight;
       cameraRef.current.updateProjectionMatrix();
       adjustBackgroundPlane(window.innerWidth, window.innerHeight);
-      renderScene(); // Re-render at screen size
-
+      renderScene();
+  
       setShowBlindMenu(true);
       saveButtonRef.current?.classList.remove("hidden");
       setIsLoading(false);
       completeCurrentProcess();
     }
   };
-
   // Helper Functions
   const cleanupThreeJs = () => cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
   const adjustCanvasAspect = () => {
@@ -1133,80 +1148,86 @@ const FilterPageUI: React.FC = () => {
         handleImageUpload(file);
       }} />
       {showBlindMenu && isCustomizerView && (
-        <div className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen overflow-y-auto" style={{
-          zIndex: 30,
-          pointerEvents: "auto",
-          touchAction: "pan-y",
-        }}>
-          <div className="w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
-            <h3 className="bg-white p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Select Type of Blind</h3>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
-              {BLIND_TYPES.map(({ type, buttonImage }) => (
-                <div key={type} className="flex flex-col items-center text-center cursor-pointer px-[5px]" onClick={() => selectBlindType(type)} onTouchEnd={() => selectBlindType(type)}>
-                  <img src={buttonImage} alt={`${type} Blind`} className="w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover" />
-                  <div className="mt-1 text-gray-700 text-[11px]">{type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}</div>
-                </div>
-              ))}
+  <div
+    className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen overflow-y-auto"
+    style={{
+      zIndex: 30,
+      pointerEvents: "auto",
+      touchAction: "pan-y",
+    }}
+  >
+    <div className="w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
+      <h3 className="bg-white p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
+        Select Type of Blind
+      </h3>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
+        {BLIND_TYPES.map(({ type, buttonImage }) => (
+          <div
+            key={type}
+            className="flex flex-col items-center text-center cursor-pointer px-[5px]"
+            onClick={() => selectBlindType(type)}
+            onTouchEnd={() => selectBlindType(type)}
+          >
+            <img
+              src={buttonImage}
+              alt={`${type} Blind`}
+              className="w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
+            />
+            <div className="mt-1 text-gray-700 text-[11px]">
+              {type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}
             </div>
           </div>
-          <div className="flex flex-col items-center w-full md:w-3/4 relative">
-            <div className="md:hidden w-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
-              <div className="p-2 bg-white rounded shadow">
-                <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
-                <div className="grid grid-cols-2 gap-2 mx-5 text-[13px]">
-                  {["solid", "pattern", "solar", "kids", "natural"].map((filter) => (
-                    <label key={filter} className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" value={filter} checked={filters.includes(filter)} onChange={handleFilterChange} className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer" />
-                      {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="flex flex-col flex-1 max-h-[300px] bg-white">
-                <h3 className="bg-white pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Available Patterns</h3>
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
-                  {filteredPatterns.map((pattern, index) => (
-                    <div key={index} className="flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition" onClick={() => selectPattern(pattern.patternUrl)} onTouchEnd={() => selectPattern(pattern.patternUrl)}>
-                      <img src={pattern.image} alt={pattern.name} className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover" />
-                      <div className="flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
-                        <span className="truncate">{pattern.name}</span>
-                        <span>{pattern.price}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className=" md:block absolute top-0 right-0 w-1/3 h-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col z-40">
-              <div className="p-2 bg-white rounded shadow">
-                <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
-                <div className="grid grid-cols-2 gap-2 mx-5 text-[13px]">
-                  {["solid", "pattern", "solar", "kids", "natural"].map((filter) => (
-                    <label key={filter} className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" value={filter} checked={filters.includes(filter)} onChange={handleFilterChange} className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer" />
-                      {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="flex flex-col flex-1 max-h-[400px] bg-white">
-                <h3 className="bg-white pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Available Patterns</h3>
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
-                  {filteredPatterns.map((pattern, index) => (
-                    <div key={index} className="flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition" onClick={() => selectPattern(pattern.patternUrl)} onTouchEnd={() => selectPattern(pattern.patternUrl)}>
-                      <img src={pattern.image} alt={pattern.name} className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover" />
-                      <div className="flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
-                        <span className="truncate">{pattern.name}</span>
-                        <span>{pattern.price}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+        ))}
+      </div>
+    </div>
+    <div className="flex flex-col items-center w-full md:w-3/4 relative">
+      <div className="md:hidden w-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
+        <div className="p-2 bg-white rounded shadow">
+          <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
+          <div className="grid grid-cols-2 gap-2 mx-5 text-[13px]">
+            {["solid", "pattern", "solar", "kids", "natural"].map((filter) => (
+              <label key={filter} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  value={filter}
+                  checked={filters.includes(filter)}
+                  onChange={handleFilterChange}
+                  className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer"
+                />
+                {filter.charAt(0).toUpperCase() + filter.slice(1)}
+              </label>
+            ))}
           </div>
         </div>
-      )}
+        <div className="flex flex-col flex-1 max-h-[300px] bg-white">
+          <h3 className="bg-white pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
+            Available Patterns
+          </h3>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
+            {filteredPatterns.map((pattern, index) => (
+              <div
+                key={index}
+                className="flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
+                onClick={() => selectPattern(pattern.patternUrl)}
+                onTouchEnd={() => selectPattern(pattern.patternUrl)}
+              >
+                <img
+                  src={pattern.image}
+                  alt={pattern.name}
+                  className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
+                />
+                <div className="flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
+                  <span className="truncate">{pattern.name}</span>
+                  <span>{pattern.price}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };
