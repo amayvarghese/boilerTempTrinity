@@ -40,64 +40,64 @@ const BlindCustomizeThreeJs: React.FC = () => {
   ];
 
   const blindTypes = [
-    { 
-      type: 'classicRoman', 
-      buttonImage: '/images/blindTypes/romanBlindIcon.png', 
-      modelUrl: '/3d/classicRoman.glb', 
-      rotation: { x: 0, y: 0, z: 0 }, 
-      baseScale: { x: 1.55, y: 2, z: 3 }, 
+    {
+      type: 'classicRoman',
+      buttonImage: '/images/blindTypes/romanBlindIcon.png',
+      modelUrl: '/3d/classicRoman.glb',
+      rotation: { x: 0, y: 0, z: 0 },
+      baseScale: { x: 1.55, y: 2, z: 3 },
       basePosition: { x: -45, y: -25, z: 10 },
     },
-    { 
-      type: 'roller', 
-      buttonImage: '/images/blindTypes/rollerBlindIcon.png', 
-      modelUrl: '/3d/ROLLER_SHADES.glb', 
-      rotation: { x: 0, y: 0, z: 0 }, 
-      baseScale: { x: 1.5, y: 2.1, z: 1 }, 
+    {
+      type: 'roller',
+      buttonImage: '/images/blindTypes/rollerBlindIcon.png',
+      modelUrl: '/3d/ROLLER_SHADES.glb',
+      rotation: { x: 0, y: 0, z: 0 },
+      baseScale: { x: 1.5, y: 2.1, z: 1 },
       basePosition: { x: -45.5, y: -30, z: 5 },
     },
-    { 
-      type: 'roman', 
-      buttonImage: '/images/blindTypes/romanBlindIcon.png', 
-      modelUrl: '/3d/ROMAN_SHADES_01.glb', 
-      rotation: { x: 0, y: 0, z: 0 }, 
-      baseScale: { x: 1.55, y: 2, z: 1 }, 
+    {
+      type: 'roman',
+      buttonImage: '/images/blindTypes/romanBlindIcon.png',
+      modelUrl: '/3d/ROMAN_SHADES_01.glb',
+      rotation: { x: 0, y: 0, z: 0 },
+      baseScale: { x: 1.55, y: 2, z: 1 },
       basePosition: { x: -45, y: -20, z: 5 },
       meshNameFabric: "polySurface1",
       meshNameWood: "polySurface3",
     },
-    { 
-      type: 'Sheet Blind', 
-      buttonImage: '/images/blindTypes/sheetBlindIcon.png', 
-      modelUrl: '/3d/sheetBlind.glb', 
-      rotation: { x: 0, y: 0, z: 0 }, 
-      baseScale: { x: 1.55, y: 2, z: 1 }, 
+    {
+      type: 'Sheet Blind',
+      buttonImage: '/images/blindTypes/sheetBlindIcon.png',
+      modelUrl: '/3d/sheetBlind.glb',
+      rotation: { x: 0, y: 0, z: 0 },
+      baseScale: { x: 1.55, y: 2, z: 1 },
       basePosition: { x: -45, y: -28, z: 20 },
     },
-    { 
-      type: 'PlantationShutter', 
-      buttonImage: '/images/blindTypes/plantationShutterIcon.png', 
-      modelUrl: '/3d/PLANTATION__SHUTTER.glb', 
-      rotation: { x: 0, y: 0, z: 0 }, 
-      baseScale: { x: 150, y: 230, z: 1 }, 
+    {
+      type: 'PlantationShutter',
+      buttonImage: '/images/blindTypes/plantationShutterIcon.png',
+      modelUrl: '/3d/PLANTATION__SHUTTER.glb',
+      rotation: { x: 0, y: 0, z: 0 },
+      baseScale: { x: 150, y: 230, z: 1 },
       basePosition: { x: -46, y: -27, z: 5 },
       meshNameWood: "shutterWood",
     },
-    { 
-      type: 'VerticalSheet', 
-      buttonImage: '/images/blindTypes/verticalSheetBlindIcon.png', 
-      modelUrl: '/3d/vertical_sheet_blinds_02.glb', 
-      rotation: { x: 0, y: 0, z: 0 }, 
-      baseScale: { x: 1.45, y: 2.1, z: 1 }, 
+    {
+      type: 'VerticalSheet',
+      buttonImage: '/images/blindTypes/verticalSheetBlindIcon.png',
+      modelUrl: '/3d/vertical_sheet_blinds_02.glb',
+      rotation: { x: 0, y: 0, z: 0 },
+      baseScale: { x: 1.45, y: 2.1, z: 1 },
       basePosition: { x: -45, y: -28, z: 5 },
       meshNameWood: "polySurface32.001",
     },
-    { 
-      type: 'zebraBlinds', 
-      buttonImage: '/images/blindTypes/zebraBlindIcon.png', 
-      modelUrl: '/3d/zebra_blinds.glb', 
-      rotation: { x: 0, y: 0, z: 0 }, 
-      baseScale: { x: 1.55, y: 2, z: 1 }, 
+    {
+      type: 'zebraBlinds',
+      buttonImage: '/images/blindTypes/zebraBlindIcon.png',
+      modelUrl: '/3d/zebra_blinds.glb',
+      rotation: { x: 0, y: 0, z: 0 },
+      baseScale: { x: 1.55, y: 2, z: 1 },
       basePosition: { x: -45, y: -20, z: 5 },
       meshNameWood: "zebra_blinds",
     },
@@ -398,7 +398,7 @@ const BlindCustomizeThreeJs: React.FC = () => {
                 className="main_bg absolute top-0 left-0 w-full h-full object-contain z-20"
               />
             </div>
-            <div className="hidden md:block viewport absolute top-0 right-0 w-1/3 h-[calc(100%+5rem)] bg-white bg-opacity-90 shadow-lg rounded flex flex-col z-40">
+            <div className="hidden md:block viewport absolute top-0 right-0 w-1/3 h-[calc(100%+5rem)] bg-white bg-opacity-90 shadow-lg rounded  flex-col z-40">
               <div className="options-menu p-2 bg-gray-100 rounded shadow">
                 <h3 className="mb-2 text-sm text-gray-700 text-left h-12">Filter Options</h3>
                 <div className="grid-container grid grid-cols-2 gap-2 mx-5 text-[13px]">

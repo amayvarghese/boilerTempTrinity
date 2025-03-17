@@ -205,7 +205,11 @@ const FilterPageAI: React.FC = () => {
 
     scene.remove(windowBoxRef.current);
     windowBoxRef.current.geometry.dispose();
-    windowBoxRef.current.material.dispose();
+    if (Array.isArray(windowBoxRef.current.material)) {
+      windowBoxRef.current.material.forEach(material => material.dispose());
+    } else {
+      windowBoxRef.current.material.dispose();
+    }
 
     const newBox = new THREE.Mesh(geometry, material);
     newBox.position.z = 0.01;
@@ -225,10 +229,10 @@ const FilterPageAI: React.FC = () => {
     for (let i = 0; i < 4; i++) {
       const [sx, sy] = [srcPoints[i].x, srcPoints[i].y];
       const [dx, dy] = [dstPoints[i].x, dstPoints[i].y];
-      A.push([sx, sy, 1, 0, 0, 0, -sx * dx, -sy * dx]);
-      A.push([0, 0, 0, sx, sy, 1, -sx * dy, -sy * dy]);
-      b.push(dx);
-      b.push(dy);
+      A.push([sx, sy, 1, 0, 0, 0, -sx * dx, -sy * dx] as never);
+      A.push([0, 0, 0, sx, sy, 1, -sx * dy, -sy * dy] as never);
+      b.push(dx as never);
+      b.push(dy as never);
     }
 
     try {
@@ -493,12 +497,20 @@ const FilterPageAI: React.FC = () => {
     if (windowBoxRef.current) {
       scene.remove(windowBoxRef.current);
       windowBoxRef.current.geometry.dispose();
-      windowBoxRef.current.material.dispose();
+      if (Array.isArray(windowBoxRef.current.material)) {
+        windowBoxRef.current.material.forEach((material) => material.dispose());
+      } else {
+        windowBoxRef.current.material.dispose();
+      }
     }
     cornerRefs.current.forEach((corner) => {
       scene.remove(corner);
       corner.geometry.dispose();
-      corner.material.dispose();
+      if (Array.isArray(corner.material)) {
+        corner.material.forEach((material) => material.dispose());
+      } else {
+        corner.material.dispose();
+      }
     });
     cornerRefs.current = [];
 
@@ -620,13 +632,21 @@ const FilterPageAI: React.FC = () => {
     if (windowBoxRef.current) {
       scene.remove(windowBoxRef.current);
       windowBoxRef.current.geometry.dispose();
-      windowBoxRef.current.material.dispose();
+      if (Array.isArray(windowBoxRef.current.material)) {
+        windowBoxRef.current.material.forEach((material) => material.dispose());
+      } else {
+        windowBoxRef.current.material.dispose();
+      }
       windowBoxRef.current = null;
     }
     cornerRefs.current.forEach((corner) => {
       scene.remove(corner);
       corner.geometry.dispose();
-      corner.material.dispose();
+      if (Array.isArray(corner.material)) {
+        corner.material.forEach((material) => material.dispose());
+      } else {
+        corner.material.dispose();
+      }
     });
     cornerRefs.current = [];
   };
