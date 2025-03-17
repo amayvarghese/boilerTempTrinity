@@ -29,60 +29,60 @@ const BlindCustomizerThreeD: React.FC = () => {
   ];
 
   const blindTypes = [
-    { 
-      type: 'classicRoman', 
-      buttonImage: '/images/blindTypes/classicRoman.png', 
-      modelUrl: '/3d/classicRoman.glb', 
-      rotation: { x: 0, y: 0, z: 0 }, 
-      baseScale: { x: 0.5, y: 0.75, z: 0.8 }, 
-      basePosition: { x: -15, y: -7.5, z: 0 } 
+    {
+      type: 'classicRoman',
+      buttonImage: '/images/blindTypes/classicRoman.png',
+      modelUrl: '/3d/classicRoman.glb',
+      rotation: { x: 0, y: 0, z: 0 },
+      baseScale: { x: 0.5, y: 0.75, z: 0.8 },
+      basePosition: { x: -15, y: -7.5, z: 0 }
     },
-    { 
-      type: 'roller', 
-      buttonImage: '/images/windowTypeIcons/image 11.png', 
-      modelUrl: '/models/plantationShutter.glb', 
-      rotation: { x: 0, y: 0, z: 0 }, 
-      baseScale: { x: 0.07, y: .1, z: .1 }, 
+    {
+      type: 'roller',
+      buttonImage: '/images/windowTypeIcons/image 11.png',
+      modelUrl: '/models/plantationShutter.glb',
+      rotation: { x: 0, y: 0, z: 0 },
+      baseScale: { x: 0.07, y: .1, z: .1 },
       basePosition: { x: -2, y: 1, z: 0 }
     },
-    { 
-      type: 'roman', 
-      buttonImage: '/images/windowTypeIcons/image 13.png', 
-      modelUrl: '/models/shadeBake.glb', 
-      rotation: { x: 0, y: 0, z: 0 }, 
-      baseScale: { x: 0.5, y: 0.75, z: 0.8 }, 
-      basePosition: { x: -15, y: -7.5, z: 0 } 
+    {
+      type: 'roman',
+      buttonImage: '/images/windowTypeIcons/image 13.png',
+      modelUrl: '/models/shadeBake.glb',
+      rotation: { x: 0, y: 0, z: 0 },
+      baseScale: { x: 0.5, y: 0.75, z: 0.8 },
+      basePosition: { x: -15, y: -7.5, z: 0 }
     },
-    { 
-      type: 'plantationShutter', 
-      buttonImage: '/images/windowTypeIcons/image 15.png', 
-      modelUrl: '/models/plantationShutter.glb', 
-      rotation: { x: 0, y: 0, z: 0 }, 
-      baseScale: { x: 0.07, y: .1, z: .1 }, 
+    {
+      type: 'plantationShutter',
+      buttonImage: '/images/windowTypeIcons/image 15.png',
+      modelUrl: '/models/plantationShutter.glb',
+      rotation: { x: 0, y: 0, z: 0 },
+      baseScale: { x: 0.07, y: .1, z: .1 },
       basePosition: { x: -2, y: 1, z: 0 }
     },
-    { 
-      type: 'solar', 
-      buttonImage: '/images/windowTypeIcons/image 14.png', 
-      modelUrl: '/models/shadeBake.glb', 
-      rotation: { x: 0, y: 0, z: 0 }, 
-      baseScale: { x: 0.7, y: 0.7, z: 0.7 }, 
+    {
+      type: 'solar',
+      buttonImage: '/images/windowTypeIcons/image 14.png',
+      modelUrl: '/models/shadeBake.glb',
+      rotation: { x: 0, y: 0, z: 0 },
+      baseScale: { x: 0.7, y: 0.7, z: 0.7 },
       basePosition: { x: -5, y: 10, z: 0 }
     },
-    { 
-      type: 'aluminumSheet', 
-      buttonImage: '/images/windowTypeIcons/image 17.png', 
-      modelUrl: '/models/plantationShutter.glb', 
-      rotation: { x: 0, y: 0, z: 0 }, 
-      baseScale: { x: 0.07, y: .1, z: .1 }, 
+    {
+      type: 'aluminumSheet',
+      buttonImage: '/images/windowTypeIcons/image 17.png',
+      modelUrl: '/models/plantationShutter.glb',
+      rotation: { x: 0, y: 0, z: 0 },
+      baseScale: { x: 0.07, y: .1, z: .1 },
       basePosition: { x: -2, y: 1, z: 0 }
     },
-    { 
-      type: 'cellularBlinds', 
-      buttonImage: '/images/windowTypeIcons/image 18.png', 
-      modelUrl: '/models/shadeBake.glb', 
-      rotation: { x: 0, y: 0, z: 0 }, 
-      baseScale: { x: 0.85, y: 0.85, z: 0.85 }, 
+    {
+      type: 'cellularBlinds',
+      buttonImage: '/images/windowTypeIcons/image 18.png',
+      modelUrl: '/models/shadeBake.glb',
+      rotation: { x: 0, y: 0, z: 0 },
+      baseScale: { x: 0.85, y: 0.85, z: 0.85 },
       basePosition: { x: 5, y: 5, z: 0 }
     },
   ];
@@ -305,18 +305,18 @@ const BlindCustomizerThreeD: React.FC = () => {
         <div className="central-content flex flex-col items-center w-full md:w-3/4 relative">
           <div className="backgroundImage relative w-full h-[calc(100%-4rem)]">
             <div className="solid-color-layer absolute inset-0 z-10" style={{ backgroundColor }}></div>
-            <img 
+            <img
               ref={imageRef}
-              src="/images/RoomElements.png" 
-              alt="Room Background" 
-              className="main_bg relative w-full h-full object-contain z-20" 
+              src="/images/RoomElements.png"
+              alt="Room Background"
+              className="main_bg relative w-full h-full object-contain z-20"
             />
             <canvas
               ref={canvasRef}
               className="blind_overlay absolute inset-0 w-full h-full z-30"
               style={{ minHeight: '400px' }}
             />
-            <div className="hidden md:block viewport absolute top-0 right-0 w-1/3 h-[calc(100%+5rem)] bg-white bg-opacity-90 shadow-lg rounded flex flex-col z-40">
+            <div className=" md:block viewport absolute top-0 right-0 w-1/3 h-[calc(100%+5rem)] bg-white bg-opacity-90 shadow-lg rounded flex flex-col z-40">
               <div className="options-menu p-2 bg-gray-100 rounded shadow">
                 <h3 className="mb-2 text-sm text-gray-700 text-left h-12">Filter Options</h3>
                 <div className="grid-container grid grid-cols-2 gap-2 mx-5 text-[13px]">

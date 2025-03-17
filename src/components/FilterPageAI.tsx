@@ -175,6 +175,7 @@ const FilterPageAI: React.FC = () => {
     if (!cameraRef.current) return;
     const fovRad = cameraRef.current.fov * (Math.PI / 180);
     const distance = (height / 100 / 2) / Math.tan(fovRad / 2);
+    const heasdasd = width
     cameraRef.current.position.set(0, 0, distance);
     cameraRef.current.lookAt(0, 0, 0);
     cameraRef.current.updateProjectionMatrix();

@@ -32,7 +32,7 @@ type InitialModelParams = { scale: THREE.Vector3; position: THREE.Vector3 };
 
 const BLIND_TYPES: BlindType[] = [
   { type: "classicRoman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/classicRoman.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: -45, y: -25, z: 10 } },
-  { type: "roller", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/3d/ROLLER_SHADES.glb",meshNameFabric:"ROLLER_SHADES" ,rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2.1, z: 1 }, basePosition: { x: -45.5, y: -30, z: 5 } },
+  { type: "roller", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/3d/ROLLER_SHADES.glb", meshNameFabric: "ROLLER_SHADES", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2.1, z: 1 }, basePosition: { x: -45.5, y: -30, z: 5 } },
   { type: "roman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/ROMAN_SHADES_01.glb", meshNameFabric: "polySurface1", meshNameWood: "polySurface3", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
   { type: "Sheet Blind", buttonImage: "/images/blindTypes/sheetBlindIcon.png", modelUrl: "/3d/sheetBlind.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -28, z: 10 } },
   { type: "PlantationShutter", buttonImage: "/images/blindTypes/plantationShutterIcon.png", modelUrl: "/3d/PlantationShutter.glb", meshNameWood: "PLANTATION__SHUTTER", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2, z: 1 }, basePosition: { x: -46, y: -27, z: 5 } },
@@ -112,8 +112,8 @@ const FilterPageUI: React.FC = () => {
   const filteredPatterns = PATTERNS.filter(
     (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
   );
-  const instruction = activeProcess && typeof activeProcess.completed === "boolean" 
-    ? (!activeProcess.completed ? activeProcess.instruction : "") 
+  const instruction = activeProcess && typeof activeProcess.completed === "boolean"
+    ? (!activeProcess.completed ? activeProcess.instruction : "")
     : "";
 
   const setNewProcess = (id: string, instruction: string) =>
@@ -270,14 +270,14 @@ const FilterPageUI: React.FC = () => {
   const startCameraStream = async () => {
     setNewProcess("camera", "Place the center of your window to this dot");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
           facingMode: "environment",
           width: { ideal: 1920 },
           height: { ideal: 1080 },
           aspectRatio: { ideal: 16 / 9 },
           frameRate: { ideal: 30 },
-        } 
+        }
       });
       cameraStreamRef.current = stream;
       if (videoRef.current && canvasRef.current && controlButtonRef.current) {
@@ -296,7 +296,7 @@ const FilterPageUI: React.FC = () => {
 
           const drawFrame = () => {
             if (!videoRef.current || !canvasRef.current || !ctx) return;
-            
+
             // Clear the canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -514,13 +514,13 @@ const FilterPageUI: React.FC = () => {
 
     const rect = mountRef.current!.getBoundingClientRect();
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    
+
     const adjustedStartY = isMobile ? startY - rect.top : startY;
     const adjustedEndY = isMobile ? endY - rect.top : endY;
 
     const worldStart = screenToWorld(startX, adjustedStartY, -0.1);
     const worldEnd = screenToWorld(endX, adjustedEndY, -0.1);
-    
+
     selectionBoxParamsRef.current = {
       targetWidth: Math.abs(worldEnd.x - worldStart.x),
       targetHeight: Math.abs(worldEnd.y - worldStart.y),
@@ -551,7 +551,7 @@ const FilterPageUI: React.FC = () => {
 
     const targetX = (worldStart.x + worldEnd.x) / 2 - center.x * scale.x;
     const targetY = (worldStart.y + worldEnd.y) / 2 - center.y * scale.y;
-    
+
     const yOffset = isMobile ? -0.5 : 0;
     model.position.set(targetX, targetY + yOffset, 0.1);
     initialModelParamsRef.current = { scale, position: model.position.clone() };
@@ -777,7 +777,7 @@ const FilterPageUI: React.FC = () => {
     }
     setIsLoading(true);
     const blindType = BLIND_TYPES.find((b) => b.type === selectedBlindType) || BLIND_TYPES[0];
-    modelsRef.current.forEach(({ model }) => 
+    modelsRef.current.forEach(({ model }) =>
       applyTextureToModel(model, patternUrl, blindType)
     );
     setIsLoading(false);
@@ -788,34 +788,34 @@ const FilterPageUI: React.FC = () => {
     if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !backgroundPlaneRef.current) return;
     setNewProcess("save", "Saving image... Please wait.");
     if (!confirm("Would you like to save the customized image?")) return;
-  
+
     setIsLoading(true);
     setShowBlindMenu(false);
     saveButtonRef.current?.classList.add("hidden");
-  
+
     // Get the captured image dimensions from the background plane texture
     const texture = (backgroundPlaneRef.current.material as THREE.MeshBasicMaterial).map;
     if (!texture || !capturedImage) return;
     const width = texture.image.width;
     const height = texture.image.height;
-  
+
     // Adjust renderer and camera to match captured image dimensions
     rendererRef.current.setSize(width, height);
     cameraRef.current.aspect = width / height;
     cameraRef.current.updateProjectionMatrix();
     adjustBackgroundPlane(width, height);
-  
+
     // Render the scene with 3D models
     rendererRef.current.render(sceneRef.current, cameraRef.current);
     const sceneDataUrl = rendererRef.current.domElement.toDataURL("image/png");
-  
+
     // Create a canvas to combine background, scene, and logo
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-  
+
     const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = "Anonymous";
@@ -823,28 +823,28 @@ const FilterPageUI: React.FC = () => {
       img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
       img.src = src;
     });
-  
+
     try {
       // Draw the captured/uploaded image as the background
       const backgroundImg = await loadImage(capturedImage);
       ctx.drawImage(backgroundImg, 0, 0, width, height);
-  
+
       // Draw the 3D scene (with models) over the background
       const sceneImg = await loadImage(sceneDataUrl);
       ctx.drawImage(sceneImg, 0, 0, width, height);
-  
+
       // Draw the logo centered horizontally, near the top
       const logoImg = await loadImage("/images/baelogoN.png");
       const logoSize = height * 0.1; // Logo height is 10% of image height
       const logoX = (width - logoSize) / 2; // Center horizontally
       const logoY = 16; // Fixed offset from top
       ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
-  
+
       // Generate the final image
       const finalDataUrl = canvas.toDataURL("image/png");
       const blob = await (await fetch(finalDataUrl)).blob();
       const file = new File([blob], "custom_blind_image.png", { type: "image/png" });
-  
+
       // Attempt to share or download
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
@@ -862,8 +862,8 @@ const FilterPageUI: React.FC = () => {
           isIOS
             ? "Image downloaded! Open it in Downloads and tap 'Save to Photos'."
             : isAndroid
-            ? "Image downloaded! Find it in your Downloads folder or Gallery."
-            : "Image downloaded! Check your Downloads folder."
+              ? "Image downloaded! Find it in your Downloads folder or Gallery."
+              : "Image downloaded! Check your Downloads folder."
         );
       }
     } catch (error) {
@@ -876,7 +876,7 @@ const FilterPageUI: React.FC = () => {
       cameraRef.current.updateProjectionMatrix();
       adjustBackgroundPlane(window.innerWidth, window.innerHeight);
       renderScene(); // Re-render at screen size
-  
+
       setShowBlindMenu(true);
       saveButtonRef.current?.classList.remove("hidden");
       setIsLoading(false);
@@ -1038,7 +1038,7 @@ const FilterPageUI: React.FC = () => {
     setShowBlindMenu(true);
     setIsCustomizerView(true);
     setIsSubmitted(true);
-    
+
     controlButtonRef.current && document.body.removeChild(controlButtonRef.current);
     uploadButtonRef.current && document.body.removeChild(uploadButtonRef.current);
     redoButtonRef.current?.classList.add("hidden");
@@ -1106,7 +1106,7 @@ const FilterPageUI: React.FC = () => {
       background: !capturedImage && !isCustomizerView ? "url('/images/unsplashMain.jpeg') center/cover" : "#FFFFFF",
       touchAction: isCustomizerView ? "pan-y" : "auto",
     }}>
-      <div ref={mountRef} className="relative w-full h-auto min-h-screen" style={{ 
+      <div ref={mountRef} className="relative w-full h-auto min-h-screen" style={{
         zIndex: isCustomizerView ? 0 : 20,
         touchAction: isCustomizerView ? "pan-y" : "auto",
       }} />
@@ -1130,8 +1130,8 @@ const FilterPageUI: React.FC = () => {
         handleImageUpload(file);
       }} />
       {showBlindMenu && isCustomizerView && (
-        <div className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen overflow-y-auto" style={{ 
-          zIndex: 30, 
+        <div className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen overflow-y-auto" style={{
+          zIndex: 30,
           pointerEvents: "auto",
           touchAction: "pan-y",
         }}>
@@ -1174,7 +1174,7 @@ const FilterPageUI: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="hidden md:block absolute top-0 right-0 w-1/3 h-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col z-40">
+            <div className=" md:block absolute top-0 right-0 w-1/3 h-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col z-40">
               <div className="p-2 bg-white rounded shadow">
                 <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
                 <div className="grid grid-cols-2 gap-2 mx-5 text-[13px]">
