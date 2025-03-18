@@ -773,6 +773,7 @@ const FilterPageUI: React.FC = () => {
   };
 
   const saveImage = async () => {
+    // Preliminary checks for required Three.js components
     if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !backgroundPlaneRef.current) {
       console.error("Required Three.js components are missing:", {
         renderer: rendererRef.current,
@@ -783,48 +784,79 @@ const FilterPageUI: React.FC = () => {
       setNewProcess("save-error", "Missing required components. Please try again.");
       return;
     }
+  
     setNewProcess("save", "Saving image... Please wait.");
     if (!confirm("Would you like to save the customized image?")) return;
+  
     setIsLoading(true);
     setShowBlindMenu(false);
     saveButtonRef.current?.classList.add("hidden");
+  
+    // Capture original model data and camera position for restoration
+    const originalModelData = modelsRef.current.map(({ model }) => ({
+      model,
+      scale: model.scale.clone(),
+      position: model.position.clone(),
+    }));
+    const originalCameraPosition = cameraRef.current.position.clone();
+  
+    // Get effective captured image
     let effectiveCapturedImage = capturedImage || localStorage.getItem("capturedImage");
-    const texture = backgroundPlaneRef.current.material.map;
+  
+    // Ensure background plane and material exist
+    if (!backgroundPlaneRef.current || !backgroundPlaneRef.current.material) {
+      console.error("Background plane or material is missing:", {
+        plane: backgroundPlaneRef.current,
+        material: backgroundPlaneRef.current?.material,
+      });
+      setNewProcess("save-error", "Scene setup incomplete. Please try again.");
+      restoreRenderer(originalModelData, originalCameraPosition);
+      return;
+    }
+  
+    // Narrow material type and get texture
+    const material = backgroundPlaneRef.current.material as THREE.MeshBasicMaterial;
+    const texture = material.map;
+  
+    // Validate texture and captured image
     if (!texture || !texture.image || !effectiveCapturedImage) {
       console.error("Texture or captured image is invalid:", { texture, capturedImage: effectiveCapturedImage });
       setNewProcess("save-error", "No image captured or uploaded. Please capture or upload an image first.");
-      restoreRenderer();
+      restoreRenderer(originalModelData, originalCameraPosition);
       return;
     }
+  
+    // Set dimensions based on captured image
     const capturedWidth = texture.image.width;
     const capturedHeight = texture.image.height;
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
     console.log("Screen dimensions:", { screenWidth, screenHeight });
     console.log("Captured image dimensions:", { capturedWidth, capturedHeight });
+  
+    // Adjust model scales and positions
     const widthScaleFactor = capturedWidth / screenWidth;
     const heightScaleFactor = capturedHeight / screenHeight;
     const scaleFactor = Math.min(widthScaleFactor, heightScaleFactor);
-    const originalModelData = modelsRef.current.map(({ model }) => ({
-      model,
-      scale: model.scale.clone(),
-      position: model.position.clone(),
-    }));
     originalModelData.forEach(({ model }) => {
       model.scale.multiplyScalar(scaleFactor);
       model.position.multiplyScalar(scaleFactor);
     });
+  
+    // Adjust renderer and camera for high-res output
     rendererRef.current.setSize(capturedWidth, capturedHeight);
     cameraRef.current.aspect = capturedWidth / capturedHeight;
-    const originalCameraPosition = cameraRef.current.position.clone();
     const distance = (screenHeight / 100 / 2) / Math.tan((cameraRef.current.fov * Math.PI / 180) / 2);
     cameraRef.current.position.set(0, 0, distance * (capturedHeight / screenHeight));
     cameraRef.current.lookAt(0, 0, 0);
     cameraRef.current.updateProjectionMatrix();
     adjustBackgroundPlane(capturedWidth, capturedHeight);
+  
+    // Render the scene
     rendererRef.current.clear();
     rendererRef.current.render(sceneRef.current, cameraRef.current);
     const sceneDataUrl = rendererRef.current.domElement.toDataURL("image/png");
+  
     if (!sceneDataUrl || sceneDataUrl === "data:,") {
       console.error("Failed to render scene to data URL");
       setNewProcess("save-error", "Failed to render the scene. Please try again.");
@@ -832,6 +864,8 @@ const FilterPageUI: React.FC = () => {
       return;
     }
     console.log("Scene rendered, data URL length:", sceneDataUrl.length);
+  
+    // Create final canvas with background, scene, and logo
     const canvas = document.createElement("canvas");
     canvas.width = capturedWidth;
     canvas.height = capturedHeight;
@@ -842,6 +876,7 @@ const FilterPageUI: React.FC = () => {
       restoreRenderer(originalModelData, originalCameraPosition);
       return;
     }
+  
     const loadImage = (src: string, description: string) =>
       new Promise<HTMLImageElement>((resolve, reject) => {
         const img = new Image();
@@ -856,23 +891,34 @@ const FilterPageUI: React.FC = () => {
         };
         img.src = src;
       });
+  
     try {
+      // Draw background image
       const backgroundImg = await loadImage(effectiveCapturedImage, "Background image");
       ctx.drawImage(backgroundImg, 0, 0, capturedWidth, capturedHeight);
+  
+      // Draw rendered scene
       const sceneImg = await loadImage(sceneDataUrl, "Scene image");
       ctx.drawImage(sceneImg, 0, 0, capturedWidth, capturedHeight);
+  
+      // Draw logo
       const logoImg = await loadImage("/images/baelogoN.png", "Logo image");
       const logoSize = capturedHeight * 0.1;
       const logoX = (capturedWidth - logoSize) / 2;
       const logoY = 16;
       ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+  
+      // Generate final image
       const finalDataUrl = canvas.toDataURL("image/png");
       if (!finalDataUrl || finalDataUrl === "data:,") {
         throw new Error("Final data URL is empty");
       }
       console.log("Final data URL length:", finalDataUrl.length);
+  
+      // Convert to blob and share/download
       const blob = await (await fetch(finalDataUrl)).blob();
       const file = new File([blob], "custom_blind_image.png", { type: "image/png" });
+  
       if (navigator.share && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
@@ -892,8 +938,10 @@ const FilterPageUI: React.FC = () => {
       }
     } catch (error) {
       console.error("Error saving image:", error);
-      setNewProcess("save-error", `Failed to save image: ${error.message}. Please try again.`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setNewProcess("save-error", `Failed to save image: ${errorMessage}. Please try again.`);
     } finally {
+      // Restore renderer state regardless of success or failure
       restoreRenderer(originalModelData, originalCameraPosition);
     }
   };
