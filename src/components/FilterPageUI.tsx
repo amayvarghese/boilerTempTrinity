@@ -1117,15 +1117,22 @@ const FilterPageUI: React.FC = () => {
 
   // Render
   return (
-    <div className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto" style={{
-      fontFamily: "Poppins, sans-serif",
-      background: !capturedImage && !isCustomizerView ? "url('/images/unsplashMain.jpeg') center/cover" : "#FFFFFF",
-      touchAction: isCustomizerView ? "pan-y" : "auto",
-    }}>
-      <div ref={mountRef} className="relative w-full h-auto min-h-screen" style={{
-        zIndex: isCustomizerView ? 0 : 20,
+    <div
+      className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto"
+      style={{
+        fontFamily: "Poppins, sans-serif",
+        background: !capturedImage && !isCustomizerView ? "url('/images/unsplashMain.jpeg') center/cover" : "#FFFFFF",
         touchAction: isCustomizerView ? "pan-y" : "auto",
-      }} />
+      }}
+    >
+      <div
+        ref={mountRef}
+        className="relative w-full h-auto min-h-screen"
+        style={{
+          zIndex: isCustomizerView ? 0 : 20,
+          touchAction: isCustomizerView ? "pan-y" : "auto",
+        }}
+      />
       <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60]">
         <img src="/images/baelogoN.png" alt="Logo" className="w-24 h-24 object-contain" />
       </div>
@@ -1139,93 +1146,100 @@ const FilterPageUI: React.FC = () => {
           <div className="text-white text-lg">Loading...</div>
         </div>
       )}
-      <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={(e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        completeCurrentProcess();
-        handleImageUpload(file);
-      }} />
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          completeCurrentProcess();
+          handleImageUpload(file);
+        }}
+      />
       {showBlindMenu && isCustomizerView && (
-  <div
-    className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen overflow-y-auto"
-    style={{
-      zIndex: 30,
-      pointerEvents: "auto",
-      touchAction: "pan-y",
-    }}
-  >
-    <div className="w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
-      <h3 className="bg-white p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
-        Select Type of Blind
-      </h3>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
-        {BLIND_TYPES.map(({ type, buttonImage }) => (
-          <div
-            key={type}
-            className="flex flex-col items-center text-center cursor-pointer px-[5px]"
-            onClick={() => selectBlindType(type)}
-            onTouchEnd={() => selectBlindType(type)}
-          >
-            <img
-              src={buttonImage}
-              alt={`${type} Blind`}
-              className="w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
-            />
-            <div className="mt-1 text-gray-700 text-[11px]">
-              {type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}
+        <div
+          className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen overflow-y-auto"
+          style={{
+            zIndex: 30,
+            pointerEvents: "auto",
+            touchAction: "pan-y",
+          }}
+        >
+          {/* Blind Type Selection */}
+          <div className="w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
+            <h3 className="bg-white p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
+              Select Type of Blind
+            </h3>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
+              {BLIND_TYPES.map(({ type, buttonImage }) => (
+                <div
+                  key={type}
+                  className="flex flex-col items-center text-center cursor-pointer px-[5px]"
+                  onClick={() => selectBlindType(type)}
+                  onTouchEnd={() => selectBlindType(type)}
+                >
+                  <img
+                    src={buttonImage}
+                    alt={`${type} Blind`}
+                    className="w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
+                  />
+                  <div className="mt-1 text-gray-700 text-[11px]">
+                    {type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        ))}
-      </div>
-    </div>
-    <div className="flex flex-col items-center w-full md:w-3/4 relative">
-      <div className="md:hidden w-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
-        <div className="p-2 bg-white rounded shadow">
-          <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
-          <div className="grid grid-cols-2 gap-2 mx-5 text-[13px]">
-            {["solid", "pattern", "solar", "kids", "natural"].map((filter) => (
-              <label key={filter} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  value={filter}
-                  checked={filters.includes(filter)}
-                  onChange={handleFilterChange}
-                  className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer"
-                />
-                {filter.charAt(0).toUpperCase() + filter.slice(1)}
-              </label>
-            ))}
-          </div>
-        </div>
-        <div className="flex flex-col flex-1 max-h-[300px] bg-white">
-          <h3 className="bg-white pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
-            Available Patterns
-          </h3>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
-            {filteredPatterns.map((pattern, index) => (
-              <div
-                key={index}
-                className="flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
-                onClick={() => selectPattern(pattern.patternUrl)}
-                onTouchEnd={() => selectPattern(pattern.patternUrl)}
-              >
-                <img
-                  src={pattern.image}
-                  alt={pattern.name}
-                  className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
-                />
-                <div className="flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
-                  <span className="truncate">{pattern.name}</span>
-                  <span>{pattern.price}</span>
-                </div>
+  
+          {/* Filter Options and Patterns (Visible on All Screens) */}
+          <div className="w-full md:w-3/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
+            <div className="p-2 bg-white rounded shadow">
+              <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mx-5 text-[13px]">
+                {["solid", "pattern", "solar", "kids", "natural"].map((filter) => (
+                  <label key={filter} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      value={filter}
+                      checked={filters.includes(filter)}
+                      onChange={handleFilterChange}
+                      className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer"
+                    />
+                    {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                  </label>
+                ))}
               </div>
-            ))}
+            </div>
+            <div className="flex flex-col flex-1 max-h-[400px] bg-white">
+              <h3 className="bg-white pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
+                Available Patterns
+              </h3>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
+                {filteredPatterns.map((pattern, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
+                    onClick={() => selectPattern(pattern.patternUrl)}
+                    onTouchEnd={() => selectPattern(pattern.patternUrl)}
+                  >
+                    <img
+                      src={pattern.image}
+                      alt={pattern.name}
+                      className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
+                    />
+                    <div className="flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
+                      <span className="truncate">{pattern.name}</span>
+                      <span>{pattern.price}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-)}
+      )}
     </div>
   );
 };
