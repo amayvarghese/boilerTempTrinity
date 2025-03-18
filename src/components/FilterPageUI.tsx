@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-// Types and Constants
+// Types and Constants (unchanged)
 type Vector3D = { x: number; y: number; z: number };
 type BlindType = {
   type: string;
@@ -31,8 +31,8 @@ type SelectionBoxParams = {
 type InitialModelParams = { scale: THREE.Vector3; position: THREE.Vector3 };
 
 const BLIND_TYPES: BlindType[] = [
-  { type: "classicRoman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/classicRoman.glb",meshNameFabric:"Gray_2_Blind" , rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: -45, y: -25, z: 10 } },
-  { type: "roller", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/3d/ROLLER_SHADES.glb",meshNameFabric:"ROLLER_SHADES" ,rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2.1, z: 1 }, basePosition: { x: -45.5, y: -30, z: 5 } },
+  { type: "classicRoman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/classicRoman.glb", meshNameFabric: "Gray_2_Blind", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: -45, y: -25, z: 10 } },
+  { type: "roller", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/3d/ROLLER_SHADES.glb", meshNameFabric: "ROLLER_SHADES", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2.1, z: 1 }, basePosition: { x: -45.5, y: -30, z: 5 } },
   { type: "roman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/ROMAN_SHADES_01.glb", meshNameFabric: "polySurface1", meshNameWood: "polySurface3", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
   { type: "Sheet Blind", buttonImage: "/images/blindTypes/sheetBlindIcon.png", modelUrl: "/3d/sheetBlind.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 2 }, basePosition: { x: -45, y: -28, z: 10 } },
   { type: "PlantationShutter", buttonImage: "/images/blindTypes/plantationShutterIcon.png", modelUrl: "/3d/PlantationShutter.glb", meshNameWood: "PLANTATION__SHUTTER", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2, z: 1 }, basePosition: { x: -46, y: -27, z: 5 } },
@@ -64,7 +64,7 @@ const PATTERNS: Pattern[] = [
   { name: "White", image: "/materials/white.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/white.png" },
 ];
 
-// Utility Functions
+// Utility Functions (unchanged)
 const isMesh = (object: THREE.Object3D): object is THREE.Mesh => "isMesh" in object && (object.isMesh as boolean);
 
 const FilterPageUI: React.FC = () => {
@@ -73,7 +73,7 @@ const FilterPageUI: React.FC = () => {
   const [selectedBlindType, setSelectedBlindType] = useState<string | null>(null);
   const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
   const [filters, setFilters] = useState<string[]>([]);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null); // Changed to null instead of localStorage
   const [isCustomizerView, setIsCustomizerView] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -107,7 +107,7 @@ const FilterPageUI: React.FC = () => {
   const isProcessingRef = useRef<boolean>(false);
   const changeQueueRef = useRef<{ type: "blind" | "pattern"; value: string }[]>([]);
   const draggingModelRef = useRef<THREE.Group | null>(null);
-  const overlayImage = useRef<HTMLImageElement | null>(null); // Preload overlay image once
+  const overlayImage = useRef<HTMLImageElement | null>(null);
 
   const filteredPatterns = PATTERNS.filter(
     (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
@@ -121,14 +121,22 @@ const FilterPageUI: React.FC = () => {
   const completeCurrentProcess = () =>
     setActiveProcess((prev) => ({ ...prev, completed: true }));
 
-  // Preload Overlay Image Once
+  // Debug initial state
+  useEffect(() => {
+    console.log("Initial capturedImage:", capturedImage);
+    console.log("Initial isCustomizerView:", isCustomizerView);
+    // Optionally clear localStorage to ensure fresh start
+    localStorage.removeItem("capturedImage");
+  }, []);
+
+  // Preload Overlay Image Once (unchanged)
   useEffect(() => {
     const img = new Image();
-    img.src = "/images/overlayFilter.png";
+    img.src = "/images/overlayFilterUpdate.png";
     img.onload = () => (overlayImage.current = img);
   }, []);
 
-  // Three.js Initialization and Cleanup
+  // Three.js Initialization and Cleanup (unchanged)
   useEffect(() => {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
@@ -175,7 +183,7 @@ const FilterPageUI: React.FC = () => {
     };
   }, []);
 
-  // Preload Models
+  // Preload Models (unchanged)
   useEffect(() => {
     const preloadModels = async () => {
       setIsLoading(true);
@@ -205,7 +213,7 @@ const FilterPageUI: React.FC = () => {
     preloadModels();
   }, []);
 
-  // UI Elements Setup
+  // UI Elements Setup (unchanged)
   useEffect(() => {
     if (!mountRef.current) return;
 
@@ -222,18 +230,18 @@ const FilterPageUI: React.FC = () => {
 
     videoRef.current = addElement<HTMLVideoElement>("video", { playsinline: true, muted: true, controls: false, className: "hidden" }, mount);
     canvasRef.current = addElement<HTMLCanvasElement>("canvas", { className: "absolute inset-0 w-full h-full object-cover z-[10]" }, mount);
-    controlButtonRef.current = addElement<HTMLButtonElement>("button", { id: "controlButton", textContent: "Start Camera", className: "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" });
+    controlButtonRef.current = addElement<HTMLButtonElement>("button", { id: "controlButton", textContent: "Start Camera", className: "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300" });
     controlButtonRef.current?.addEventListener("click", handleButtonClick);
-    uploadButtonRef.current = addElement<HTMLButtonElement>("button", { id: "uploadButton", textContent: "Upload Image", className: "fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" });
+    uploadButtonRef.current = addElement<HTMLButtonElement>("button", { id: "uploadButton", textContent: "Upload Image", className: "fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300" });
     uploadButtonRef.current?.addEventListener("click", () => fileInputRef.current?.click());
     saveButtonRef.current = addElement<HTMLButtonElement>("button", { id: "saveButton", textContent: "Save Image", className: "fixed bottom-16 right-5 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
     saveButtonRef.current?.addEventListener("click", saveImage);
     redoButtonRef.current = addElement<HTMLButtonElement>("button", { id: "redoButton", className: "fixed bottom-12 right-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
     redoButtonRef.current?.appendChild(addElement("img", { src: "/images/retryButtonImg.png", alt: "Redo Selection", className: "h-6 w-6" }));
     redoButtonRef.current?.addEventListener("click", handleRedoSelection);
-    addWindowButtonRef.current = addElement<HTMLButtonElement>("button", { id: "addWindowButton", textContent: "Add Blind", className: "fixed bottom-12 left-5 py-2 px-4 text-md bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
+    addWindowButtonRef.current = addElement<HTMLButtonElement>("button", { id: "addWindowButton", textContent: "Add Blind", className: "fixed bottom-12 left-5 py-2 px-4 text-md bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden" });
     addWindowButtonRef.current?.addEventListener("click", addAnotherWindow);
-    addElement("button", { id: "backButton", innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>', className: "absolute top-5 left-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300" }).addEventListener("click", () => window.location.href = "/");
+    addElement("button", { id: "backButton", innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>', className: "absolute top-5 left-5 p-2 bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300" }).addEventListener("click", () => window.location.href = "/");
     levelIndicatorRef.current = addElement<HTMLDivElement>("div", { className: "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-2 bg-red-500 rounded-full z-[100] hidden", style: { transition: "background-color 0.3s ease, border 0.3s ease" } }, mount);
     const mobileOverlayRef = addElement<HTMLDivElement>("div", { id: "mobileOverlay", className: "fixed inset-0 z-[35] pointer-events-none hidden md:hidden" }, mount);
 
@@ -244,7 +252,7 @@ const FilterPageUI: React.FC = () => {
     };
   }, []);
 
-  // Core Functions
+  // Core Functions (unchanged except for render)
   const updateCameraPosition = (width: number, height: number) => {
     if (!cameraRef.current) return;
     const distance = (height / 100 / 2) / Math.tan((cameraRef.current.fov * Math.PI / 180) / 2);
@@ -268,16 +276,15 @@ const FilterPageUI: React.FC = () => {
   };
 
   const startCameraStream = async () => {
-    setNewProcess("camera", "Place the center of your window to this dot");
+    setNewProcess("camera", "Place the window like it aligns with the edges of the box");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: "environment",
-          width: { min: 1280, ideal: 1920, max: 3840 }, // Enforce a minimum, aim for 1080p or 4K
+          width: { min: 1280, ideal: 1920, max: 3840 },
           height: { min: 720, ideal: 1080, max: 2160 },
           aspectRatio: { ideal: 16 / 9 },
-
-          frameRate: { ideal: 30, max: 60 }, // Higher frame rate can improve clarity
+          frameRate: { ideal: 30, max: 60 },
         },
       });
       cameraStreamRef.current = stream;
@@ -287,25 +294,18 @@ const FilterPageUI: React.FC = () => {
           const canvas = canvasRef.current!;
           const ctx = canvas.getContext("2d");
           if (!ctx) return;
-  
-          // Initially set canvas to screen size for preview
           canvas.width = window.innerWidth * window.devicePixelRatio;
           canvas.height = window.innerHeight * window.devicePixelRatio;
           canvas.style.width = `${window.innerWidth}px`;
           canvas.style.height = `${window.innerHeight}px`;
           canvas.classList.remove("hidden");
-  
           adjustCanvasAspect();
-  
           const drawFrame = () => {
             if (!videoRef.current || !canvasRef.current || !ctx) return;
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
             const videoAspect = videoRef.current.videoWidth / videoRef.current.videoHeight;
             const canvasAspect = canvas.width / canvas.height;
             let drawWidth, drawHeight, offsetX, offsetY;
-  
             if (videoAspect > canvasAspect) {
               drawWidth = canvas.width;
               drawHeight = canvas.width / videoAspect;
@@ -317,18 +317,14 @@ const FilterPageUI: React.FC = () => {
               offsetX = (canvas.width - drawWidth) / 2;
               offsetY = 0;
             }
-  
             ctx.drawImage(videoRef.current, offsetX, offsetY, drawWidth, drawHeight);
-  
             if (overlayImage.current) {
               ctx.globalAlpha = 0.7;
               ctx.drawImage(overlayImage.current, 0, 0, canvas.width, canvas.height);
               ctx.globalAlpha = 1.0;
             }
-  
             requestAnimationFrame(drawFrame);
           };
-  
           if (controlButtonRef.current) {
             controlButtonRef.current.textContent = "Capture";
             controlButtonRef.current.classList.remove("hidden");
@@ -337,7 +333,6 @@ const FilterPageUI: React.FC = () => {
           uploadButtonRef.current?.style.setProperty("display", "none");
           levelIndicatorRef.current?.classList.remove("hidden");
           requestOrientationPermission();
-  
           drawFrame();
         }).catch((err) => {
           console.error("Video play failed:", err);
@@ -353,32 +348,23 @@ const FilterPageUI: React.FC = () => {
   const captureImage = () => {
     if (!canvasRef.current || !sceneRef.current || !cameraRef.current || !rendererRef.current || !videoRef.current) return;
     setNewProcess("capture", "Draw a box on the image to place the 3D model.");
-    
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-  
-    // Set canvas to the video's native resolution for capture
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    canvas.style.width = `${video.videoWidth}px`; // Optional, for debugging
+    canvas.style.width = `${video.videoWidth}px`;
     canvas.style.height = `${video.videoHeight}px`;
-  
-    // Draw the video frame at full resolution without overlay
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  
-    // Capture the image
     const imageData = canvas.toDataURL("image/png");
+    console.log("Captured image data:", imageData.substring(0, 50));
     setCapturedImage(imageData);
     localStorage.setItem("capturedImage", imageData);
-  
-    // Reset canvas to screen size for display
     canvas.width = window.innerWidth * window.devicePixelRatio;
     canvas.height = window.innerHeight * window.devicePixelRatio;
     canvas.style.width = `${window.innerWidth}px`;
     canvas.style.height = `${window.innerHeight}px`;
-  
     cleanupCameraStream();
     loadTextureAndCreatePlane(imageData, window.innerWidth, window.innerHeight);
     initSelectionBox();
@@ -397,6 +383,7 @@ const FilterPageUI: React.FC = () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const imageData = e.target?.result as string;
+      console.log("Uploaded image data:", imageData.substring(0, 50));
       setCapturedImage(imageData);
       localStorage.setItem("capturedImage", imageData);
       cleanupCameraStream();
@@ -784,130 +771,171 @@ const FilterPageUI: React.FC = () => {
     setIsLoading(false);
     completeCurrentProcess();
   };
+
   const saveImage = async () => {
     if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !backgroundPlaneRef.current) {
-      console.error("Required Three.js components are missing");
+      console.error("Required Three.js components are missing:", {
+        renderer: rendererRef.current,
+        scene: sceneRef.current,
+        camera: cameraRef.current,
+        backgroundPlane: backgroundPlaneRef.current,
+      });
+      setNewProcess("save-error", "Missing required components. Please try again.");
       return;
     }
     setNewProcess("save", "Saving image... Please wait.");
     if (!confirm("Would you like to save the customized image?")) return;
-  
     setIsLoading(true);
     setShowBlindMenu(false);
     saveButtonRef.current?.classList.add("hidden");
-  
-    const texture = (backgroundPlaneRef.current.material as THREE.MeshBasicMaterial).map;
-    if (!texture || !capturedImage) {
-      console.error("Texture or captured image is missing");
+    let effectiveCapturedImage = capturedImage || localStorage.getItem("capturedImage");
+    const texture = backgroundPlaneRef.current.material.map;
+    if (!texture || !texture.image || !effectiveCapturedImage) {
+      console.error("Texture or captured image is invalid:", { texture, capturedImage: effectiveCapturedImage });
+      setNewProcess("save-error", "No image captured or uploaded. Please capture or upload an image first.");
+      restoreRenderer();
       return;
     }
-    const width = texture.image.width;
-    const height = texture.image.height;
-    console.log("Captured image state:", capturedImage);
-    console.log("Background plane:", backgroundPlaneRef.current);
-    console.log("Texture:", texture);
-  
-    // Adjust renderer and camera to match captured image dimensions
-    rendererRef.current.setSize(width, height);
-    cameraRef.current.aspect = width / height;
+    const capturedWidth = texture.image.width;
+    const capturedHeight = texture.image.height;
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    console.log("Screen dimensions:", { screenWidth, screenHeight });
+    console.log("Captured image dimensions:", { capturedWidth, capturedHeight });
+    const widthScaleFactor = capturedWidth / screenWidth;
+    const heightScaleFactor = capturedHeight / screenHeight;
+    const scaleFactor = Math.min(widthScaleFactor, heightScaleFactor);
+    const originalModelData = modelsRef.current.map(({ model }) => ({
+      model,
+      scale: model.scale.clone(),
+      position: model.position.clone(),
+    }));
+    originalModelData.forEach(({ model }) => {
+      model.scale.multiplyScalar(scaleFactor);
+      model.position.multiplyScalar(scaleFactor);
+    });
+    rendererRef.current.setSize(capturedWidth, capturedHeight);
+    cameraRef.current.aspect = capturedWidth / capturedHeight;
+    const originalCameraPosition = cameraRef.current.position.clone();
+    const distance = (screenHeight / 100 / 2) / Math.tan((cameraRef.current.fov * Math.PI / 180) / 2);
+    cameraRef.current.position.set(0, 0, distance * (capturedHeight / screenHeight));
+    cameraRef.current.lookAt(0, 0, 0);
     cameraRef.current.updateProjectionMatrix();
-    adjustBackgroundPlane(width, height);
-  
-    // Render the scene
+    adjustBackgroundPlane(capturedWidth, capturedHeight);
+    rendererRef.current.clear();
     rendererRef.current.render(sceneRef.current, cameraRef.current);
     const sceneDataUrl = rendererRef.current.domElement.toDataURL("image/png");
+    if (!sceneDataUrl || sceneDataUrl === "data:,") {
+      console.error("Failed to render scene to data URL");
+      setNewProcess("save-error", "Failed to render the scene. Please try again.");
+      restoreRenderer(originalModelData, originalCameraPosition);
+      return;
+    }
     console.log("Scene rendered, data URL length:", sceneDataUrl.length);
-  
-    // Create canvas to combine images
     const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = capturedWidth;
+    canvas.height = capturedHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) {
       console.error("Failed to get 2D context for canvas");
+      setNewProcess("save-error", "Canvas context unavailable. Please try again.");
+      restoreRenderer(originalModelData, originalCameraPosition);
       return;
     }
-  
-    const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = "Anonymous";
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
-      img.src = src;
-    });
-  
+    const loadImage = (src: string, description: string) =>
+      new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => {
+          console.log(`${description} loaded successfully`);
+          resolve(img);
+        };
+        img.onerror = (err) => {
+          console.error(`Failed to load ${description}:`, err);
+          reject(new Error(`Failed to load ${description}: ${src}`));
+        };
+        img.src = src;
+      });
     try {
-      // Draw background image
-      const backgroundImg = await loadImage(capturedImage);
-      ctx.drawImage(backgroundImg, 0, 0, width, height);
-      console.log("Background image drawn");
-  
-      // Draw 3D scene
-      const sceneImg = await loadImage(sceneDataUrl);
-      ctx.drawImage(sceneImg, 0, 0, width, height);
-      console.log("Scene image drawn");
-  
-      // Draw logo
-      const logoImg = await loadImage("/images/baelogoN.png");
-      const logoSize = height * 0.1;
-      const logoX = (width - logoSize) / 2;
+      const backgroundImg = await loadImage(effectiveCapturedImage, "Background image");
+      ctx.drawImage(backgroundImg, 0, 0, capturedWidth, capturedHeight);
+      const sceneImg = await loadImage(sceneDataUrl, "Scene image");
+      ctx.drawImage(sceneImg, 0, 0, capturedWidth, capturedHeight);
+      const logoImg = await loadImage("/images/baelogoN.png", "Logo image");
+      const logoSize = capturedHeight * 0.1;
+      const logoX = (capturedWidth - logoSize) / 2;
       const logoY = 16;
       ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
-      console.log("Logo drawn");
-  
-      // Generate final image
       const finalDataUrl = canvas.toDataURL("image/png");
+      if (!finalDataUrl || finalDataUrl === "data:,") {
+        throw new Error("Final data URL is empty");
+      }
       console.log("Final data URL length:", finalDataUrl.length);
-  
       const blob = await (await fetch(finalDataUrl)).blob();
       const file = new File([blob], "custom_blind_image.png", { type: "image/png" });
-  
-      // Attempt to share or download
       if (navigator.share && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: "Custom Blind Image",
-          text: "Check out my custom blind design!",
-        });
-        setNewProcess("save-success", "Image shared! Check your gallery or downloads.");
+        try {
+          await navigator.share({
+            files: [file],
+            title: "Custom Blind Image",
+            text: "Check out my custom blind design!",
+          });
+          setNewProcess("save-success", "Image shared! Check your gallery or downloads.");
+        } catch (shareError) {
+          console.warn("Sharing failed, falling back to download:", shareError);
+          triggerDownload(finalDataUrl);
+          setNewProcess("save-success", getDownloadSuccessMessage());
+        }
       } else {
         triggerDownload(finalDataUrl);
-        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-        const isAndroid = /Android/i.test(navigator.userAgent);
-        setNewProcess(
-          "save-success",
-          isIOS
-            ? "Image downloaded! Open it in Downloads and tap 'Save to Photos'."
-            : isAndroid
-              ? "Image downloaded! Find it in your Downloads folder or Gallery."
-              : "Image downloaded! Check your Downloads folder."
-        );
+        setNewProcess("save-success", getDownloadSuccessMessage());
       }
     } catch (error) {
       console.error("Error saving image:", error);
-      setNewProcess("save-error", "Failed to save image. Please try again.");
+      setNewProcess("save-error", `Failed to save image: ${error.message}. Please try again.`);
     } finally {
-      // Restore renderer and camera to screen size
-      rendererRef.current.setSize(window.innerWidth, window.innerHeight);
-      cameraRef.current.aspect = window.innerWidth / window.innerHeight;
-      cameraRef.current.updateProjectionMatrix();
-      adjustBackgroundPlane(window.innerWidth, window.innerHeight);
-      renderScene();
-  
-      setShowBlindMenu(true);
-      saveButtonRef.current?.classList.remove("hidden");
-      setIsLoading(false);
-      completeCurrentProcess();
+      restoreRenderer(originalModelData, originalCameraPosition);
     }
   };
-  // Helper Functions
+
+  const restoreRenderer = (originalModelData: { model: THREE.Group; scale: THREE.Vector3; position: THREE.Vector3 }[], originalCameraPosition: THREE.Vector3) => {
+    if (rendererRef.current && cameraRef.current) {
+      rendererRef.current.setSize(window.innerWidth, window.innerHeight);
+      cameraRef.current.aspect = window.innerWidth / window.innerHeight;
+      cameraRef.current.position.copy(originalCameraPosition);
+      cameraRef.current.updateProjectionMatrix();
+      adjustBackgroundPlane(window.innerWidth, window.innerHeight);
+      originalModelData.forEach(({ model, scale, position }) => {
+        model.scale.copy(scale);
+        model.position.copy(position);
+      });
+      renderScene();
+    }
+    setShowBlindMenu(true);
+    saveButtonRef.current?.classList.remove("hidden");
+    setIsLoading(false);
+    completeCurrentProcess();
+  };
+
+  const getDownloadSuccessMessage = () => {
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    return isIOS
+      ? "Image downloaded! Open it in Downloads and tap 'Save to Photos'."
+      : isAndroid
+        ? "Image downloaded! Find it in your Downloads folder or Gallery."
+        : "Image downloaded! Check your Downloads folder.";
+  };
+
   const cleanupThreeJs = () => cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+
   const adjustCanvasAspect = () => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
     canvas.style.width = "100%";
     canvas.style.height = "100%";
   };
+
   const cleanupCameraStream = () => {
     cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
     if (videoRef.current) {
@@ -915,10 +943,11 @@ const FilterPageUI: React.FC = () => {
     }
     if (canvasRef.current) {
       const ctx = canvasRef.current.getContext("2d");
-      if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height); // Clear canvas
+      if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       canvasRef.current.classList.add("hidden");
     }
   };
+
   const screenToWorld = (x: number, y: number, depth: number = -0.1) => {
     if (!cameraRef.current || !mountRef.current) return new THREE.Vector3();
     const rect = mountRef.current.getBoundingClientRect();
@@ -1121,7 +1150,7 @@ const FilterPageUI: React.FC = () => {
       className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto"
       style={{
         fontFamily: "Poppins, sans-serif",
-        background: !capturedImage && !isCustomizerView ? "url('/images/unsplashMain.jpeg') center/cover" : "#FFFFFF",
+        background: !capturedImage && !isCustomizerView ? "url('/images/unsplashMain.jpeg') center/cover no-repeat" : "#FFFFFF",
         touchAction: isCustomizerView ? "pan-y" : "auto",
       }}
     >
@@ -1167,7 +1196,6 @@ const FilterPageUI: React.FC = () => {
             touchAction: "pan-y",
           }}
         >
-          {/* Blind Type Selection */}
           <div className="w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
             <h3 className="bg-white p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
               Select Type of Blind
@@ -1192,8 +1220,6 @@ const FilterPageUI: React.FC = () => {
               ))}
             </div>
           </div>
-  
-          {/* Filter Options and Patterns (Visible on All Screens) */}
           <div className="w-full md:w-3/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
             <div className="p-2 bg-white rounded shadow">
               <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
