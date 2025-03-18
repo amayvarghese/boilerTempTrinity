@@ -21,9 +21,6 @@ interface Pattern {
   filterTags: string[];
 }
 
-// Declare external numeric library for homography computation
-declare const numeric: any;
-
 // Main React component for the filter page
 const FilterPageAI: React.FC = () => {
   const [showBlindMenu, setShowBlindMenu] = useState(false);
@@ -69,20 +66,7 @@ const FilterPageAI: React.FC = () => {
   );
 
   useEffect(() => {
-    console.log("Component mounted, loading numeric.js");
-    const script = document.createElement("script");
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js";
-    script.async = true;
-    script.onload = () => {
-      console.log("numeric.js loaded successfully");
-      setupThreeJS();
-    };
-    script.onerror = () => console.error("Failed to load numeric.js");
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
+    setupThreeJS();
   }, []);
 
   const setupThreeJS = () => {
@@ -101,8 +85,6 @@ const FilterPageAI: React.FC = () => {
     rendererRef.current = renderer;
     renderer.setClearColor(0x000000, 0); // Transparent background
     mountRef.current.appendChild(renderer.domElement);
-
-    console.log("Renderer initialized and appended to mountRef");
 
     const animate = () => {
       requestAnimationFrame(animate);
@@ -175,7 +157,6 @@ const FilterPageAI: React.FC = () => {
     if (!cameraRef.current) return;
     const fovRad = cameraRef.current.fov * (Math.PI / 180);
     const distance = (height / 100 / 2) / Math.tan(fovRad / 2);
-    const heasdasd = width
     cameraRef.current.position.set(0, 0, distance);
     cameraRef.current.lookAt(0, 0, 0);
     cameraRef.current.updateProjectionMatrix();
@@ -218,211 +199,83 @@ const FilterPageAI: React.FC = () => {
     windowBoxRef.current = newBox;
   };
 
-  const computeHomography = (srcPoints: THREE.Vector2[], dstPoints: THREE.Vector2[]): number[] => {
-    if (srcPoints.length !== 4 || dstPoints.length !== 4) {
-      console.error("Homography requires exactly 4 points");
-      return [1, 0, 0, 0, 1, 0, 0, 0, 1];
-    }
-
-    const A = [];
-    const b = [];
-
-    for (let i = 0; i < 4; i++) {
-      const [sx, sy] = [srcPoints[i].x, srcPoints[i].y];
-      const [dx, dy] = [dstPoints[i].x, dstPoints[i].y];
-      A.push([sx, sy, 1, 0, 0, 0, -sx * dx, -sy * dx] as never);
-      A.push([0, 0, 0, sx, sy, 1, -sx * dy, -sy * dy] as never);
-      b.push(dx as never);
-      b.push(dy as never);
-    }
-
-    try {
-      const solution = numeric.solve(A, b);
-      return solution.concat(1);
-    } catch (error) {
-      console.error("Error computing homography:", error);
-      return [1, 0, 0, 0, 1, 0, 0, 0, 1];
-    }
-  };
-
-  const extractRotationFromHomography = (h: number[]): THREE.Quaternion => {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    const fov = 45;
-    const fx = (width / 2) / Math.tan((fov * Math.PI / 180) / 2);
-    const fy = fx;
-    const cx = width / 2;
-    const cy = height / 2;
-
-    const K = [
-      [fx, 0, cx],
-      [0, fy, cy],
-      [0, 0, 1],
-    ];
-    const K_inv = numeric.inv(K);
-
-    const H = [
-      [h[0], h[1], h[2]],
-      [h[3], h[4], h[5]],
-      [h[6], h[7], h[8]],
-    ];
-
-    const R_approx = numeric.dot(K_inv, H);
-    let r1 = [R_approx[0][0], R_approx[1][0], R_approx[2][0]];
-    let r2 = [R_approx[0][1], R_approx[1][1], R_approx[2][1]];
-    const r3 = [
-      r1[1] * r2[2] - r1[2] * r2[1],
-      r1[2] * r2[0] - r1[0] * r2[2],
-      r1[0] * r2[1] - r1[1] * r2[0],
-    ];
-
-    const norm_r1 = Math.sqrt(r1.reduce((sum, v) => sum + v * v, 0)) || 1;
-    const norm_r2 = Math.sqrt(r2.reduce((sum, v) => sum + v * v, 0)) || 1;
-    const norm_r3 = Math.sqrt(r3.reduce((sum, v) => sum + v * v, 0)) || 1;
-
-    r1 = r1.map((v) => v / norm_r1);
-    r2 = r2.map((v) => v / norm_r2);
-    const r3_normalized = r3.map((v) => v / norm_r3);
-
-    const R = [
-      [r1[0], r2[0], r3_normalized[0]],
-      [r1[1], r2[1], r3_normalized[1]],
-      [r1[2], r2[2], r3_normalized[2]],
-    ];
-
-    const matrix = new THREE.Matrix4().set(
-      R[0][0], R[0][1], R[0][2], 0,
-      R[1][0], R[1][1], R[1][2], 0,
-      R[2][0], R[2][1], R[2][2], 0,
-      0, 0, 0, 1
-    );
-
-    return new THREE.Quaternion().setFromRotationMatrix(matrix);
-  };
-
   const createModelBoxWithShadeBake = (corners: THREE.Vector3[]) => {
     const scene = sceneRef.current;
-    const camera = cameraRef.current;
-    if (!scene || !camera || corners.length !== 4) {
-      console.error("Cannot create model: Invalid scene, camera, or corners");
+    if (!scene || corners.length !== 4) {
+      console.error("Cannot create model: Invalid scene or corners");
       return;
     }
-
+  
     if (shadeBakeRef.current) {
       scene.remove(shadeBakeRef.current);
       shadeBakeRef.current = null;
     }
-
+  
     const loader = new GLTFLoader();
     loader.load(
       "/3d/shadeBakeINV.glb",
       (gltf) => {
         const model = gltf.scene;
         shadeBakeRef.current = model;
-
+  
+        // Get model bounding box before scaling
         const box = new THREE.Box3().setFromObject(model);
         const modelSize = new THREE.Vector3();
-        box.getSize(modelSize);
+        box.getSize(modelSize); // Original size of the model (x, y, z)
         const modelCenter = new THREE.Vector3();
-        box.getCenter(modelCenter);
-        console.log("Model Size:", modelSize);
-        console.log("Model Center (local):", modelCenter);
-
-        const modelCorners = [
-          new THREE.Vector2(-modelSize.x / 2, -modelSize.y / 2),
-          new THREE.Vector2(modelSize.x / 2, -modelSize.y / 2),
-          new THREE.Vector2(modelSize.x / 2, modelSize.y / 2),
-          new THREE.Vector2(-modelSize.x / 2, modelSize.y / 2),
+        box.getCenter(modelCenter); // Original center of the model in its local space
+  
+        // Order corners: bottom-left, bottom-right, top-right, top-left
+        const orderedCorners = [...corners];
+        orderedCorners.sort((a, b) => a.y - b.y); // Sort by Y
+        const bottomCorners = orderedCorners.slice(0, 2);
+        const topCorners = orderedCorners.slice(2, 4);
+        bottomCorners.sort((a, b) => a.x - b.x); // Sort bottom by X
+        topCorners.sort((a, b) => a.x - b.x);    // Sort top by X
+        const finalCorners = [
+          bottomCorners[0], // Bottom-left
+          bottomCorners[1], // Bottom-right
+          topCorners[1],    // Top-right
+          topCorners[0],    // Top-left
         ];
-        console.log("Model Corners:", modelCorners);
-
-        const screenWidth = window.innerWidth;
-        const screenHeight = window.innerHeight;
-        const drawnCorners2D = corners.map((corner) => {
-          const screenPos = corner.clone().project(camera);
-          return new THREE.Vector2(
-            (-screenPos.x + 1) * screenWidth / 2,
-            (-screenPos.y + 1) * screenHeight / 2
-          );
-        });
-        console.log("Drawn Corners (screen space):", drawnCorners2D);
-
-        const sortedCorners2D = [...drawnCorners2D];
-        sortedCorners2D.sort((a, b) => a.y - b.y);
-        const bottomCorners = sortedCorners2D.slice(0, 2);
-        const topCorners = sortedCorners2D.slice(2, 4);
-        bottomCorners.sort((a, b) => a.x - b.x);
-        topCorners.sort((a, b) => a.x - b.x);
-        const orderedCorners2D = [
-          bottomCorners[0],
-          bottomCorners[1],
-          topCorners[1],
-          topCorners[0],
-        ];
-        console.log("Ordered Drawn Corners:", orderedCorners2D);
-
-        const homography = computeHomography(modelCorners, orderedCorners2D);
-        console.log("Homography Matrix:", homography);
-
-        const quaternion = extractRotationFromHomography(homography);
-        model.quaternion.copy(quaternion);
-
-        const rotationMatrix = new THREE.Matrix4().makeRotationFromQuaternion(quaternion);
-        const eulerBefore = new THREE.Euler().setFromQuaternion(quaternion, "YXZ");
-        console.log("Euler Before Orthogonalization:", {
-          yaw: eulerBefore.y,
-          pitch: eulerBefore.x,
-          roll: eulerBefore.z,
-        });
-
-        const elements = rotationMatrix.elements;
-        const R = [
-          [elements[0], elements[4], elements[8]],
-          [elements[1], elements[5], elements[9]],
-          [elements[2], elements[6], elements[10]],
-        ];
-        const svdResult = numeric.svd(R);
-        const correctedR = numeric.dot(svdResult.U, numeric.transpose(svdResult.V));
-
-        rotationMatrix.set(
-          correctedR[0][0], correctedR[0][1], correctedR[0][2], 0,
-          correctedR[1][0], correctedR[1][1], correctedR[1][2], 0,
-          correctedR[2][0], correctedR[2][1], correctedR[2][2], 0,
-          0, 0, 0, 1
-        );
-        model.quaternion.setFromRotationMatrix(rotationMatrix);
-
-        const eulerAfter = new THREE.Euler().setFromQuaternion(model.quaternion, "YXZ");
-        console.log("Euler After Orthogonalization:", {
-          yaw: eulerAfter.y,
-          pitch: eulerAfter.x,
-          roll: eulerAfter.z,
-        });
-
-        const targetWidth = Math.sqrt(
-          Math.pow(corners[1].x - corners[0].x, 2) + Math.pow(corners[1].y - corners[0].y, 2)
-        );
-        const targetHeight = Math.sqrt(
-          Math.pow(corners[3].x - corners[0].x, 2) + Math.pow(corners[3].y - corners[0].y, 2)
-        );
+  
+        // Calculate target width and height
+        const targetWidth = finalCorners[1].x - finalCorners[0].x; // Bottom-right - Bottom-left
+        const targetHeight = finalCorners[2].y - finalCorners[1].y; // Top-right - Bottom-right
+  
+        // Calculate scaling factors (non-uniform for X and Y)
         const scaleX = targetWidth / modelSize.x;
         const scaleY = targetHeight / modelSize.y;
-        const scaleFactor = 1;
-        model.scale.set(scaleX * 1.2, scaleY * scaleFactor, Math.min(scaleX, scaleY) * scaleFactor);
-        console.log("Applied Scale:", model.scale);
-
+        
+        // Determine Z-scale based on the model's original depth and scene needs
+        const baseZScale = Math.min(scaleX, scaleY); // Use smaller scale to avoid exaggeration
+        const zScale = baseZScale * 0.1; // Scale Z proportionally but smaller (adjustable)
+        model.scale.set(scaleX, scaleY, zScale); // Non-uniform scaling with controlled Z
+  
+        // Calculate the center of the quadrilateral in world space
         const quadCenter = new THREE.Vector3();
-        corners.forEach((corner) => quadCenter.add(corner));
+        finalCorners.forEach((corner) => quadCenter.add(corner));
         quadCenter.divideScalar(4);
+  
+        // Position the model so its center aligns with the quadrilateral's center
         model.position.copy(quadCenter);
-
-        const offset = modelCenter.clone().applyQuaternion(model.quaternion).multiply(model.scale);
-        model.position.sub(offset);
-        model.position.z = 0.1;
-        model.position.x += 0.25;
-        model.position.y += 0.15;
-        console.log("Model Position (adjusted):", model.position);
-
+  
+        // Adjust for the model's local center offset after scaling
+        const scaledCenterOffset = modelCenter.clone().multiply(model.scale);
+        model.position.sub(scaledCenterOffset);
+  
+        // Set Z position dynamically based on camera distance
+        const cameraDistance = cameraRef.current?.position.z || 1; // Default to 1 if camera not set
+        model.position.z = cameraDistance * 0.01; // Position close to the background (adjustable)
+  
+        // Calculate rotation to align with quadrilateral
+        const bottomEdge = new THREE.Vector3()
+          .subVectors(finalCorners[1], finalCorners[0])
+          .normalize();
+        const horizontal = new THREE.Vector3(1, 0, 0); // Reference X-axis
+        const angle = Math.acos(bottomEdge.dot(horizontal)) * Math.sign(bottomEdge.y);
+        model.rotation.z = angle; // Rotate around Z-axis to align with bottom edge
+  
         model.renderOrder = 2;
         model.traverse((child) => {
           if (child instanceof THREE.Mesh) {
@@ -432,9 +285,10 @@ const FilterPageAI: React.FC = () => {
             child.material.side = THREE.DoubleSide;
           }
         });
-
+  
         scene.add(model);
-
+  
+        // Add lighting
         if (!scene.getObjectByName("ambientLight")) {
           const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
           ambientLight.name = "ambientLight";
@@ -446,8 +300,8 @@ const FilterPageAI: React.FC = () => {
           directionalLight.name = "directionalLight";
           scene.add(directionalLight);
         }
-
-        rendererRef.current?.render(scene, camera);
+  
+        rendererRef.current?.render(scene, cameraRef.current!);
       },
       undefined,
       (error) => {
@@ -458,7 +312,6 @@ const FilterPageAI: React.FC = () => {
   };
 
   const handleButtonClick = () => {
-    console.log("Button clicked:", buttonText);
     switch (buttonText) {
       case "Start Camera":
         startCameraStream();
@@ -554,13 +407,12 @@ const FilterPageAI: React.FC = () => {
     });
   };
 
-  // Set image as scene background
   const setBackgroundImage = (imageData: string): Promise<void> => {
     return new Promise((resolve) => {
       const textureLoader = new THREE.TextureLoader();
       textureLoader.load(imageData, (texture) => {
-        sceneRef.current.background = texture; // Set as scene background
-        drawDefaultQuadrilateral(window.innerWidth, window.innerHeight); // Draw quadrilateral
+        sceneRef.current.background = texture;
+        drawDefaultQuadrilateral(window.innerWidth, window.innerHeight);
         resolve();
       });
     });
