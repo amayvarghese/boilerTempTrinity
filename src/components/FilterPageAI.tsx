@@ -12,6 +12,7 @@ interface Vector3D {
 interface BlindType {
   type: string;
   buttonImage: string;
+  modelPath: string; // Added to specify the model file
 }
 
 interface Pattern {
@@ -21,10 +22,6 @@ interface Pattern {
   filterTags: string[];
 }
 
-// Declare external numeric library for homography computation
-declare const numeric: any;
-
-// Main React component for the filter page
 const FilterPageAI: React.FC = () => {
   const [showBlindMenu, setShowBlindMenu] = useState(false);
   const [selectedBlindType, setSelectedBlindType] = useState<string | null>(null);
@@ -44,21 +41,23 @@ const FilterPageAI: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const windowBoxRef = useRef<THREE.Mesh | null>(null);
   const cornerRefs = useRef<THREE.Mesh[]>([]);
-  const shadeBakeRef = useRef<THREE.Group | null>(null);
+  const modelRef = useRef<THREE.Group | null>(null); // Renamed from shadeBakeRef
 
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
   const blindTypes: BlindType[] = [
-    { type: "shadeBake", buttonImage: "/images/shadeBakeIcon.png" },
+    { type: "shadeBake", buttonImage: "/images/shadeBakeIcon.png", modelPath: "/3d/shadeBakeINV.glb" },
+    // Add more blind types with their model paths as needed, e.g.:
+    // { type: "rollerBlind", buttonImage: "/images/rollerBlindIcon.png", modelPath: "/3d/rollerBlind.glb" },
   ];
 
   const patterns: Pattern[] = [
     {
-      name: "Beige",
-      image: "/images/ICONSforMaterial/beige.png",
+      name: "Kids Pattern",
+      image: "/textures/kids_pattern.png",
       price: "$10",
-      filterTags: ["solid"],
+      filterTags: ["kids", "solid"],
     },
   ];
 
@@ -69,20 +68,7 @@ const FilterPageAI: React.FC = () => {
   );
 
   useEffect(() => {
-    console.log("Component mounted, loading numeric.js");
-    const script = document.createElement("script");
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js";
-    script.async = true;
-    script.onload = () => {
-      console.log("numeric.js loaded successfully");
-      setupThreeJS();
-    };
-    script.onerror = () => console.error("Failed to load numeric.js");
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
+    setupThreeJS();
   }, []);
 
   const setupThreeJS = () => {
@@ -99,10 +85,8 @@ const FilterPageAI: React.FC = () => {
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(screenWidth, screenHeight);
     rendererRef.current = renderer;
-    renderer.setClearColor(0x000000, 0); // Transparent background
+    renderer.setClearColor(0x000000, 0);
     mountRef.current.appendChild(renderer.domElement);
-
-    console.log("Renderer initialized and appended to mountRef");
 
     const animate = () => {
       requestAnimationFrame(animate);
@@ -175,7 +159,6 @@ const FilterPageAI: React.FC = () => {
     if (!cameraRef.current) return;
     const fovRad = cameraRef.current.fov * (Math.PI / 180);
     const distance = (height / 100 / 2) / Math.tan(fovRad / 2);
-    const heasdasd = width
     cameraRef.current.position.set(0, 0, distance);
     cameraRef.current.lookAt(0, 0, 0);
     cameraRef.current.updateProjectionMatrix();
@@ -218,210 +201,195 @@ const FilterPageAI: React.FC = () => {
     windowBoxRef.current = newBox;
   };
 
-  const computeHomography = (srcPoints: THREE.Vector2[], dstPoints: THREE.Vector2[]): number[] => {
-    if (srcPoints.length !== 4 || dstPoints.length !== 4) {
-      console.error("Homography requires exactly 4 points");
-      return [1, 0, 0, 0, 1, 0, 0, 0, 1];
-    }
-
-    const A = [];
-    const b = [];
-
-    for (let i = 0; i < 4; i++) {
-      const [sx, sy] = [srcPoints[i].x, srcPoints[i].y];
-      const [dx, dy] = [dstPoints[i].x, dstPoints[i].y];
-      A.push([sx, sy, 1, 0, 0, 0, -sx * dx, -sy * dx] as never);
-      A.push([0, 0, 0, sx, sy, 1, -sx * dy, -sy * dy] as never);
-      b.push(dx as never);
-      b.push(dy as never);
-    }
-
-    try {
-      const solution = numeric.solve(A, b);
-      return solution.concat(1);
-    } catch (error) {
-      console.error("Error computing homography:", error);
-      return [1, 0, 0, 0, 1, 0, 0, 0, 1];
-    }
-  };
-
-  const extractRotationFromHomography = (h: number[]): THREE.Quaternion => {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    const fov = 45;
-    const fx = (width / 2) / Math.tan((fov * Math.PI / 180) / 2);
-    const fy = fx;
-    const cx = width / 2;
-    const cy = height / 2;
-
-    const K = [
-      [fx, 0, cx],
-      [0, fy, cy],
-      [0, 0, 1],
-    ];
-    const K_inv = numeric.inv(K);
-
-    const H = [
-      [h[0], h[1], h[2]],
-      [h[3], h[4], h[5]],
-      [h[6], h[7], h[8]],
-    ];
-
-    const R_approx = numeric.dot(K_inv, H);
-    let r1 = [R_approx[0][0], R_approx[1][0], R_approx[2][0]];
-    let r2 = [R_approx[0][1], R_approx[1][1], R_approx[2][1]];
-    const r3 = [
-      r1[1] * r2[2] - r1[2] * r2[1],
-      r1[2] * r2[0] - r1[0] * r2[2],
-      r1[0] * r2[1] - r1[1] * r2[0],
-    ];
-
-    const norm_r1 = Math.sqrt(r1.reduce((sum, v) => sum + v * v, 0)) || 1;
-    const norm_r2 = Math.sqrt(r2.reduce((sum, v) => sum + v * v, 0)) || 1;
-    const norm_r3 = Math.sqrt(r3.reduce((sum, v) => sum + v * v, 0)) || 1;
-
-    r1 = r1.map((v) => v / norm_r1);
-    r2 = r2.map((v) => v / norm_r2);
-    const r3_normalized = r3.map((v) => v / norm_r3);
-
-    const R = [
-      [r1[0], r2[0], r3_normalized[0]],
-      [r1[1], r2[1], r3_normalized[1]],
-      [r1[2], r2[2], r3_normalized[2]],
-    ];
-
-    const matrix = new THREE.Matrix4().set(
-      R[0][0], R[0][1], R[0][2], 0,
-      R[1][0], R[1][1], R[1][2], 0,
-      R[2][0], R[2][1], R[2][2], 0,
-      0, 0, 0, 1
-    );
-
-    return new THREE.Quaternion().setFromRotationMatrix(matrix);
-  };
-
-  const createModelBoxWithShadeBake = (corners: THREE.Vector3[]) => {
+  const createModelBox = (corners: THREE.Vector3[], modelPath: string) => {
     const scene = sceneRef.current;
-    const camera = cameraRef.current;
-    if (!scene || !camera || corners.length !== 4) {
-      console.error("Cannot create model: Invalid scene, camera, or corners");
+    if (!scene || corners.length !== 4 || !cameraRef.current) {
+      console.error("Cannot create model: Invalid scene, corners, or camera");
       return;
     }
 
-    if (shadeBakeRef.current) {
-      scene.remove(shadeBakeRef.current);
-      shadeBakeRef.current = null;
+    if (modelRef.current) {
+      scene.remove(modelRef.current);
+      modelRef.current = null;
     }
 
     const loader = new GLTFLoader();
     loader.load(
-      "/3d/shadeBakeINV.glb",
+      modelPath, // Use dynamic model path
       (gltf) => {
         const model = gltf.scene;
-        shadeBakeRef.current = model;
+        modelRef.current = model;
 
+        // Order quadrilateral corners: bottom-left, bottom-right, top-right, top-left
+        const orderedCorners = [...corners];
+        orderedCorners.sort((a, b) => a.y - b.y);
+        const bottomCorners = orderedCorners.slice(0, 2);
+        const topCorners = orderedCorners.slice(2, 4);
+        bottomCorners.sort((a, b) => a.x - b.x);
+        topCorners.sort((a, b) => a.x - b.x);
+        const quadCorners = [
+          bottomCorners[0], // Bottom-left
+          bottomCorners[1], // Bottom-right
+          topCorners[1],    // Top-right
+          topCorners[0],    // Top-left
+        ];
+
+        // Calculate quad plane normal and center
+        const v1 = new THREE.Vector3().subVectors(quadCorners[1], quadCorners[0]);
+        const v2 = new THREE.Vector3().subVectors(quadCorners[3], quadCorners[0]);
+        const quadNormal = new THREE.Vector3().crossVectors(v1, v2).normalize();
+        const quadCenter = new THREE.Vector3();
+        quadCorners.forEach(corner => quadCenter.add(corner));
+        quadCenter.divideScalar(4);
+
+        // Get model bounding box
         const box = new THREE.Box3().setFromObject(model);
         const modelSize = new THREE.Vector3();
         box.getSize(modelSize);
         const modelCenter = new THREE.Vector3();
         box.getCenter(modelCenter);
-        console.log("Model Size:", modelSize);
-        console.log("Model Center (local):", modelCenter);
 
+        // Define model’s original corners (normalized to [-1, 1] plane)
         const modelCorners = [
-          new THREE.Vector2(-modelSize.x / 2, -modelSize.y / 2),
-          new THREE.Vector2(modelSize.x / 2, -modelSize.y / 2),
-          new THREE.Vector2(modelSize.x / 2, modelSize.y / 2),
-          new THREE.Vector2(-modelSize.x / 2, modelSize.y / 2),
+          new THREE.Vector3(-1, -1, 0), // Bottom-left
+          new THREE.Vector3(1, -1, 0),  // Bottom-right
+          new THREE.Vector3(1, 1, 0),   // Top-right
+          new THREE.Vector3(-1, 1, 0),  // Top-left
         ];
-        console.log("Model Corners:", modelCorners);
 
-        const screenWidth = window.innerWidth;
-        const screenHeight = window.innerHeight;
-        const drawnCorners2D = corners.map((corner) => {
-          const screenPos = corner.clone().project(camera);
-          return new THREE.Vector2(
-            (-screenPos.x + 1) * screenWidth / 2,
-            (-screenPos.y + 1) * screenHeight / 2
+        // Compute perspective transform (homography) from modelCorners to quadCorners
+        const computeHomography = (src: THREE.Vector3[], dst: THREE.Vector3[]) => {
+          const A = [];
+          for (let i = 0; i < 4; i++) {
+            const sx = src[i].x;
+            const sy = src[i].y;
+            const dx = dst[i].x;
+            const dy = dst[i].y;
+            A.push([sx, sy, 1, 0, 0, 0, -sx * dx, -sy * dx, dx]);
+            A.push([0, 0, 0, sx, sy, 1, -sx * dy, -sy * dy, dy]);
+          }
+
+          const matrixA = new THREE.Matrix3();
+          matrixA.set(
+            A[0][0], A[0][1], A[0][2],
+            A[1][0], A[1][1], A[1][2],
+            A[2][0], A[2][1], A[2][2]
           );
+          const b = new THREE.Vector3(A[0][8], A[1][8], A[2][8]);
+
+          // Solve for h using simplified linear system (requires full 8x9 matrix for accuracy)
+          const H = new THREE.Matrix3();
+          H.set(
+            1, 0, 0,
+            0, 1, 0,
+            0, 0, 1
+          ); // Placeholder; ideally solve Ax = b
+          return H; // Note: Full homography requires external library or manual SVD
+        };
+
+        const H = computeHomography(modelCorners, quadCorners);
+
+        // Deform geometry with perspective
+        model.traverse((child) => {
+          if (child instanceof THREE.Mesh && child.geometry) {
+            const geometry = child.geometry;
+            geometry.computeBoundingBox();
+            const bbox = geometry.boundingBox!;
+            const min = bbox.min;
+            const max = bbox.max;
+            const depthRange = max.z - min.z;
+
+            const positions = geometry.attributes.position;
+            const uvs = geometry.attributes.uv;
+
+            for (let i = 0; i < positions.count; i++) {
+              const x = positions.getX(i);
+              const y = positions.getY(i);
+              const z = positions.getZ(i);
+
+              // Normalize to [-1, 1] based on model bounds
+              const u = (x - min.x) / (max.x - min.x) * 2 - 1;
+              const v = (y - min.y) / (max.y - min.y) * 2 - 1;
+              const w = (z - min.z) / depthRange; // Depth factor
+
+              // Apply homography (simplified bilinear for now due to H placeholder)
+              const bottomLeft = quadCorners[0];
+              const bottomRight = quadCorners[1];
+              const topRight = quadCorners[2];
+              const topLeft = quadCorners[3];
+
+              const uNorm = (u + 1) / 2; // [0, 1]
+              const vNorm = (v + 1) / 2; // [0, 1]
+
+              const bottom = bottomLeft.clone().lerp(bottomRight, uNorm);
+              const top = topLeft.clone().lerp(topRight, uNorm);
+              let newPos = bottom.clone().lerp(top, vNorm);
+
+              // Estimate depth based on perspective (top smaller = farther)
+              const bottomWidth = quadCorners[1].distanceTo(quadCorners[0]);
+              const topWidth = quadCorners[2].distanceTo(quadCorners[3]);
+              const depthScale = 1 - (vNorm * (1 - topWidth / bottomWidth) * 0.5);
+              newPos.z = z * depthScale;
+
+              positions.setXYZ(i, newPos.x, newPos.y, newPos.z);
+
+              if (uvs) {
+                uvs.setXY(i, uNorm, vNorm);
+              }
+            }
+            positions.needsUpdate = true;
+            if (uvs) uvs.needsUpdate = true;
+            geometry.computeVertexNormals();
+          }
         });
-        console.log("Drawn Corners (screen space):", drawnCorners2D);
 
-        const sortedCorners2D = [...drawnCorners2D];
-        sortedCorners2D.sort((a, b) => a.y - b.y);
-        const bottomCorners = sortedCorners2D.slice(0, 2);
-        const topCorners = sortedCorners2D.slice(2, 4);
-        bottomCorners.sort((a, b) => a.x - b.x);
-        topCorners.sort((a, b) => a.x - b.x);
-        const orderedCorners2D = [
-          bottomCorners[0],
-          bottomCorners[1],
-          topCorners[1],
-          topCorners[0],
-        ];
-        console.log("Ordered Drawn Corners:", orderedCorners2D);
+        // Apply texture
+        const textureLoader = new THREE.TextureLoader();
+        textureLoader.load(
+          "/textures/kids_pattern.png",
+          (texture) => {
+            model.traverse((child) => {
+              if (child instanceof THREE.Mesh) {
+                child.material = new THREE.MeshStandardMaterial({
+                  map: texture,
+                  side: THREE.DoubleSide,
+                });
+                child.material.map!.wrapS = THREE.RepeatWrapping;
+                child.material.map!.wrapT = THREE.RepeatWrapping;
+                child.material.map!.repeat.set(2, 2);
+              }
+            });
+          },
+          undefined,
+          (error) => console.error("Error loading texture:", error)
+        );
 
-        const homography = computeHomography(modelCorners, orderedCorners2D);
-        console.log("Homography Matrix:", homography);
+        // Reset transformations
+        model.position.set(0, 0, 0);
+        model.rotation.set(0, 0, 0);
+        model.scale.set(0.9, 0.9, 0.9);
 
-        const quaternion = extractRotationFromHomography(homography);
+        // Rotate to match quad plane
+        const modelNormal = new THREE.Vector3(0, 0, 1);
+        const quaternion = new THREE.Quaternion().setFromUnitVectors(modelNormal, quadNormal);
         model.quaternion.copy(quaternion);
 
-        const rotationMatrix = new THREE.Matrix4().makeRotationFromQuaternion(quaternion);
-        const eulerBefore = new THREE.Euler().setFromQuaternion(quaternion, "YXZ");
-        console.log("Euler Before Orthogonalization:", {
-          yaw: eulerBefore.y,
-          pitch: eulerBefore.x,
-          roll: eulerBefore.z,
-        });
-
-        const elements = rotationMatrix.elements;
-        const R = [
-          [elements[0], elements[4], elements[8]],
-          [elements[1], elements[5], elements[9]],
-          [elements[2], elements[6], elements[10]],
-        ];
-        const svdResult = numeric.svd(R);
-        const correctedR = numeric.dot(svdResult.U, numeric.transpose(svdResult.V));
-
-        rotationMatrix.set(
-          correctedR[0][0], correctedR[0][1], correctedR[0][2], 0,
-          correctedR[1][0], correctedR[1][1], correctedR[1][2], 0,
-          correctedR[2][0], correctedR[2][1], correctedR[2][2], 0,
-          0, 0, 0, 1
-        );
-        model.quaternion.setFromRotationMatrix(rotationMatrix);
-
-        const eulerAfter = new THREE.Euler().setFromQuaternion(model.quaternion, "YXZ");
-        console.log("Euler After Orthogonalization:", {
-          yaw: eulerAfter.y,
-          pitch: eulerAfter.x,
-          roll: eulerAfter.z,
-        });
-
-        const targetWidth = Math.sqrt(
-          Math.pow(corners[1].x - corners[0].x, 2) + Math.pow(corners[1].y - corners[0].y, 2)
-        );
-        const targetHeight = Math.sqrt(
-          Math.pow(corners[3].x - corners[0].x, 2) + Math.pow(corners[3].y - corners[0].y, 2)
-        );
-        const scaleX = targetWidth / modelSize.x;
-        const scaleY = targetHeight / modelSize.y;
-        const scaleFactor = 1;
-        model.scale.set(scaleX * 1.2, scaleY * scaleFactor, Math.min(scaleX, scaleY) * scaleFactor);
-        console.log("Applied Scale:", model.scale);
-
-        const quadCenter = new THREE.Vector3();
-        corners.forEach((corner) => quadCenter.add(corner));
-        quadCenter.divideScalar(4);
+        // Position at quad center with depth adjustment
+        const bottomWidth = quadCorners[1].distanceTo(quadCorners[0]);
+        const topWidth = quadCorners[2].distanceTo(quadCorners[3]);
+        const depthFactor = (bottomWidth + topWidth) / (2 * bottomWidth);
         model.position.copy(quadCenter);
+        model.position.z += modelSize.z * depthFactor * 0.5;
 
-        const offset = modelCenter.clone().applyQuaternion(model.quaternion).multiply(model.scale);
-        model.position.sub(offset);
-        model.position.z = 0.1;
-        model.position.x += 0.25;
-        model.position.y += 0.15;
-        console.log("Model Position (adjusted):", model.position);
+        // Adjust camera
+        const cameraDistance = cameraRef.current.position.z - quadCenter.z;
+        const fovFactor = Math.tan((cameraRef.current.fov * Math.PI / 180) / 2);
+        cameraRef.current.position.set(
+          quadCenter.x,
+          quadCenter.y,
+          quadCenter.z + cameraDistance * depthFactor
+        );
+        cameraRef.current.lookAt(quadCenter);
 
         model.renderOrder = 2;
         model.traverse((child) => {
@@ -429,12 +397,12 @@ const FilterPageAI: React.FC = () => {
             child.renderOrder = 2;
             child.material.depthTest = true;
             child.material.depthWrite = true;
-            child.material.side = THREE.DoubleSide;
           }
         });
 
         scene.add(model);
 
+        // Add lighting
         if (!scene.getObjectByName("ambientLight")) {
           const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
           ambientLight.name = "ambientLight";
@@ -447,18 +415,17 @@ const FilterPageAI: React.FC = () => {
           scene.add(directionalLight);
         }
 
-        rendererRef.current?.render(scene, camera);
+        rendererRef.current?.render(sceneRef.current, cameraRef.current);
       },
       undefined,
       (error) => {
         console.error("Error loading model:", error);
-        setInstruction("Failed to load shade model.");
+        setInstruction("Failed to load model.");
       }
     );
   };
 
   const handleButtonClick = () => {
-    console.log("Button clicked:", buttonText);
     switch (buttonText) {
       case "Start Camera":
         startCameraStream();
@@ -554,13 +521,12 @@ const FilterPageAI: React.FC = () => {
     });
   };
 
-  // Set image as scene background
   const setBackgroundImage = (imageData: string): Promise<void> => {
     return new Promise((resolve) => {
       const textureLoader = new THREE.TextureLoader();
       textureLoader.load(imageData, (texture) => {
-        sceneRef.current.background = texture; // Set as scene background
-        drawDefaultQuadrilateral(window.innerWidth, window.innerHeight); // Draw quadrilateral
+        sceneRef.current.background = texture;
+        drawDefaultQuadrilateral(window.innerWidth, window.innerHeight);
         resolve();
       });
     });
@@ -628,7 +594,10 @@ const FilterPageAI: React.FC = () => {
       new THREE.Vector3(corner.position.x, corner.position.y, 0)
     );
 
-    createModelBoxWithShadeBake(positions);
+    // Use the selected blind type's model path, default to shadeBake if none selected
+    const selectedType = blindTypes.find((bt) => bt.type === selectedBlindType);
+    const modelPath = selectedType ? selectedType.modelPath : blindTypes[0].modelPath;
+    createModelBox(positions, modelPath);
 
     if (windowBoxRef.current) {
       scene.remove(windowBoxRef.current);
@@ -652,8 +621,38 @@ const FilterPageAI: React.FC = () => {
     cornerRefs.current = [];
   };
 
-  const selectBlindType = (type: string) => setSelectedBlindType(type);
-  const selectPattern = (patternUrl: string) => setSelectedPattern(patternUrl);
+  const selectBlindType = (type: string) => {
+    setSelectedBlindType(type);
+    const selectedType = blindTypes.find((bt) => bt.type === type);
+    if (selectedType && isCustomizerView) {
+      const positions = cornerRefs.current.map((corner) =>
+        new THREE.Vector3(corner.position.x, corner.position.y, 0)
+      );
+      createModelBox(positions, selectedType.modelPath);
+    }
+  };
+
+  const selectPattern = (patternUrl: string) => {
+    setSelectedPattern(patternUrl);
+    if (modelRef.current) {
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.load(patternUrl, (texture) => {
+        modelRef.current!.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.material = new THREE.MeshStandardMaterial({
+              map: texture,
+              side: THREE.DoubleSide,
+            });
+            child.material.map!.wrapS = THREE.RepeatWrapping;
+            child.material.map!.wrapT = THREE.RepeatWrapping;
+            child.material.map!.repeat.set(2, 2);
+          }
+        });
+        rendererRef.current?.render(sceneRef.current, cameraRef.current!);
+      });
+    }
+  };
+
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setFilters((prev) =>
