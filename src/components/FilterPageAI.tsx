@@ -12,6 +12,7 @@ interface Vector3D {
 interface BlindType {
   type: string;
   buttonImage: string;
+  modelPath: string; // Added to specify the model file
 }
 
 interface Pattern {
@@ -21,7 +22,6 @@ interface Pattern {
   filterTags: string[];
 }
 
-// Main React component for the filter page
 const FilterPageAI: React.FC = () => {
   const [showBlindMenu, setShowBlindMenu] = useState(false);
   const [selectedBlindType, setSelectedBlindType] = useState<string | null>(null);
@@ -41,21 +41,23 @@ const FilterPageAI: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const windowBoxRef = useRef<THREE.Mesh | null>(null);
   const cornerRefs = useRef<THREE.Mesh[]>([]);
-  const shadeBakeRef = useRef<THREE.Group | null>(null);
+  const modelRef = useRef<THREE.Group | null>(null); // Renamed from shadeBakeRef
 
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
   const blindTypes: BlindType[] = [
-    { type: "shadeBake", buttonImage: "/images/shadeBakeIcon.png" },
+    { type: "shadeBake", buttonImage: "/images/shadeBakeIcon.png", modelPath: "/3d/shadeBakeINV.glb" },
+    // Add more blind types with their model paths as needed, e.g.:
+    // { type: "rollerBlind", buttonImage: "/images/rollerBlindIcon.png", modelPath: "/3d/rollerBlind.glb" },
   ];
 
   const patterns: Pattern[] = [
     {
-      name: "Beige",
-      image: "/images/ICONSforMaterial/beige.png",
+      name: "Kids Pattern",
+      image: "/textures/kids_pattern.png",
       price: "$10",
-      filterTags: ["solid"],
+      filterTags: ["kids", "solid"],
     },
   ];
 
@@ -83,7 +85,7 @@ const FilterPageAI: React.FC = () => {
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(screenWidth, screenHeight);
     rendererRef.current = renderer;
-    renderer.setClearColor(0x000000, 0); // Transparent background
+    renderer.setClearColor(0x000000, 0);
     mountRef.current.appendChild(renderer.domElement);
 
     const animate = () => {
@@ -199,95 +201,207 @@ const FilterPageAI: React.FC = () => {
     windowBoxRef.current = newBox;
   };
 
-  const createModelBoxWithShadeBake = (corners: THREE.Vector3[]) => {
+  const createModelBox = (corners: THREE.Vector3[], modelPath: string) => {
     const scene = sceneRef.current;
-    if (!scene || corners.length !== 4) {
-      console.error("Cannot create model: Invalid scene or corners");
+    if (!scene || corners.length !== 4 || !cameraRef.current) {
+      console.error("Cannot create model: Invalid scene, corners, or camera");
       return;
     }
-  
-    if (shadeBakeRef.current) {
-      scene.remove(shadeBakeRef.current);
-      shadeBakeRef.current = null;
+
+    if (modelRef.current) {
+      scene.remove(modelRef.current);
+      modelRef.current = null;
     }
-  
+
     const loader = new GLTFLoader();
     loader.load(
-      "/3d/shadeBakeINV.glb",
+      modelPath, // Use dynamic model path
       (gltf) => {
         const model = gltf.scene;
-        shadeBakeRef.current = model;
-  
-        // Get model bounding box before scaling
-        const box = new THREE.Box3().setFromObject(model);
-        const modelSize = new THREE.Vector3();
-        box.getSize(modelSize); // Original size of the model (x, y, z)
-        const modelCenter = new THREE.Vector3();
-        box.getCenter(modelCenter); // Original center of the model in its local space
-  
-        // Order corners: bottom-left, bottom-right, top-right, top-left
+        modelRef.current = model;
+
+        // Order quadrilateral corners: bottom-left, bottom-right, top-right, top-left
         const orderedCorners = [...corners];
-        orderedCorners.sort((a, b) => a.y - b.y); // Sort by Y
+        orderedCorners.sort((a, b) => a.y - b.y);
         const bottomCorners = orderedCorners.slice(0, 2);
         const topCorners = orderedCorners.slice(2, 4);
-        bottomCorners.sort((a, b) => a.x - b.x); // Sort bottom by X
-        topCorners.sort((a, b) => a.x - b.x);    // Sort top by X
-        const finalCorners = [
+        bottomCorners.sort((a, b) => a.x - b.x);
+        topCorners.sort((a, b) => a.x - b.x);
+        const quadCorners = [
           bottomCorners[0], // Bottom-left
           bottomCorners[1], // Bottom-right
           topCorners[1],    // Top-right
           topCorners[0],    // Top-left
         ];
-  
-        // Calculate target width and height
-        const targetWidth = finalCorners[1].x - finalCorners[0].x; // Bottom-right - Bottom-left
-        const targetHeight = finalCorners[2].y - finalCorners[1].y; // Top-right - Bottom-right
-  
-        // Calculate scaling factors (non-uniform for X and Y)
-        const scaleX = targetWidth / modelSize.x;
-        const scaleY = targetHeight / modelSize.y;
-        
-        // Determine Z-scale based on the model's original depth and scene needs
-        const baseZScale = Math.min(scaleX, scaleY); // Use smaller scale to avoid exaggeration
-        const zScale = baseZScale * 0.1; // Scale Z proportionally but smaller (adjustable)
-        model.scale.set(scaleX, scaleY, zScale); // Non-uniform scaling with controlled Z
-  
-        // Calculate the center of the quadrilateral in world space
+
+        // Calculate quad plane normal and center
+        const v1 = new THREE.Vector3().subVectors(quadCorners[1], quadCorners[0]);
+        const v2 = new THREE.Vector3().subVectors(quadCorners[3], quadCorners[0]);
+        const quadNormal = new THREE.Vector3().crossVectors(v1, v2).normalize();
         const quadCenter = new THREE.Vector3();
-        finalCorners.forEach((corner) => quadCenter.add(corner));
+        quadCorners.forEach(corner => quadCenter.add(corner));
         quadCenter.divideScalar(4);
-  
-        // Position the model so its center aligns with the quadrilateral's center
+
+        // Get model bounding box
+        const box = new THREE.Box3().setFromObject(model);
+        const modelSize = new THREE.Vector3();
+        box.getSize(modelSize);
+        const modelCenter = new THREE.Vector3();
+        box.getCenter(modelCenter);
+
+        // Define model’s original corners (normalized to [-1, 1] plane)
+        const modelCorners = [
+          new THREE.Vector3(-1, -1, 0), // Bottom-left
+          new THREE.Vector3(1, -1, 0),  // Bottom-right
+          new THREE.Vector3(1, 1, 0),   // Top-right
+          new THREE.Vector3(-1, 1, 0),  // Top-left
+        ];
+
+        // Compute perspective transform (homography) from modelCorners to quadCorners
+        const computeHomography = (src: THREE.Vector3[], dst: THREE.Vector3[]) => {
+          const A = [];
+          for (let i = 0; i < 4; i++) {
+            const sx = src[i].x;
+            const sy = src[i].y;
+            const dx = dst[i].x;
+            const dy = dst[i].y;
+            A.push([sx, sy, 1, 0, 0, 0, -sx * dx, -sy * dx, dx]);
+            A.push([0, 0, 0, sx, sy, 1, -sx * dy, -sy * dy, dy]);
+          }
+
+          const matrixA = new THREE.Matrix3();
+          matrixA.set(
+            A[0][0], A[0][1], A[0][2],
+            A[1][0], A[1][1], A[1][2],
+            A[2][0], A[2][1], A[2][2]
+          );
+          const b = new THREE.Vector3(A[0][8], A[1][8], A[2][8]);
+
+          // Solve for h using simplified linear system (requires full 8x9 matrix for accuracy)
+          const H = new THREE.Matrix3();
+          H.set(
+            1, 0, 0,
+            0, 1, 0,
+            0, 0, 1
+          ); // Placeholder; ideally solve Ax = b
+          return H; // Note: Full homography requires external library or manual SVD
+        };
+
+        const H = computeHomography(modelCorners, quadCorners);
+
+        // Deform geometry with perspective
+        model.traverse((child) => {
+          if (child instanceof THREE.Mesh && child.geometry) {
+            const geometry = child.geometry;
+            geometry.computeBoundingBox();
+            const bbox = geometry.boundingBox!;
+            const min = bbox.min;
+            const max = bbox.max;
+            const depthRange = max.z - min.z;
+
+            const positions = geometry.attributes.position;
+            const uvs = geometry.attributes.uv;
+
+            for (let i = 0; i < positions.count; i++) {
+              const x = positions.getX(i);
+              const y = positions.getY(i);
+              const z = positions.getZ(i);
+
+              // Normalize to [-1, 1] based on model bounds
+              const u = (x - min.x) / (max.x - min.x) * 2 - 1;
+              const v = (y - min.y) / (max.y - min.y) * 2 - 1;
+              const w = (z - min.z) / depthRange; // Depth factor
+
+              // Apply homography (simplified bilinear for now due to H placeholder)
+              const bottomLeft = quadCorners[0];
+              const bottomRight = quadCorners[1];
+              const topRight = quadCorners[2];
+              const topLeft = quadCorners[3];
+
+              const uNorm = (u + 1) / 2; // [0, 1]
+              const vNorm = (v + 1) / 2; // [0, 1]
+
+              const bottom = bottomLeft.clone().lerp(bottomRight, uNorm);
+              const top = topLeft.clone().lerp(topRight, uNorm);
+              let newPos = bottom.clone().lerp(top, vNorm);
+
+              // Estimate depth based on perspective (top smaller = farther)
+              const bottomWidth = quadCorners[1].distanceTo(quadCorners[0]);
+              const topWidth = quadCorners[2].distanceTo(quadCorners[3]);
+              const depthScale = 1 - (vNorm * (1 - topWidth / bottomWidth) * 0.5);
+              newPos.z = z * depthScale;
+
+              positions.setXYZ(i, newPos.x, newPos.y, newPos.z);
+
+              if (uvs) {
+                uvs.setXY(i, uNorm, vNorm);
+              }
+            }
+            positions.needsUpdate = true;
+            if (uvs) uvs.needsUpdate = true;
+            geometry.computeVertexNormals();
+          }
+        });
+
+        // Apply texture
+        const textureLoader = new THREE.TextureLoader();
+        textureLoader.load(
+          "/textures/kids_pattern.png",
+          (texture) => {
+            model.traverse((child) => {
+              if (child instanceof THREE.Mesh) {
+                child.material = new THREE.MeshStandardMaterial({
+                  map: texture,
+                  side: THREE.DoubleSide,
+                });
+                child.material.map!.wrapS = THREE.RepeatWrapping;
+                child.material.map!.wrapT = THREE.RepeatWrapping;
+                child.material.map!.repeat.set(2, 2);
+              }
+            });
+          },
+          undefined,
+          (error) => console.error("Error loading texture:", error)
+        );
+
+        // Reset transformations
+        model.position.set(0, 0, 0);
+        model.rotation.set(0, 0, 0);
+        model.scale.set(0.9, 0.9, 0.9);
+
+        // Rotate to match quad plane
+        const modelNormal = new THREE.Vector3(0, 0, 1);
+        const quaternion = new THREE.Quaternion().setFromUnitVectors(modelNormal, quadNormal);
+        model.quaternion.copy(quaternion);
+
+        // Position at quad center with depth adjustment
+        const bottomWidth = quadCorners[1].distanceTo(quadCorners[0]);
+        const topWidth = quadCorners[2].distanceTo(quadCorners[3]);
+        const depthFactor = (bottomWidth + topWidth) / (2 * bottomWidth);
         model.position.copy(quadCenter);
-  
-        // Adjust for the model's local center offset after scaling
-        const scaledCenterOffset = modelCenter.clone().multiply(model.scale);
-        model.position.sub(scaledCenterOffset);
-  
-        // Set Z position dynamically based on camera distance
-        const cameraDistance = cameraRef.current?.position.z || 1; // Default to 1 if camera not set
-        model.position.z = cameraDistance * 0.01; // Position close to the background (adjustable)
-  
-        // Calculate rotation to align with quadrilateral
-        const bottomEdge = new THREE.Vector3()
-          .subVectors(finalCorners[1], finalCorners[0])
-          .normalize();
-        const horizontal = new THREE.Vector3(1, 0, 0); // Reference X-axis
-        const angle = Math.acos(bottomEdge.dot(horizontal)) * Math.sign(bottomEdge.y);
-        model.rotation.z = angle; // Rotate around Z-axis to align with bottom edge
-  
+        model.position.z += modelSize.z * depthFactor * 0.5;
+
+        // Adjust camera
+        const cameraDistance = cameraRef.current.position.z - quadCenter.z;
+        const fovFactor = Math.tan((cameraRef.current.fov * Math.PI / 180) / 2);
+        cameraRef.current.position.set(
+          quadCenter.x,
+          quadCenter.y,
+          quadCenter.z + cameraDistance * depthFactor
+        );
+        cameraRef.current.lookAt(quadCenter);
+
         model.renderOrder = 2;
         model.traverse((child) => {
           if (child instanceof THREE.Mesh) {
             child.renderOrder = 2;
             child.material.depthTest = true;
             child.material.depthWrite = true;
-            child.material.side = THREE.DoubleSide;
           }
         });
-  
+
         scene.add(model);
-  
+
         // Add lighting
         if (!scene.getObjectByName("ambientLight")) {
           const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
@@ -300,13 +414,13 @@ const FilterPageAI: React.FC = () => {
           directionalLight.name = "directionalLight";
           scene.add(directionalLight);
         }
-  
-        rendererRef.current?.render(scene, cameraRef.current!);
+
+        rendererRef.current?.render(sceneRef.current, cameraRef.current);
       },
       undefined,
       (error) => {
         console.error("Error loading model:", error);
-        setInstruction("Failed to load shade model.");
+        setInstruction("Failed to load model.");
       }
     );
   };
@@ -480,7 +594,10 @@ const FilterPageAI: React.FC = () => {
       new THREE.Vector3(corner.position.x, corner.position.y, 0)
     );
 
-    createModelBoxWithShadeBake(positions);
+    // Use the selected blind type's model path, default to shadeBake if none selected
+    const selectedType = blindTypes.find((bt) => bt.type === selectedBlindType);
+    const modelPath = selectedType ? selectedType.modelPath : blindTypes[0].modelPath;
+    createModelBox(positions, modelPath);
 
     if (windowBoxRef.current) {
       scene.remove(windowBoxRef.current);
@@ -504,8 +621,38 @@ const FilterPageAI: React.FC = () => {
     cornerRefs.current = [];
   };
 
-  const selectBlindType = (type: string) => setSelectedBlindType(type);
-  const selectPattern = (patternUrl: string) => setSelectedPattern(patternUrl);
+  const selectBlindType = (type: string) => {
+    setSelectedBlindType(type);
+    const selectedType = blindTypes.find((bt) => bt.type === type);
+    if (selectedType && isCustomizerView) {
+      const positions = cornerRefs.current.map((corner) =>
+        new THREE.Vector3(corner.position.x, corner.position.y, 0)
+      );
+      createModelBox(positions, selectedType.modelPath);
+    }
+  };
+
+  const selectPattern = (patternUrl: string) => {
+    setSelectedPattern(patternUrl);
+    if (modelRef.current) {
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.load(patternUrl, (texture) => {
+        modelRef.current!.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.material = new THREE.MeshStandardMaterial({
+              map: texture,
+              side: THREE.DoubleSide,
+            });
+            child.material.map!.wrapS = THREE.RepeatWrapping;
+            child.material.map!.wrapT = THREE.RepeatWrapping;
+            child.material.map!.repeat.set(2, 2);
+          }
+        });
+        rendererRef.current?.render(sceneRef.current, cameraRef.current!);
+      });
+    }
+  };
+
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setFilters((prev) =>
