@@ -2,33 +2,66 @@ import React, { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-// Define interfaces for TypeScript type safety
-interface Vector3D {
-  x: number;
-  y: number;
-  z: number;
-}
-
-interface BlindType {
+// Types and Constants
+type Vector3D = { x: number; y: number; z: number };
+type BlindType = {
   type: string;
   buttonImage: string;
-  modelPath: string; // Added to specify the model file
-}
-
-interface Pattern {
+  modelUrl: string;
+  meshNameFabric?: string;
+  meshNameWood?: string;
+  depthFactor?: number;
+};
+type Pattern = {
   name: string;
   image: string;
   price: string;
   filterTags: string[];
-}
+  patternUrl: string;
+};
+type ModelData = { model: THREE.Group; gltf?: any };
 
-const FilterPageAI: React.FC = () => {
+const BLIND_TYPES: BlindType[] = [
+  { type: "Roman Blind", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/models/shadeBake.glb", depthFactor: 0 },
+  { type: "Roller Blind", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/models/Black_Blind.glb", depthFactor: 0 },
+  { type: "Classic Roman", buttonImage: "/images/blindTypes/classicRomanIcon.png", modelUrl: "/models/Gray_2_Blind.glb", depthFactor: 0 },
+];
+
+const PATTERNS: Pattern[] = [
+  { name: "Beige", image: "/materials/beige.png", price: "$10", filterTags: ["solid"], patternUrl: "/materials/beige.png" },
+  { name: "Blanche", image: "/materials/Blanche.png", price: "$67", filterTags: ["pattern"], patternUrl: "/materials/Blanche.png" },
+  { name: "Cerrulean", image: "/materials/cerulean.png", price: "$10", filterTags: ["pattern"], patternUrl: "/materials/cerulean.png" },
+  { name: "Chestnut", image: "/materials/chestnut.png", price: "$100", filterTags: ["kids", "pattern"], patternUrl: "/materials/chestnut.png" },
+  { name: "Driftwood", image: "/materials/driftwood.png", price: "$100", filterTags: ["pattern"], patternUrl: "/materials/driftwood.png" },
+  { name: "Driftwood Sand", image: "/materials/driftwoodsand.png", price: "$100", filterTags: ["pattern"], patternUrl: "/materials/driftwoodsand.png" },
+  { name: "Iron", image: "/materials/iron.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/iron.png" },
+  { name: "Ivory", image: "/materials/ivory.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/ivory.png" },
+  { name: "Kaki", image: "/materials/kaki.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/kaki.png" },
+  { name: "Mocha", image: "/materials/mocha.png", price: "$45", filterTags: ["pattern", "natural"], patternUrl: "/materials/mocha.png" },
+  { name: "Noir", image: "/materials/noir.png", price: "$150", filterTags: ["pattern", "natural"], patternUrl: "/materials/noir.png" },
+  { name: "Oatmeal", image: "/materials/oatmeal.png", price: "$150", filterTags: ["natural", "pattern"], patternUrl: "/materials/oatmeal.png" },
+  { name: "Slate", image: "/materials/slate.png", price: "$100", filterTags: ["pattern"], patternUrl: "/materials/slate.png" },
+  { name: "Silver", image: "/materials/SolarSilver.png", price: "$100", filterTags: ["solid", "solar"], patternUrl: "/materials/SolarSilver.png" },
+  { name: "Steel", image: "/materials/steel.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/steel.png" },
+  { name: "Taupe", image: "/materials/taupe.png", price: "$45", filterTags: ["pattern"], patternUrl: "/materials/taupe.png" },
+  { name: "Taupe Solar", image: "/materials/taupeSolar.png", price: "$100", filterTags: ["solar"], patternUrl: "/materials/taupeSolar.png" },
+  { name: "Tea Leaves Brown", image: "/materials/tealeaves_brown.png", price: "$150", filterTags: ["pattern"], patternUrl: "/materials/tealeaves_brown.png" },
+  { name: "Tea Leaves White", image: "/materials/tealeaves_white.png", price: "$150", filterTags: ["patterned"], patternUrl: "/materials/tealeaves_white.png" },
+  { name: "Toast", image: "/materials/toast.png", price: "$45", filterTags: ["pattern"], patternUrl: "/materials/toast.png" },
+  { name: "White", image: "/materials/white.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/white.png" },
+];
+
+// Utility Functions
+const isMesh = (object: THREE.Object3D): object is THREE.Mesh => "isMesh" in object && (object.isMesh as boolean);
+
+const FilterPageMerged: React.FC = () => {
   const [showBlindMenu, setShowBlindMenu] = useState(false);
-  const [selectedBlindType, setSelectedBlindType] = useState<string | null>(null);
+  const [selectedBlindType, setSelectedBlindType] = useState<string>(BLIND_TYPES[0].type);
   const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
   const [filters, setFilters] = useState<string[]>([]);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isCustomizerView, setIsCustomizerView] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [instruction, setInstruction] = useState("Click 'Start Camera' or upload an image to begin.");
   const [buttonText, setButtonText] = useState("Start Camera");
 
@@ -41,36 +74,28 @@ const FilterPageAI: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const windowBoxRef = useRef<THREE.Mesh | null>(null);
   const cornerRefs = useRef<THREE.Mesh[]>([]);
-  const modelRef = useRef<THREE.Group | null>(null); // Renamed from shadeBakeRef
+  const modelRef = useRef<THREE.Group | null>(null);
+  const preloadedModelsRef = useRef<Map<string, ModelData>>(new Map());
+  const quadParamsRef = useRef<{
+    corners: THREE.Vector3[];
+    normal: THREE.Vector3;
+    center: THREE.Vector3;
+    cameraPosition: THREE.Vector3;
+  } | null>(null);
 
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
-  const blindTypes: BlindType[] = [
-    { type: "shadeBake", buttonImage: "/images/shadeBakeIcon.png", modelPath: "/3d/shadeBakeINV.glb" },
-    // Add more blind types with their model paths as needed, e.g.:
-    // { type: "rollerBlind", buttonImage: "/images/rollerBlindIcon.png", modelPath: "/3d/rollerBlind.glb" },
-  ];
-
-  const patterns: Pattern[] = [
-    {
-      name: "Kids Pattern",
-      image: "/textures/kids_pattern.png",
-      price: "$10",
-      filterTags: ["kids", "solid"],
-    },
-  ];
-
-  const filteredPatterns = patterns.filter(
-    (pattern) =>
-      filters.length === 0 ||
-      pattern.filterTags.some((tag) => filters.includes(tag))
+  const filteredPatterns = PATTERNS.filter(
+    (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
   );
 
   useEffect(() => {
     setupThreeJS();
+    preloadModels();
   }, []);
 
+  // Setup Three.js scene, camera, and renderer
   const setupThreeJS = () => {
     if (!mountRef.current) return;
 
@@ -81,12 +106,17 @@ const FilterPageAI: React.FC = () => {
     cameraRef.current = camera;
     updateCameraPosition(screenWidth, screenHeight);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(screenWidth, screenHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     rendererRef.current = renderer;
-    renderer.setClearColor(0x000000, 0);
     mountRef.current.appendChild(renderer.domElement);
+
+    sceneRef.current.add(new THREE.AmbientLight(0xffffff, 2));
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+    directionalLight.position.set(5, 10, 5);
+    sceneRef.current.add(directionalLight);
 
     const animate = () => {
       requestAnimationFrame(animate);
@@ -97,6 +127,7 @@ const FilterPageAI: React.FC = () => {
     animate();
 
     const handleMouseDown = (event: MouseEvent) => {
+      if (isCustomizerView) return;
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
       raycaster.setFromCamera(mouse, cameraRef.current!);
@@ -108,6 +139,7 @@ const FilterPageAI: React.FC = () => {
     };
 
     const handleMouseMove = (event: MouseEvent) => {
+      if (isCustomizerView) return;
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
       raycaster.setFromCamera(mouse, cameraRef.current!);
@@ -155,6 +187,65 @@ const FilterPageAI: React.FC = () => {
     };
   };
 
+  // Preload all 3D models with vertex coordinate logging
+  const preloadModels = async () => {
+    setIsLoading(true);
+    const loader = new GLTFLoader();
+    try {
+      await Promise.all(
+        BLIND_TYPES.map(
+          (blind) =>
+            new Promise<void>((resolve, reject) =>
+              loader.load(
+                blind.modelUrl,
+                (gltf) => {
+                  const model = gltf.scene.clone();
+                  const bbox = new THREE.Box3().setFromObject(model);
+                  const center = new THREE.Vector3();
+                  bbox.getCenter(center);
+                  model.position.sub(center); // Center at origin
+                  preloadedModelsRef.current.set(blind.modelUrl, { model, gltf });
+                  const size = new THREE.Vector3();
+                  bbox.getSize(size);
+                  console.log(`[Preload] ${blind.type} Size:`, {
+                    x: size.x.toFixed(3),
+                    y: size.y.toFixed(3),
+                    z: size.z.toFixed(3),
+                  });
+
+                  // Log vertex coordinates for all meshes in the model
+                  console.log(`[Preload] Vertex Coordinates for ${blind.type} (${blind.modelUrl}):`);
+                  model.traverse((child) => {
+                    if (isMesh(child) && child.geometry) {
+                      const positions = child.geometry.attributes.position;
+                      console.log(`  Mesh: ${child.name || "Unnamed"}`);
+                      for (let i = 0; i < positions.count; i++) {
+                        const x = positions.getX(i);
+                        const y = positions.getY(i);
+                        const z = positions.getZ(i);
+                        // console.log(`    Vertex ${i}: (${x.toFixed(3)}, ${y.toFixed(3)}, ${z.toFixed(3)})`);
+                      }
+                    }
+                  });
+
+                  resolve();
+                },
+                undefined,
+                (error) => {
+                  console.error(`[Preload Error] Failed to load ${blind.modelUrl}:`, error);
+                  reject(error);
+                }
+              )
+            )
+        )
+      );
+    } catch (error) {
+      console.error("[Preload] Model preloading failed:", error);
+    }
+    setIsLoading(false);
+  };
+
+  // Update camera position based on screen size
   const updateCameraPosition = (width: number, height: number) => {
     if (!cameraRef.current) return;
     const fovRad = cameraRef.current.fov * (Math.PI / 180);
@@ -164,13 +255,12 @@ const FilterPageAI: React.FC = () => {
     cameraRef.current.updateProjectionMatrix();
   };
 
+  // Update the window box shape based on corner positions
   const updateWindowBoxShape = () => {
     const scene = sceneRef.current;
     if (!scene || !windowBoxRef.current || cornerRefs.current.length !== 4) return;
 
-    const positions = cornerRefs.current.map((corner) =>
-      new THREE.Vector3(corner.position.x, corner.position.y, 0)
-    );
+    const positions = cornerRefs.current.map((corner) => new THREE.Vector3(corner.position.x, corner.position.y, 0));
 
     const shape = new THREE.Shape();
     shape.moveTo(positions[0].x, positions[0].y);
@@ -180,17 +270,12 @@ const FilterPageAI: React.FC = () => {
     shape.closePath();
 
     const geometry = new THREE.ShapeGeometry(shape);
-    const material = new THREE.MeshBasicMaterial({
-      color: 0xff0000,
-      opacity: 0.4,
-      transparent: true,
-      side: THREE.DoubleSide,
-    });
+    const material = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.4, transparent: true, side: THREE.DoubleSide });
 
     scene.remove(windowBoxRef.current);
     windowBoxRef.current.geometry.dispose();
     if (Array.isArray(windowBoxRef.current.material)) {
-      windowBoxRef.current.material.forEach(material => material.dispose());
+      windowBoxRef.current.material.forEach((mat) => mat.dispose());
     } else {
       windowBoxRef.current.material.dispose();
     }
@@ -201,228 +286,242 @@ const FilterPageAI: React.FC = () => {
     windowBoxRef.current = newBox;
   };
 
-  const createModelBox = (corners: THREE.Vector3[], modelPath: string) => {
+  // Create and position the 3D model within the quadrilateral with debugging
+  const createModelBox = (corners: THREE.Vector3[], modelUrl: string, isInitial: boolean = false) => {
     const scene = sceneRef.current;
     if (!scene || corners.length !== 4 || !cameraRef.current) {
-      console.error("Cannot create model: Invalid scene, corners, or camera");
+      console.error("[createModelBox] Invalid scene, corners, or camera");
       return;
     }
-
+  
     if (modelRef.current) {
       scene.remove(modelRef.current);
       modelRef.current = null;
     }
-
-    const loader = new GLTFLoader();
-    loader.load(
-      modelPath, // Use dynamic model path
-      (gltf) => {
-        const model = gltf.scene;
-        modelRef.current = model;
-
-        // Order quadrilateral corners: bottom-left, bottom-right, top-right, top-left
-        const orderedCorners = [...corners];
-        orderedCorners.sort((a, b) => a.y - b.y);
-        const bottomCorners = orderedCorners.slice(0, 2);
-        const topCorners = orderedCorners.slice(2, 4);
-        bottomCorners.sort((a, b) => a.x - b.x);
-        topCorners.sort((a, b) => a.x - b.x);
-        const quadCorners = [
-          bottomCorners[0], // Bottom-left
-          bottomCorners[1], // Bottom-right
-          topCorners[1],    // Top-right
-          topCorners[0],    // Top-left
-        ];
-
-        // Calculate quad plane normal and center
-        const v1 = new THREE.Vector3().subVectors(quadCorners[1], quadCorners[0]);
-        const v2 = new THREE.Vector3().subVectors(quadCorners[3], quadCorners[0]);
-        const quadNormal = new THREE.Vector3().crossVectors(v1, v2).normalize();
-        const quadCenter = new THREE.Vector3();
-        quadCorners.forEach(corner => quadCenter.add(corner));
-        quadCenter.divideScalar(4);
-
-        // Get model bounding box
-        const box = new THREE.Box3().setFromObject(model);
-        const modelSize = new THREE.Vector3();
-        box.getSize(modelSize);
-        const modelCenter = new THREE.Vector3();
-        box.getCenter(modelCenter);
-
-        // Define model’s original corners (normalized to [-1, 1] plane)
-        const modelCorners = [
-          new THREE.Vector3(-1, -1, 0), // Bottom-left
-          new THREE.Vector3(1, -1, 0),  // Bottom-right
-          new THREE.Vector3(1, 1, 0),   // Top-right
-          new THREE.Vector3(-1, 1, 0),  // Top-left
-        ];
-
-        // Compute perspective transform (homography) from modelCorners to quadCorners
-        const computeHomography = (src: THREE.Vector3[], dst: THREE.Vector3[]) => {
-          const A = [];
-          for (let i = 0; i < 4; i++) {
-            const sx = src[i].x;
-            const sy = src[i].y;
-            const dx = dst[i].x;
-            const dy = dst[i].y;
-            A.push([sx, sy, 1, 0, 0, 0, -sx * dx, -sy * dx, dx]);
-            A.push([0, 0, 0, sx, sy, 1, -sx * dy, -sy * dy, dy]);
-          }
-
-          const matrixA = new THREE.Matrix3();
-          matrixA.set(
-            A[0][0], A[0][1], A[0][2],
-            A[1][0], A[1][1], A[1][2],
-            A[2][0], A[2][1], A[2][2]
-          );
-          const b = new THREE.Vector3(A[0][8], A[1][8], A[2][8]);
-
-          // Solve for h using simplified linear system (requires full 8x9 matrix for accuracy)
-          const H = new THREE.Matrix3();
-          H.set(
-            1, 0, 0,
-            0, 1, 0,
-            0, 0, 1
-          ); // Placeholder; ideally solve Ax = b
-          return H; // Note: Full homography requires external library or manual SVD
-        };
-
-        const H = computeHomography(modelCorners, quadCorners);
-
-        // Deform geometry with perspective
-        model.traverse((child) => {
-          if (child instanceof THREE.Mesh && child.geometry) {
-            const geometry = child.geometry;
-            geometry.computeBoundingBox();
-            const bbox = geometry.boundingBox!;
-            const min = bbox.min;
-            const max = bbox.max;
-            const depthRange = max.z - min.z;
-
-            const positions = geometry.attributes.position;
-            const uvs = geometry.attributes.uv;
-
-            for (let i = 0; i < positions.count; i++) {
-              const x = positions.getX(i);
-              const y = positions.getY(i);
-              const z = positions.getZ(i);
-
-              // Normalize to [-1, 1] based on model bounds
-              const u = (x - min.x) / (max.x - min.x) * 2 - 1;
-              const v = (y - min.y) / (max.y - min.y) * 2 - 1;
-              const w = (z - min.z) / depthRange; // Depth factor
-
-              // Apply homography (simplified bilinear for now due to H placeholder)
-              const bottomLeft = quadCorners[0];
-              const bottomRight = quadCorners[1];
-              const topRight = quadCorners[2];
-              const topLeft = quadCorners[3];
-
-              const uNorm = (u + 1) / 2; // [0, 1]
-              const vNorm = (v + 1) / 2; // [0, 1]
-
-              const bottom = bottomLeft.clone().lerp(bottomRight, uNorm);
-              const top = topLeft.clone().lerp(topRight, uNorm);
-              let newPos = bottom.clone().lerp(top, vNorm);
-
-              // Estimate depth based on perspective (top smaller = farther)
-              const bottomWidth = quadCorners[1].distanceTo(quadCorners[0]);
-              const topWidth = quadCorners[2].distanceTo(quadCorners[3]);
-              const depthScale = 1 - (vNorm * (1 - topWidth / bottomWidth) * 0.5);
-              newPos.z = z * depthScale;
-
-              positions.setXYZ(i, newPos.x, newPos.y, newPos.z);
-
-              if (uvs) {
-                uvs.setXY(i, uNorm, vNorm);
-              }
-            }
-            positions.needsUpdate = true;
-            if (uvs) uvs.needsUpdate = true;
-            geometry.computeVertexNormals();
-          }
-        });
-
-        // Apply texture
-        const textureLoader = new THREE.TextureLoader();
-        textureLoader.load(
-          "/textures/kids_pattern.png",
-          (texture) => {
-            model.traverse((child) => {
-              if (child instanceof THREE.Mesh) {
-                child.material = new THREE.MeshStandardMaterial({
-                  map: texture,
-                  side: THREE.DoubleSide,
-                });
-                child.material.map!.wrapS = THREE.RepeatWrapping;
-                child.material.map!.wrapT = THREE.RepeatWrapping;
-                child.material.map!.repeat.set(2, 2);
-              }
-            });
-          },
-          undefined,
-          (error) => console.error("Error loading texture:", error)
-        );
-
-        // Reset transformations
-        model.position.set(0, 0, 0);
-        model.rotation.set(0, 0, 0);
-        model.scale.set(0.9, 0.9, 0.9);
-
-        // Rotate to match quad plane
-        const modelNormal = new THREE.Vector3(0, 0, 1);
-        const quaternion = new THREE.Quaternion().setFromUnitVectors(modelNormal, quadNormal);
-        model.quaternion.copy(quaternion);
-
-        // Position at quad center with depth adjustment
-        const bottomWidth = quadCorners[1].distanceTo(quadCorners[0]);
-        const topWidth = quadCorners[2].distanceTo(quadCorners[3]);
-        const depthFactor = (bottomWidth + topWidth) / (2 * bottomWidth);
-        model.position.copy(quadCenter);
-        model.position.z += modelSize.z * depthFactor * 0.5;
-
-        // Adjust camera
-        const cameraDistance = cameraRef.current.position.z - quadCenter.z;
-        const fovFactor = Math.tan((cameraRef.current.fov * Math.PI / 180) / 2);
-        cameraRef.current.position.set(
-          quadCenter.x,
-          quadCenter.y,
-          quadCenter.z + cameraDistance * depthFactor
-        );
-        cameraRef.current.lookAt(quadCenter);
-
-        model.renderOrder = 2;
-        model.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            child.renderOrder = 2;
-            child.material.depthTest = true;
-            child.material.depthWrite = true;
-          }
-        });
-
-        scene.add(model);
-
-        // Add lighting
-        if (!scene.getObjectByName("ambientLight")) {
-          const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
-          ambientLight.name = "ambientLight";
-          scene.add(ambientLight);
+  
+    const modelData = preloadedModelsRef.current.get(modelUrl);
+    if (!modelData) {
+      console.error(`[createModelBox] Model not found for ${modelUrl}`);
+      return;
+    }
+  
+    const blindType = BLIND_TYPES.find((b) => b.modelUrl === modelUrl) || BLIND_TYPES[0];
+    const model = modelData.model.clone();
+    modelRef.current = model;
+  
+    console.log(`[createModelBox] Loading ${blindType.type} (${modelUrl})`);
+  
+    // Order corners: bottom-left, bottom-right, top-right, top-left
+    const orderedCorners = [...corners];
+    orderedCorners.sort((a, b) => a.y - b.y);
+    const bottomCorners = orderedCorners.slice(0, 2);
+    const topCorners = orderedCorners.slice(2, 4);
+    bottomCorners.sort((a, b) => a.x - b.x);
+    topCorners.sort((a, b) => a.x - b.x);
+    const quadCorners = [bottomCorners[0], bottomCorners[1], topCorners[1], topCorners[0]];
+  
+    const quadCenter = new THREE.Vector3();
+    quadCorners.forEach((corner) => quadCenter.add(corner));
+    quadCenter.divideScalar(4);
+  
+    const v1 = new THREE.Vector3().subVectors(quadCorners[1], quadCorners[0]);
+    const v2 = new THREE.Vector3().subVectors(quadCorners[3], quadCorners[0]);
+    const quadNormal = new THREE.Vector3().crossVectors(v1, v2).normalize();
+  
+    const box = new THREE.Box3().setFromObject(model);
+    const modelSize = new THREE.Vector3();
+    box.getSize(modelSize);
+  
+    // Deform geometry
+    model.traverse((child) => {
+      if (isMesh(child) && child.geometry) {
+        const geometry = child.geometry.clone();
+        geometry.computeBoundingBox();
+        const bbox = geometry.boundingBox!;
+        let min = bbox.min.clone();
+        let max = bbox.max.clone();
+  
+        let width = max.x - min.x || 0.01;
+        let height = max.y - min.y || 0.01;
+        let depth = max.z - min.z || 0.01;
+  
+        console.log(`[Deform] ${child.name || "Unnamed"} in ${blindType.type}:`);
+        console.log(`  BBox Before: min(${min.x.toFixed(2)}, ${min.y.toFixed(2)}, ${min.z.toFixed(2)}), max(${max.x.toFixed(2)}, ${max.y.toFixed(2)}, ${max.z.toFixed(2)})`);
+  
+        // Detect and correct orientation
+        const dims = { x: width, y: height, z: depth };
+        const sortedDims = Object.entries(dims).sort((a, b) => b[1] - a[1]);
+        let uAxis = 'x', vAxis = 'y', depthAxis = 'z';
+        if (sortedDims[0][0] === 'z' && sortedDims[1][0] === 'x') { // X/Z plane (Roller Blind)
+          console.log(`  Rotating X/Z to X/Y`);
+          geometry.rotateX(Math.PI / 2); // Z becomes Y, Y becomes -Z
+          geometry.computeBoundingBox();
+          min = geometry.boundingBox!.min.clone();
+          max = geometry.boundingBox!.max.clone();
+          width = max.x - min.x || 0.01;
+          height = max.y - min.y || 0.01;
+          depth = max.z - min.z || 0.01;
+        } else if (sortedDims[0][0] === 'z' && sortedDims[1][0] === 'y') { // Y/Z plane
+          console.log(`  Rotating Y/Z to X/Y`);
+          geometry.rotateY(Math.PI / 2); // Adjust as needed
+          geometry.computeBoundingBox();
+          min = geometry.boundingBox!.min.clone();
+          max = geometry.boundingBox!.max.clone();
+          width = max.x - min.x || 0.01;
+          height = max.y - min.y || 0.01;
+          depth = max.z - min.z || 0.01;
         }
-        if (!scene.getObjectByName("directionalLight")) {
-          const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
-          directionalLight.position.set(0, 0, 5);
-          directionalLight.name = "directionalLight";
-          scene.add(directionalLight);
+  
+        // Normalize huge scales (e.g., Vertical Blind)
+        const maxDim = Math.max(width, height, depth);
+        const scaleFactor = maxDim > 100 ? 50 / maxDim : 1; // Scale to Roman Blind size (~50 units)
+        if (scaleFactor !== 1) {
+          console.log(`  Scaling by ${scaleFactor.toFixed(3)}`);
+          geometry.scale(scaleFactor, scaleFactor, scaleFactor);
+          min.multiplyScalar(scaleFactor);
+          max.multiplyScalar(scaleFactor);
+          width *= scaleFactor;
+          height *= scaleFactor;
+          depth *= scaleFactor;
         }
-
-        rendererRef.current?.render(sceneRef.current, cameraRef.current);
-      },
-      undefined,
-      (error) => {
-        console.error("Error loading model:", error);
-        setInstruction("Failed to load model.");
+  
+        console.log(`  BBox After: min(${min.x.toFixed(2)}, ${min.y.toFixed(2)}, ${min.z.toFixed(2)}), max(${max.x.toFixed(2)}, ${max.y.toFixed(2)}, ${max.z.toFixed(2)})`);
+  
+        const positions = geometry.attributes.position;
+        const uvs = geometry.attributes.uv;
+  
+        // Log original vertices
+        for (let i = 0; i < Math.min(5, positions.count); i++) {
+          console.log(`  Original Vertex ${i}: (${positions.getX(i).toFixed(2)}, ${positions.getY(i).toFixed(2)}, ${positions.getZ(i).toFixed(2)})`);
+        }
+  
+        for (let i = 0; i < positions.count; i++) {
+          const x = positions.getX(i);
+          const y = positions.getY(i);
+          const z = positions.getZ(i);
+  
+          const uNorm = (x - min.x) / width;
+          const vNorm = (y - min.y) / height;
+          const depthVal = (z - min.z) / depth;
+  
+          const uClamped = Math.max(0, Math.min(1, uNorm));
+          const vClamped = Math.max(0, Math.min(1, vNorm));
+  
+          const bottom = quadCorners[0].clone().lerp(quadCorners[1], uClamped);
+          const top = quadCorners[3].clone().lerp(quadCorners[2], uClamped);
+          let newPos = bottom.clone().lerp(top, vClamped);
+  
+          const bottomWidth = quadCorners[1].distanceTo(quadCorners[0]);
+          const topWidth = quadCorners[2].distanceTo(quadCorners[3]);
+          const depthScale = bottomWidth === 0 ? 1 : 1 - (vClamped * (1 - topWidth / bottomWidth) * 0.5);
+          newPos.z = quadCenter.z + (depthVal - 0.5) * depth * depthScale;
+  
+          positions.setXYZ(i, newPos.x, newPos.y, newPos.z);
+          if (uvs) uvs.setXY(i, uClamped, vClamped);
+        }
+  
+        // Log deformed vertices
+        for (let i = 0; i < Math.min(5, positions.count); i++) {
+          console.log(`  Deformed Vertex ${i}: (${positions.getX(i).toFixed(2)}, ${positions.getY(i).toFixed(2)}, ${positions.getZ(i).toFixed(2)})`);
+        }
+  
+        positions.needsUpdate = true;
+        if (uvs) uvs.needsUpdate = true;
+        geometry.computeVertexNormals();
+        child.geometry = geometry;
       }
-    );
+    });
+  
+    applyTextureToModel(model, selectedPattern || PATTERNS[0].patternUrl, blindType);
+  
+    const modelNormal = new THREE.Vector3(0, 0, 1);
+    const quaternion = new THREE.Quaternion().setFromUnitVectors(modelNormal, quadNormal);
+    model.quaternion.copy(quaternion);
+    model.position.copy(quadCenter);
+    model.position.z += modelSize.z * (blindType.depthFactor || 0);
+  
+    const cameraDistance = cameraRef.current.position.z - quadCenter.z;
+    cameraRef.current.position.set(quadCenter.x, quadCenter.y, quadCenter.z + cameraDistance);
+    cameraRef.current.lookAt(quadCenter);
+    cameraRef.current.updateProjectionMatrix();
+  
+    if (isInitial) {
+      quadParamsRef.current = {
+        corners: quadCorners.map((corner) => corner.clone()),
+        normal: quadNormal.clone(),
+        center: quadCenter.clone(),
+        cameraPosition: cameraRef.current.position.clone(),
+      };
+    } else if (quadParamsRef.current) {
+      model.position.copy(quadParamsRef.current.center);
+      model.quaternion.copy(quaternion);
+      model.position.z += modelSize.z * (blindType.depthFactor || 0);
+      cameraRef.current.position.copy(quadParamsRef.current.cameraPosition);
+      cameraRef.current.lookAt(quadParamsRef.current.center);
+      cameraRef.current.updateProjectionMatrix();
+    }
+  
+    model.renderOrder = 2;
+    model.traverse((child) => {
+      if (isMesh(child)) {
+        child.renderOrder = 2;
+        child.material.depthTest = true;
+        child.material.depthWrite = true;
+      }
+    });
+  
+    scene.add(model);
+    renderScene();
+  };
+
+  // Apply texture to the model based on blind type
+  const applyTextureToModel = (model: THREE.Group, patternUrl: string, blindType: BlindType) => {
+    const textureLoader = new THREE.TextureLoader();
+    const applyMaterial = (
+      textureUrl: string,
+      normalUrl: string | null,
+      repeat: number,
+      normalScale: number,
+      roughness: number,
+      metalness: number,
+      meshName?: string
+    ) => {
+      const texture = textureLoader.load(textureUrl);
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(repeat, repeat);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      const materialProps: THREE.MeshStandardMaterialParameters = {
+        map: texture,
+        roughness,
+        metalness,
+        side: THREE.DoubleSide,
+      };
+      if (normalUrl) {
+        materialProps.normalMap = textureLoader.load(normalUrl);
+        materialProps.normalScale = new THREE.Vector2(normalScale, normalScale);
+      }
+      const material = new THREE.MeshStandardMaterial(materialProps);
+      model.traverse((child) => {
+        if (isMesh(child) && (!meshName || child.name === meshName)) {
+          if (Array.isArray(child.material)) {
+            child.material = child.material.map(() => material);
+          } else {
+            child.material = material;
+          }
+          (child.material as THREE.MeshStandardMaterial).needsUpdate = true;
+        }
+      });
+    };
+
+    if (!blindType.meshNameFabric && !blindType.meshNameWood) {
+      applyMaterial(patternUrl, null, 4, 0, 0.5, 0.1);
+    } else {
+      if (blindType.meshNameFabric) applyMaterial(patternUrl, "/3d/normals/clothTex.jpg", 6, 0.5, 0.3, 0.1, blindType.meshNameFabric);
+      if (blindType.meshNameWood) applyMaterial("/materials/beige.png", "/3d/normals/wood.jpg", 1, 0.5, 0.3, 0.1, blindType.meshNameWood);
+    }
+    renderScene();
+
+    console.log(`[applyTextureToModel] Applied texture ${patternUrl} to ${blindType.type}`);
   };
 
   const handleButtonClick = () => {
@@ -442,18 +541,14 @@ const FilterPageAI: React.FC = () => {
   const startCameraStream = async () => {
     setInstruction("Point your camera and click 'Capture'.");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
       cameraStreamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play().then(() => {
-          setButtonText("Capture");
-        });
+        videoRef.current.play().then(() => setButtonText("Capture"));
       }
     } catch (err) {
-      console.error("Camera error:", err);
+      console.error("[startCameraStream] Camera error:", err);
       setInstruction("Failed to access camera. Upload an image instead.");
     }
   };
@@ -466,7 +561,7 @@ const FilterPageAI: React.FC = () => {
       scene.remove(windowBoxRef.current);
       windowBoxRef.current.geometry.dispose();
       if (Array.isArray(windowBoxRef.current.material)) {
-        windowBoxRef.current.material.forEach((material) => material.dispose());
+        windowBoxRef.current.material.forEach((mat) => mat.dispose());
       } else {
         windowBoxRef.current.material.dispose();
       }
@@ -475,7 +570,7 @@ const FilterPageAI: React.FC = () => {
       scene.remove(corner);
       corner.geometry.dispose();
       if (Array.isArray(corner.material)) {
-        corner.material.forEach((material) => material.dispose());
+        corner.material.forEach((mat) => mat.dispose());
       } else {
         corner.material.dispose();
       }
@@ -499,19 +594,14 @@ const FilterPageAI: React.FC = () => {
     shape.closePath();
 
     const geometry = new THREE.ShapeGeometry(shape);
-    const material = new THREE.MeshBasicMaterial({
-      color: 0xff0000,
-      opacity: 0.4,
-      transparent: true,
-      side: THREE.DoubleSide,
-    });
+    const material = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.4, transparent: true, side: THREE.DoubleSide });
     const box = new THREE.Mesh(geometry, material);
     box.position.z = 0.01;
     scene.add(box);
     windowBoxRef.current = box;
 
     const cornerGeometry = new THREE.SphereGeometry(0.01 * planeWidth, 16, 16);
-    const cornerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const cornerMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
     defaultCorners.forEach((pos) => {
       const corner = new THREE.Mesh(cornerGeometry, cornerMaterial);
       corner.position.set(pos.x, pos.y, 0.03);
@@ -525,6 +615,7 @@ const FilterPageAI: React.FC = () => {
     return new Promise((resolve) => {
       const textureLoader = new THREE.TextureLoader();
       textureLoader.load(imageData, (texture) => {
+        texture.colorSpace = THREE.SRGBColorSpace;
         sceneRef.current.background = texture;
         drawDefaultQuadrilateral(window.innerWidth, window.innerHeight);
         resolve();
@@ -560,7 +651,6 @@ const FilterPageAI: React.FC = () => {
       const imageData = e.target?.result as string;
       setCapturedImage(imageData);
       setButtonText("Submit");
-
       await setBackgroundImage(imageData);
     };
     reader.readAsDataURL(file);
@@ -580,7 +670,7 @@ const FilterPageAI: React.FC = () => {
     const dataUrl = rendererRef.current.domElement.toDataURL("image/png");
     const link = document.createElement("a");
     link.href = dataUrl;
-    link.download = "window_with_blind.png";
+    link.download = "custom_blind_image.png";
     link.click();
   };
 
@@ -589,75 +679,44 @@ const FilterPageAI: React.FC = () => {
     setShowBlindMenu(true);
     setIsCustomizerView(true);
 
-    const scene = sceneRef.current;
-    const positions = cornerRefs.current.map((corner) =>
-      new THREE.Vector3(corner.position.x, corner.position.y, 0)
-    );
-
-    // Use the selected blind type's model path, default to shadeBake if none selected
-    const selectedType = blindTypes.find((bt) => bt.type === selectedBlindType);
-    const modelPath = selectedType ? selectedType.modelPath : blindTypes[0].modelPath;
-    createModelBox(positions, modelPath);
+    const positions = cornerRefs.current.map((corner) => new THREE.Vector3(corner.position.x, corner.position.y, 0));
+    createModelBox(positions, BLIND_TYPES.find((b) => b.type === selectedBlindType)!.modelUrl, true);
 
     if (windowBoxRef.current) {
-      scene.remove(windowBoxRef.current);
-      windowBoxRef.current.geometry.dispose();
-      if (Array.isArray(windowBoxRef.current.material)) {
-        windowBoxRef.current.material.forEach((material) => material.dispose());
-      } else {
-        windowBoxRef.current.material.dispose();
-      }
+      sceneRef.current.remove(windowBoxRef.current);
       windowBoxRef.current = null;
     }
-    cornerRefs.current.forEach((corner) => {
-      scene.remove(corner);
-      corner.geometry.dispose();
-      if (Array.isArray(corner.material)) {
-        corner.material.forEach((material) => material.dispose());
-      } else {
-        corner.material.dispose();
-      }
-    });
+    cornerRefs.current.forEach((corner) => sceneRef.current.remove(corner));
     cornerRefs.current = [];
   };
 
   const selectBlindType = (type: string) => {
     setSelectedBlindType(type);
-    const selectedType = blindTypes.find((bt) => bt.type === type);
-    if (selectedType && isCustomizerView) {
-      const positions = cornerRefs.current.map((corner) =>
-        new THREE.Vector3(corner.position.x, corner.position.y, 0)
-      );
-      createModelBox(positions, selectedType.modelPath);
+    if (isCustomizerView && quadParamsRef.current) {
+      const blindType = BLIND_TYPES.find((b) => b.type === type);
+      if (blindType) {
+        console.log(`[selectBlindType] Switching to ${type}`);
+        createModelBox(quadParamsRef.current.corners, blindType.modelUrl, false);
+      }
     }
   };
 
   const selectPattern = (patternUrl: string) => {
     setSelectedPattern(patternUrl);
     if (modelRef.current) {
-      const textureLoader = new THREE.TextureLoader();
-      textureLoader.load(patternUrl, (texture) => {
-        modelRef.current!.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            child.material = new THREE.MeshStandardMaterial({
-              map: texture,
-              side: THREE.DoubleSide,
-            });
-            child.material.map!.wrapS = THREE.RepeatWrapping;
-            child.material.map!.wrapT = THREE.RepeatWrapping;
-            child.material.map!.repeat.set(2, 2);
-          }
-        });
-        rendererRef.current?.render(sceneRef.current, cameraRef.current!);
-      });
+      applyTextureToModel(modelRef.current, patternUrl, BLIND_TYPES.find((b) => b.type === selectedBlindType) || BLIND_TYPES[0]);
     }
   };
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setFilters((prev) =>
-      e.target.checked ? [...prev, value] : prev.filter((tag) => tag !== value)
-    );
+    setFilters((prev) => (e.target.checked ? [...prev, value] : prev.filter((tag) => tag !== value)));
+  };
+
+  const renderScene = () => {
+    if (rendererRef.current && cameraRef.current) {
+      rendererRef.current.render(sceneRef.current, cameraRef.current);
+    }
   };
 
   return (
@@ -665,32 +724,32 @@ const FilterPageAI: React.FC = () => {
       className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto"
       style={{
         fontFamily: "Poppins, sans-serif",
-        backgroundColor: capturedImage || isCustomizerView ? "#FFFFFF" : "transparent",
+        background: !capturedImage && !isCustomizerView ? "url('/images/unsplashMain.jpeg') center/cover no-repeat" : "#FFFFFF",
       }}
     >
       <div ref={mountRef} className="relative w-full h-auto min-h-screen">
-        <video
-          ref={videoRef}
-          playsInline
-          muted
-          className="absolute inset-0 w-full h-full object-cover z-[10]"
-        />
+        <video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover z-[10]" />
       </div>
       {instruction && (
         <div className="fixed top-32 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 p-2 rounded shadow-md z-[100] text-brown-800 text-lg">
           {instruction}
         </div>
       )}
+      {isLoading && (
+        <div className="fixed inset-0 flex items-center justify-center z-[50] bg-black bg-opacity-50">
+          <div className="text-white text-lg">Loading...</div>
+        </div>
+      )}
       <button
         onClick={handleButtonClick}
-        className="fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100]"
+        className="fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300"
       >
         {buttonText}
       </button>
       {!capturedImage && (
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100]"
+          className="fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300"
         >
           Upload Image
         </button>
@@ -698,59 +757,68 @@ const FilterPageAI: React.FC = () => {
       {isCustomizerView && (
         <button
           onClick={saveImage}
-          className="fixed bottom-16 right-5 py-3 px-6 text-lg bg-[#2F3526] text-white rounded-lg shadow-md hover:bg-[#3F4536] z-[100]"
+          className="fixed bottom-16 right-5 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300"
         >
           Save Image
         </button>
       )}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="image/*"
-        className="hidden"
-        onChange={handleImageUpload}
-      />
+      <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleImageUpload} />
       {showBlindMenu && isCustomizerView && (
-        <div className="relative max-w-7xl mx-auto p-4 flex flex-col items-start justify-center gap-4 min-h-screen">
-          <div className="w-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
-            <h3 className="bg-white p-2 text-left text-sm text-gray-700">Select Type of Blind</h3>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5">
-              {blindTypes.map(({ type, buttonImage }) => (
-                <div
-                  key={type}
-                  className="flex flex-col items-center cursor-pointer"
-                  onClick={() => selectBlindType(type)}
-                >
+        <div className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen">
+          <div className="w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
+            <h3 className="bg-white p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Select Type of Blind</h3>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
+              {BLIND_TYPES.map(({ type, buttonImage }) => (
+                <div key={type} className="flex flex-col items-center text-center cursor-pointer px-[5px]" onClick={() => selectBlindType(type)}>
                   <img
                     src={buttonImage}
                     alt={`${type} Blind`}
-                    className="w-14 h-14 rounded shadow-md hover:scale-105 transition"
+                    className="w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
                   />
-                  <div className="mt-1 text-gray-700 text-[11px]">{type}</div>
+                  <div className="mt-1 text-gray-700 text-[11px]">{type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}</div>
                 </div>
               ))}
             </div>
           </div>
-          <div className="w-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
-            <h3 className="bg-white p-2 text-left text-sm text-gray-700">Available Patterns</h3>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5">
-              {filteredPatterns.map((pattern, index) => (
-                <div
-                  key={index}
-                  className="flex flex-col items-center cursor-pointer"
-                  onClick={() => selectPattern(pattern.image)}
-                >
-                  <img
-                    src={pattern.image}
-                    alt={pattern.name}
-                    className="w-12 h-12 rounded shadow-md hover:scale-105 transition"
-                  />
-                  <div className="flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
-                    <span>{pattern.name}</span>
-                    <span>{pattern.price}</span>
+          <div className="w-full md:w-3/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
+            <div className="p-2 bg-white rounded shadow">
+              <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mx-5 text-[13px]">
+                {["solid", "pattern", "solar", "kids", "natural"].map((filter) => (
+                  <label key={filter} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      value={filter}
+                      checked={filters.includes(filter)}
+                      onChange={handleFilterChange}
+                      className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer"
+                    />
+                    {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col flex-1 max-h-[400px] bg-white">
+              <h3 className="bg-white pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Available Patterns</h3>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
+                {filteredPatterns.map((pattern, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
+                    onClick={() => selectPattern(pattern.patternUrl)}
+                  >
+                    <img
+                      src={pattern.image}
+                      alt={pattern.name}
+                      className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
+                    />
+                    <div className="flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
+                      <span className="truncate">{pattern.name}</span>
+                      <span>{pattern.price}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -759,4 +827,4 @@ const FilterPageAI: React.FC = () => {
   );
 };
 
-export default FilterPageAI;
+export default FilterPageMerged;
