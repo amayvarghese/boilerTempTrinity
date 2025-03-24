@@ -108,7 +108,7 @@ const FilterPageAI: React.FC = () => {
 
     const camera = new THREE.PerspectiveCamera(45, screenWidth / screenHeight, 0.01, 2000);
     cameraRef.current = camera;
-    updateCameraPosition(screenWidth, screenHeight);
+    updateCameraPosition(screenHeight);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -174,7 +174,7 @@ const FilterPageAI: React.FC = () => {
         rendererRef.current.setSize(newWidth, newHeight);
         cameraRef.current.aspect = newWidth / newHeight;
         cameraRef.current.updateProjectionMatrix();
-        updateCameraPosition(newWidth, newHeight);
+        updateCameraPosition(newHeight);
       }
     };
     window.addEventListener("resize", handleResize);
@@ -250,7 +250,7 @@ const FilterPageAI: React.FC = () => {
   };
 
   // Update camera position based on screen size
-  const updateCameraPosition = (width: number, height: number) => {
+  const updateCameraPosition = (height: number) => {
     if (!cameraRef.current) return;
     const fovRad = cameraRef.current.fov * (Math.PI / 180);
     const distance = (height / 100 / 2) / Math.tan(fovRad / 2);
