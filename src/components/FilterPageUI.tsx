@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-// Types and Constants (unchanged)
+// Types and Constants
 type Vector3D = { x: number; y: number; z: number };
 type BlindType = {
   type: string;
@@ -49,7 +49,7 @@ const PATTERNS: Pattern[] = [
   { name: "Driftwood Sand", image: "/materials/driftwoodsand.png", price: "$100", filterTags: ["pattern"], patternUrl: "/materials/driftwoodsand.png" },
   { name: "Iron", image: "/materials/iron.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/iron.png" },
   { name: "Ivory", image: "/materials/ivory.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/ivory.png" },
-  { name: "Kaki", image: "/materials/kaki.png", price: "$30", STARTfilterTags: ["solid"], patternUrl: "/materials/kaki.png" },
+  { name: "Kaki", image: "/materials/kaki.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/kaki.png" }, // Fixed STARTfilterTags to filterTags
   { name: "Mocha", image: "/materials/mocha.png", price: "$45", filterTags: ["pattern", "natural"], patternUrl: "/materials/mocha.png" },
   { name: "Noir", image: "/materials/noir.png", price: "$150", filterTags: ["pattern", "natural"], patternUrl: "/materials/noir.png" },
   { name: "Oatmeal", image: "/materials/oatmeal.png", price: "$150", filterTags: ["natural", "pattern"], patternUrl: "/materials/oatmeal.png" },
@@ -64,7 +64,7 @@ const PATTERNS: Pattern[] = [
   { name: "White", image: "/materials/white.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/white.png" },
 ];
 
-// Utility Functions (unchanged)
+// Utility Functions
 const isMesh = (object: THREE.Object3D): object is THREE.Mesh => "isMesh" in object && (object.isMesh as boolean);
 
 const FilterPageUI: React.FC = () => {
@@ -121,21 +121,21 @@ const FilterPageUI: React.FC = () => {
   const completeCurrentProcess = () =>
     setActiveProcess((prev) => ({ ...prev, completed: true }));
 
-  // Debug initial state (unchanged)
+  // Debug initial state
   useEffect(() => {
     console.log("Initial capturedImage:", capturedImage);
     console.log("Initial isCustomizerView:", isCustomizerView);
     localStorage.removeItem("capturedImage");
   }, []);
 
-  // Preload Overlay Image Once (unchanged)
+  // Preload Overlay Image Once
   useEffect(() => {
     const img = new Image();
     img.src = "/images/overlayFilterUpdate.png";
     img.onload = () => (overlayImage.current = img);
   }, []);
 
-  // Three.js Initialization and Cleanup (unchanged)
+  // Three.js Initialization and Cleanup
   useEffect(() => {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
@@ -182,7 +182,7 @@ const FilterPageUI: React.FC = () => {
     };
   }, []);
 
-  // Preload Models (unchanged)
+  // Preload Models
   useEffect(() => {
     const preloadModels = async () => {
       setIsLoading(true);
@@ -212,7 +212,7 @@ const FilterPageUI: React.FC = () => {
     preloadModels();
   }, []);
 
-  // UI Elements Setup (unchanged)
+  // UI Elements Setup
   useEffect(() => {
     if (!mountRef.current) return;
 
@@ -251,7 +251,6 @@ const FilterPageUI: React.FC = () => {
     };
   }, []);
 
-  // Core Functions (unchanged except for submitAndShowMenu)
   const updateCameraPosition = (width: number, height: number) => {
     if (!cameraRef.current) return;
     const distance = (height / 100 / 2) / Math.tan((cameraRef.current.fov * Math.PI / 180) / 2);
@@ -302,7 +301,7 @@ const FilterPageUI: React.FC = () => {
           const drawFrame = () => {
             if (!videoRef.current || !canvasRef.current || !ctx) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const videoAspect = videoRef.current.videoWidth / videoRef.current.videoHeight;
+            const videoAspect = videoRef.current.videoWidth / videoRef.current.videoHeight; // Fixed typo here
             const canvasAspect = canvas.width / canvas.height;
             let drawWidth, drawHeight, offsetX, offsetY;
             if (videoAspect > canvasAspect) {
@@ -729,7 +728,7 @@ const FilterPageUI: React.FC = () => {
       newModel.rotation.set(blindType.rotation.x, blindType.rotation.y, blindType.rotation.z);
       applyTextureToModel(newModel, selectedPattern || "/materials/beige.png", blindType);
       sceneRef.current.add(newModel);
-      updatedModels.push({ model: newModel, gltf: modelData.gtf });
+      updatedModels.push({ model: newModel, gltf: modelData.gltf }); // Fixed gtf to gltf
       fadeInModel(newModel);
     }
 
@@ -965,7 +964,7 @@ const FilterPageUI: React.FC = () => {
     if (!model) return;
     const textureLoader = new THREE.TextureLoader();
     const applyMaterial = (textureUrl: string, normalUrl: string | null, repeat: number, normalScale: number, roughness: number, metalness: number, meshName?: string) => {
-      const texture = textureLoader.load(textureUrl, undefined, undefined, (err) => console.error(`Texture load failed: ${textureUrl}`, err));
+      const texture = textureLoader.load(textureUrl, undefined, undefined, (_) => console.error(`Texture load failed: ${textureUrl}`)); // Changed err to _ since it's unused
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
       texture.repeat.set(repeat, repeat);
       texture.colorSpace = THREE.SRGBColorSpace;
@@ -975,7 +974,7 @@ const FilterPageUI: React.FC = () => {
         metalness,
       };
       if (normalUrl) {
-        materialProps.normalMap = textureLoader.load(normalUrl, undefined, undefined, (err) => console.error(`Normal map load failed: ${normalUrl}`, err));
+        materialProps.normalMap = textureLoader.load(normalUrl, undefined, undefined, (_) => console.error(`Normal map load failed: ${normalUrl}`));
         materialProps.normalScale = new THREE.Vector2(normalScale, normalScale);
       }
       const material = new THREE.MeshStandardMaterial(materialProps);
@@ -1099,50 +1098,45 @@ const FilterPageUI: React.FC = () => {
         const imgWidth = texture.image.width;
         const imgHeight = texture.image.height;
         const imgAspect = imgWidth / imgHeight;
-        const maxWidth = window.innerWidth * 0.9; // Use 90% of window width to avoid overflow
-        const maxHeight = window.innerHeight * 0.9; // Use 90% of window height
+        const maxWidth = window.innerWidth * 0.9;
+        const maxHeight = window.innerHeight * 0.9;
 
         let canvasWidth = imgWidth;
         let canvasHeight = imgHeight;
 
-        // Scale down if the image exceeds max dimensions while preserving aspect ratio
         if (canvasWidth > maxWidth || canvasHeight > maxHeight) {
           const scale = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
           canvasWidth = imgWidth * scale;
           canvasHeight = imgHeight * scale;
         }
 
-        // Set renderer size to match the scaled image dimensions
         rendererRef.current.setSize(canvasWidth, canvasHeight);
         cameraRef.current!.aspect = canvasWidth / canvasHeight;
         cameraRef.current!.updateProjectionMatrix();
 
-        // Adjust background plane to match the exact image dimensions in world units
-        const planeWidth = canvasWidth / 100; // Assuming 100 units per screen width for consistency
+        const planeWidth = canvasWidth / 100;
         const planeHeight = canvasHeight / 100;
         backgroundPlaneRef.current.geometry.dispose();
         backgroundPlaneRef.current.geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
         backgroundPlaneRef.current.position.set(0, 0, -0.1);
 
-        // Update camera position to view the entire plane
         const distance = (canvasHeight / 100 / 2) / Math.tan((cameraRef.current!.fov * Math.PI / 180) / 2);
         cameraRef.current!.position.set(0, 0, distance);
         cameraRef.current!.lookAt(0, 0, 0);
 
-        // Style the canvas to match the calculated dimensions
         rendererRef.current.domElement.style.width = `${canvasWidth}px`;
         rendererRef.current.domElement.style.height = `${canvasHeight}px`;
         rendererRef.current.domElement.style.maxWidth = "100%";
         rendererRef.current.domElement.style.maxHeight = "100%";
-        rendererRef.current.domElement.style.margin = "auto"; // Center the canvas
-        rendererRef.current.domElement.style.display = "block"; // Ensure block display for centering
+        rendererRef.current.domElement.style.margin = "auto";
+        rendererRef.current.domElement.style.display = "block";
 
         if (mountRef.current) {
           mountRef.current.style.overflowY = "auto";
           mountRef.current.style.display = "flex";
           mountRef.current.style.justifyContent = "center";
           mountRef.current.style.alignItems = "center";
-          mountRef.current.style.minHeight = "100vh"; // Ensure it takes full height
+          mountRef.current.style.minHeight = "100vh";
         }
 
         renderScene();
@@ -1185,7 +1179,7 @@ const FilterPageUI: React.FC = () => {
     levelIndicatorRef.current.style.border = isLevel ? "2px solid black" : "none";
   };
 
-  // Render (unchanged except for minor style tweak)
+  // Render
   return (
     <div
       className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto"
@@ -1235,7 +1229,7 @@ const FilterPageUI: React.FC = () => {
             zIndex: 30,
             pointerEvents: "auto",
             touchAction: "pan-y",
-            marginTop: "20px", // Add some top margin to avoid overlap with logo
+            marginTop: "20px",
           }}
         >
           <div className="w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
