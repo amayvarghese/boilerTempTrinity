@@ -31,13 +31,13 @@ type SelectionBoxParams = {
 type InitialModelParams = { scale: THREE.Vector3; position: THREE.Vector3 };
 
 const BLIND_TYPES: BlindType[] = [
-  { type: "classicRoman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/classicRoman.glb", meshNameFabric: "Gray_2_Blind", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: -45, y: -25, z: 10 } },
-  { type: "roller", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/3d/ROLLER_SHADES.glb", meshNameFabric: "ROLLER_SHADES", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2.1, z: 1 }, basePosition: { x: -45.5, y: -30, z: 5 } },
+  { type: "classicRoman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/classicRoman.glb", meshNameFabric: "Gray_2_Blind", meshNameWood:"Cube", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: -45, y: -25, z: 10 } },
+  { type: "roller", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/3d/ROLLER_SHADES.glb", meshNameFabric: "ROLLER_SHADES",  meshNameWood:"Cube",rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2.1, z: 1 }, basePosition: { x: -45.5, y: -30, z: 5 } },
   { type: "roman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/ROMAN_SHADES_01.glb", meshNameFabric: "polySurface1", meshNameWood: "polySurface3", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
-  { type: "Sheet Blind", buttonImage: "/images/blindTypes/sheetBlindIcon.png", modelUrl: "/3d/sheetBlind.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 2 }, basePosition: { x: -45, y: -28, z: 10 } },
+  { type: "Sheet Blind", buttonImage: "/images/blindTypes/sheetBlindIcon.png", modelUrl: "/models/curtainBlindN.glb", meshNameFabric: "Cloth", meshNameWood: "Rod", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 2 }, basePosition: { x: -45, y: -28, z: 10 } },
   { type: "PlantationShutter", buttonImage: "/images/blindTypes/plantationShutterIcon.png", modelUrl: "/3d/PlantationShutter.glb", meshNameWood: "PLANTATION__SHUTTER", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2, z: 1 }, basePosition: { x: -46, y: -27, z: 5 } },
-  { type: "VerticalBlind", buttonImage: "/images/blindTypes/verticalSheetBlindIcon.png", modelUrl: "/3d/vertical_sheet_blinds_02.glb", meshNameWood: "polySurface32.001", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.45, y: 2.1, z: 1 }, basePosition: { x: -45, y: -28, z: 5 } },
-  { type: "zebraBlinds", buttonImage: "/images/blindTypes/zebraBlindIcon.png", modelUrl: "/3d/zebra_blinds.glb", meshNameWood: "zebra_blinds", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
+  { type: "VerticalBlind", buttonImage: "/images/blindTypes/verticalSheetBlindIcon.png", modelUrl: "/3d/VerticalSheet.glb", meshNameWood: "polySurface32.001", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.45, y: 2.1, z: 1 }, basePosition: { x: -45, y: -28, z: 5 } },
+  { type: "zebraBlinds", buttonImage: "/images/blindTypes/zebraBlindIcon.png", modelUrl: "/3d/zebra_blinds.glb",  meshNameWood:"Cube", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
 ];
 
 const PATTERNS: Pattern[] = [
@@ -49,7 +49,7 @@ const PATTERNS: Pattern[] = [
   { name: "Driftwood Sand", image: "/materials/driftwoodsand.png", price: "$100", filterTags: ["pattern"], patternUrl: "/materials/driftwoodsand.png" },
   { name: "Iron", image: "/materials/iron.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/iron.png" },
   { name: "Ivory", image: "/materials/ivory.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/ivory.png" },
-  { name: "Kaki", image: "/materials/kaki.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/kaki.png" },
+  { name: "Kaki", image: "/materials/kaki.png", price: "$30", STARTfilterTags: ["solid"], patternUrl: "/materials/kaki.png" },
   { name: "Mocha", image: "/materials/mocha.png", price: "$45", filterTags: ["pattern", "natural"], patternUrl: "/materials/mocha.png" },
   { name: "Noir", image: "/materials/noir.png", price: "$150", filterTags: ["pattern", "natural"], patternUrl: "/materials/noir.png" },
   { name: "Oatmeal", image: "/materials/oatmeal.png", price: "$150", filterTags: ["natural", "pattern"], patternUrl: "/materials/oatmeal.png" },
@@ -68,12 +68,12 @@ const PATTERNS: Pattern[] = [
 const isMesh = (object: THREE.Object3D): object is THREE.Mesh => "isMesh" in object && (object.isMesh as boolean);
 
 const FilterPageUI: React.FC = () => {
-  // State and Refs
+  // State and Refs (unchanged)
   const [showBlindMenu, setShowBlindMenu] = useState(false);
   const [selectedBlindType, setSelectedBlindType] = useState<string | null>(null);
   const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
   const [filters, setFilters] = useState<string[]>([]);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null); // Changed to null instead of localStorage
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isCustomizerView, setIsCustomizerView] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -121,11 +121,10 @@ const FilterPageUI: React.FC = () => {
   const completeCurrentProcess = () =>
     setActiveProcess((prev) => ({ ...prev, completed: true }));
 
-  // Debug initial state
+  // Debug initial state (unchanged)
   useEffect(() => {
     console.log("Initial capturedImage:", capturedImage);
     console.log("Initial isCustomizerView:", isCustomizerView);
-    // Optionally clear localStorage to ensure fresh start
     localStorage.removeItem("capturedImage");
   }, []);
 
@@ -252,7 +251,7 @@ const FilterPageUI: React.FC = () => {
     };
   }, []);
 
-  // Core Functions (unchanged except for render)
+  // Core Functions (unchanged except for submitAndShowMenu)
   const updateCameraPosition = (width: number, height: number) => {
     if (!cameraRef.current) return;
     const distance = (height / 100 / 2) / Math.tan((cameraRef.current.fov * Math.PI / 180) / 2);
@@ -413,13 +412,6 @@ const FilterPageUI: React.FC = () => {
       plane.position.set(0, 0, -0.1);
       sceneRef.current.add(plane);
       updateCameraPosition(width, height);
-      if (isCustomizerView && rendererRef.current) {
-        const canvasWidth = window.innerWidth;
-        const canvasHeight = planeHeight * (canvasWidth / planeWidth);
-        rendererRef.current.setSize(canvasWidth, canvasHeight);
-        rendererRef.current.domElement.style.width = `${canvasWidth}px`;
-        rendererRef.current.domElement.style.height = `${canvasHeight}px`;
-      }
     });
   };
 
@@ -737,7 +729,7 @@ const FilterPageUI: React.FC = () => {
       newModel.rotation.set(blindType.rotation.x, blindType.rotation.y, blindType.rotation.z);
       applyTextureToModel(newModel, selectedPattern || "/materials/beige.png", blindType);
       sceneRef.current.add(newModel);
-      updatedModels.push({ model: newModel, gltf: modelData.gltf });
+      updatedModels.push({ model: newModel, gltf: modelData.gtf });
       fadeInModel(newModel);
     }
 
@@ -773,7 +765,6 @@ const FilterPageUI: React.FC = () => {
   };
 
   const saveImage = async () => {
-    // Preliminary checks for required Three.js components
     if (!rendererRef.current || !sceneRef.current || !cameraRef.current || !backgroundPlaneRef.current) {
       console.error("Required Three.js components are missing:", {
         renderer: rendererRef.current,
@@ -784,57 +775,38 @@ const FilterPageUI: React.FC = () => {
       setNewProcess("save-error", "Missing required components. Please try again.");
       return;
     }
-  
+
     setNewProcess("save", "Saving image... Please wait.");
     if (!confirm("Would you like to save the customized image?")) return;
-  
+
     setIsLoading(true);
     setShowBlindMenu(false);
     saveButtonRef.current?.classList.add("hidden");
-  
-    // Capture original model data and camera position for restoration
+
     const originalModelData = modelsRef.current.map(({ model }) => ({
       model,
       scale: model.scale.clone(),
       position: model.position.clone(),
     }));
     const originalCameraPosition = cameraRef.current.position.clone();
-  
-    // Get effective captured image
+
     let effectiveCapturedImage = capturedImage || localStorage.getItem("capturedImage");
-  
-    // Ensure background plane and material exist
-    if (!backgroundPlaneRef.current || !backgroundPlaneRef.current.material) {
-      console.error("Background plane or material is missing:", {
-        plane: backgroundPlaneRef.current,
-        material: backgroundPlaneRef.current?.material,
-      });
-      setNewProcess("save-error", "Scene setup incomplete. Please try again.");
-      restoreRenderer(originalModelData, originalCameraPosition);
-      return;
-    }
-  
-    // Narrow material type and get texture
+
     const material = backgroundPlaneRef.current.material as THREE.MeshBasicMaterial;
     const texture = material.map;
-  
-    // Validate texture and captured image
+
     if (!texture || !texture.image || !effectiveCapturedImage) {
       console.error("Texture or captured image is invalid:", { texture, capturedImage: effectiveCapturedImage });
       setNewProcess("save-error", "No image captured or uploaded. Please capture or upload an image first.");
       restoreRenderer(originalModelData, originalCameraPosition);
       return;
     }
-  
-    // Set dimensions based on captured image
+
     const capturedWidth = texture.image.width;
     const capturedHeight = texture.image.height;
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    console.log("Screen dimensions:", { screenWidth, screenHeight });
-    console.log("Captured image dimensions:", { capturedWidth, capturedHeight });
-  
-    // Adjust model scales and positions
+
     const widthScaleFactor = capturedWidth / screenWidth;
     const heightScaleFactor = capturedHeight / screenHeight;
     const scaleFactor = Math.min(widthScaleFactor, heightScaleFactor);
@@ -842,8 +814,7 @@ const FilterPageUI: React.FC = () => {
       model.scale.multiplyScalar(scaleFactor);
       model.position.multiplyScalar(scaleFactor);
     });
-  
-    // Adjust renderer and camera for high-res output
+
     rendererRef.current.setSize(capturedWidth, capturedHeight);
     cameraRef.current.aspect = capturedWidth / capturedHeight;
     const distance = (screenHeight / 100 / 2) / Math.tan((cameraRef.current.fov * Math.PI / 180) / 2);
@@ -851,21 +822,18 @@ const FilterPageUI: React.FC = () => {
     cameraRef.current.lookAt(0, 0, 0);
     cameraRef.current.updateProjectionMatrix();
     adjustBackgroundPlane(capturedWidth, capturedHeight);
-  
-    // Render the scene
+
     rendererRef.current.clear();
     rendererRef.current.render(sceneRef.current, cameraRef.current);
     const sceneDataUrl = rendererRef.current.domElement.toDataURL("image/png");
-  
+
     if (!sceneDataUrl || sceneDataUrl === "data:,") {
       console.error("Failed to render scene to data URL");
       setNewProcess("save-error", "Failed to render the scene. Please try again.");
       restoreRenderer(originalModelData, originalCameraPosition);
       return;
     }
-    console.log("Scene rendered, data URL length:", sceneDataUrl.length);
-  
-    // Create final canvas with background, scene, and logo
+
     const canvas = document.createElement("canvas");
     canvas.width = capturedWidth;
     canvas.height = capturedHeight;
@@ -876,49 +844,37 @@ const FilterPageUI: React.FC = () => {
       restoreRenderer(originalModelData, originalCameraPosition);
       return;
     }
-  
+
     const loadImage = (src: string, description: string) =>
       new Promise<HTMLImageElement>((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = "Anonymous";
-        img.onload = () => {
-          console.log(`${description} loaded successfully`);
-          resolve(img);
-        };
-        img.onerror = (err) => {
-          console.error(`Failed to load ${description}:`, err);
-          reject(new Error(`Failed to load ${description}: ${src}`));
-        };
+        img.onload = () => resolve(img);
+        img.onerror = (err) => reject(new Error(`Failed to load ${description}: ${src}`));
         img.src = src;
       });
-  
+
     try {
-      // Draw background image
       const backgroundImg = await loadImage(effectiveCapturedImage, "Background image");
       ctx.drawImage(backgroundImg, 0, 0, capturedWidth, capturedHeight);
-  
-      // Draw rendered scene
+
       const sceneImg = await loadImage(sceneDataUrl, "Scene image");
       ctx.drawImage(sceneImg, 0, 0, capturedWidth, capturedHeight);
-  
-      // Draw logo
+
       const logoImg = await loadImage("/images/baelogoN.png", "Logo image");
       const logoSize = capturedHeight * 0.1;
       const logoX = (capturedWidth - logoSize) / 2;
       const logoY = 16;
       ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
-  
-      // Generate final image
+
       const finalDataUrl = canvas.toDataURL("image/png");
       if (!finalDataUrl || finalDataUrl === "data:,") {
         throw new Error("Final data URL is empty");
       }
-      console.log("Final data URL length:", finalDataUrl.length);
-  
-      // Convert to blob and share/download
+
       const blob = await (await fetch(finalDataUrl)).blob();
       const file = new File([blob], "custom_blind_image.png", { type: "image/png" });
-  
+
       if (navigator.share && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
@@ -941,7 +897,6 @@ const FilterPageUI: React.FC = () => {
       const errorMessage = error instanceof Error ? error.message : String(error);
       setNewProcess("save-error", `Failed to save image: ${errorMessage}. Please try again.`);
     } finally {
-      // Restore renderer state regardless of success or failure
       restoreRenderer(originalModelData, originalCameraPosition);
     }
   };
@@ -1141,17 +1096,55 @@ const FilterPageUI: React.FC = () => {
     if (rendererRef.current && backgroundPlaneRef.current) {
       const texture = (backgroundPlaneRef.current.material as THREE.MeshBasicMaterial).map;
       if (texture) {
-        const imgAspect = texture.image.width / texture.image.height;
-        const canvasWidth = window.innerWidth;
-        const canvasHeight = canvasWidth / imgAspect;
+        const imgWidth = texture.image.width;
+        const imgHeight = texture.image.height;
+        const imgAspect = imgWidth / imgHeight;
+        const maxWidth = window.innerWidth * 0.9; // Use 90% of window width to avoid overflow
+        const maxHeight = window.innerHeight * 0.9; // Use 90% of window height
+
+        let canvasWidth = imgWidth;
+        let canvasHeight = imgHeight;
+
+        // Scale down if the image exceeds max dimensions while preserving aspect ratio
+        if (canvasWidth > maxWidth || canvasHeight > maxHeight) {
+          const scale = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
+          canvasWidth = imgWidth * scale;
+          canvasHeight = imgHeight * scale;
+        }
+
+        // Set renderer size to match the scaled image dimensions
         rendererRef.current.setSize(canvasWidth, canvasHeight);
+        cameraRef.current!.aspect = canvasWidth / canvasHeight;
+        cameraRef.current!.updateProjectionMatrix();
+
+        // Adjust background plane to match the exact image dimensions in world units
+        const planeWidth = canvasWidth / 100; // Assuming 100 units per screen width for consistency
+        const planeHeight = canvasHeight / 100;
+        backgroundPlaneRef.current.geometry.dispose();
+        backgroundPlaneRef.current.geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
+        backgroundPlaneRef.current.position.set(0, 0, -0.1);
+
+        // Update camera position to view the entire plane
+        const distance = (canvasHeight / 100 / 2) / Math.tan((cameraRef.current!.fov * Math.PI / 180) / 2);
+        cameraRef.current!.position.set(0, 0, distance);
+        cameraRef.current!.lookAt(0, 0, 0);
+
+        // Style the canvas to match the calculated dimensions
         rendererRef.current.domElement.style.width = `${canvasWidth}px`;
         rendererRef.current.domElement.style.height = `${canvasHeight}px`;
-        rendererRef.current.domElement.style.touchAction = "pan-y";
+        rendererRef.current.domElement.style.maxWidth = "100%";
+        rendererRef.current.domElement.style.maxHeight = "100%";
+        rendererRef.current.domElement.style.margin = "auto"; // Center the canvas
+        rendererRef.current.domElement.style.display = "block"; // Ensure block display for centering
+
         if (mountRef.current) {
           mountRef.current.style.overflowY = "auto";
-          mountRef.current.style.touchAction = "pan-y";
+          mountRef.current.style.display = "flex";
+          mountRef.current.style.justifyContent = "center";
+          mountRef.current.style.alignItems = "center";
+          mountRef.current.style.minHeight = "100vh"; // Ensure it takes full height
         }
+
         renderScene();
       }
     }
@@ -1192,7 +1185,7 @@ const FilterPageUI: React.FC = () => {
     levelIndicatorRef.current.style.border = isLevel ? "2px solid black" : "none";
   };
 
-  // Render
+  // Render (unchanged except for minor style tweak)
   return (
     <div
       className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto"
@@ -1237,11 +1230,12 @@ const FilterPageUI: React.FC = () => {
       />
       {showBlindMenu && isCustomizerView && (
         <div
-          className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen overflow-y-auto"
+          className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 overflow-y-auto"
           style={{
             zIndex: 30,
             pointerEvents: "auto",
             touchAction: "pan-y",
+            marginTop: "20px", // Add some top margin to avoid overlap with logo
           }}
         >
           <div className="w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">

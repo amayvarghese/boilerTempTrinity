@@ -66,7 +66,7 @@ const FilterPageAI: React.FC = () => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isCustomizerView, setIsCustomizerView] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [instruction, setInstruction] = useState("Click 'Start Camera' or upload an image to begin.");
+  const [instruction, setInstruction] = useState("Tap 'Start Camera' or 'Upload Image' to begin.");
   const [buttonText, setButtonText] = useState("Start Camera");
 
   const sceneRef = useRef<THREE.Scene>(new THREE.Scene());
@@ -130,10 +130,11 @@ const FilterPageAI: React.FC = () => {
     };
     animate();
 
-    const handleMouseDown = (event: MouseEvent) => {
+    // Handle start of dragging (mouse or touch)
+    const handleStart = (clientX: number, clientY: number) => {
       if (isCustomizerView) return;
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      mouse.x = (clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(clientY / window.innerHeight) * 2 + 1;
       raycaster.setFromCamera(mouse, cameraRef.current!);
       const intersects = raycaster.intersectObjects(cornerRefs.current);
       if (intersects.length > 0) {
@@ -142,10 +143,11 @@ const FilterPageAI: React.FC = () => {
       }
     };
 
-    const handleMouseMove = (event: MouseEvent) => {
+    // Handle movement (mouse or touch)
+    const handleMove = (clientX: number, clientY: number) => {
       if (isCustomizerView) return;
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      mouse.x = (clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(clientY / window.innerHeight) * 2 + 1;
       raycaster.setFromCamera(mouse, cameraRef.current!);
       const intersects = raycaster.intersectObjects(sceneRef.current.children);
       if (intersects.length > 0) {
@@ -159,13 +161,52 @@ const FilterPageAI: React.FC = () => {
       }
     };
 
-    const handleMouseUp = () => {
+    // Handle end of dragging (mouse or touch)
+    const handleEnd = () => {
       cornerRefs.current.forEach((corner) => (corner.userData.isDragging = false));
     };
 
+    // Mouse event listeners
+    const handleMouseDown = (event: MouseEvent) => {
+      event.preventDefault();
+      handleStart(event.clientX, event.clientY);
+    };
+
+    const handleMouseMove = (event: MouseEvent) => {
+      event.preventDefault();
+      handleMove(event.clientX, event.clientY);
+    };
+
+    const handleMouseUp = (event: MouseEvent) => {
+      event.preventDefault();
+      handleEnd();
+    };
+
+    // Touch event listeners
+    const handleTouchStart = (event: TouchEvent) => {
+      event.preventDefault();
+      const touch = event.touches[0];
+      handleStart(touch.clientX, touch.clientY);
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      event.preventDefault();
+      const touch = event.touches[0];
+      handleMove(touch.clientX, touch.clientY);
+    };
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      event.preventDefault();
+      handleEnd();
+    };
+
+    // Add event listeners
     window.addEventListener("mousedown", handleMouseDown);
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("touchstart", handleTouchStart, { passive: false });
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchend", handleTouchEnd, { passive: false });
 
     const handleResize = () => {
       const newWidth = window.innerWidth;
@@ -188,10 +229,13 @@ const FilterPageAI: React.FC = () => {
       window.removeEventListener("mousedown", handleMouseDown);
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
     };
   };
 
-  // Preload all 3D models with vertex coordinate logging
+  // Preload all 3D models
   const preloadModels = async () => {
     setIsLoading(true);
     const loader = new GLTFLoader();
@@ -209,29 +253,6 @@ const FilterPageAI: React.FC = () => {
                   bbox.getCenter(center);
                   model.position.sub(center); // Center at origin
                   preloadedModelsRef.current.set(blind.modelUrl, { model, gltf });
-                  const size = new THREE.Vector3();
-                  bbox.getSize(size);
-                  console.log(`[Preload] ${blind.type} Size:`, {
-                    x: size.x.toFixed(3),
-                    y: size.y.toFixed(3),
-                    z: size.z.toFixed(3),
-                  });
-
-                  // Log vertex coordinates for all meshes in the model
-                  console.log(`[Preload] Vertex Coordinates for ${blind.type} (${blind.modelUrl}):`);
-                  model.traverse((child) => {
-                    if (isMesh(child) && child.geometry) {
-                      const positions = child.geometry.attributes.position;
-                      console.log(`  Mesh: ${child.name || "Unnamed"}`);
-                      for (let i = 0; i < positions.count; i++) {
-                        const x = positions.getX(i);
-                        const y = positions.getY(i);
-                        const z = positions.getZ(i);
-                        // console.log(`    Vertex ${i}: (${x.toFixed(3)}, ${y.toFixed(3)}, ${z.toFixed(3)})`);
-                      }
-                    }
-                  });
-
                   resolve();
                 },
                 undefined,
@@ -290,7 +311,7 @@ const FilterPageAI: React.FC = () => {
     windowBoxRef.current = newBox;
   };
 
-  // Create and position the 3D model within the quadrilateral with debugging
+  // Create and position the 3D model within the quadrilateral (original version)
   const createModelBox = (corners: THREE.Vector3[], modelUrl: string, isInitial: boolean = false) => {
     const scene = sceneRef.current;
     if (!scene || corners.length !== 4 || !cameraRef.current) {
@@ -376,7 +397,6 @@ const FilterPageAI: React.FC = () => {
           depth = max.z - min.z || 0.01;
         }
 
-        // Fit to quad
         const modelAspect = width / height;
         const fitScale = Math.min(quadWidth / width, quadHeight / height);
         console.log(`  Fitting: Model Aspect=${modelAspect.toFixed(2)}, Quad Aspect=${quadAspect.toFixed(2)}, Fit Scale=${fitScale.toFixed(3)}`);
@@ -391,10 +411,6 @@ const FilterPageAI: React.FC = () => {
 
         const positions = geometry.attributes.position;
         const uvs = geometry.attributes.uv;
-
-        for (let i = 0; i < Math.min(5, positions.count); i++) {
-          console.log(`  Original Vertex ${i}: (${positions.getX(i).toFixed(2)}, ${positions.getY(i).toFixed(2)}, ${positions.getZ(i).toFixed(2)})`);
-        }
 
         for (let i = 0; i < positions.count; i++) {
           const x = positions.getX(i);
@@ -421,10 +437,6 @@ const FilterPageAI: React.FC = () => {
           if (uvs) uvs.setXY(i, uClamped, vClamped);
         }
 
-        for (let i = 0; i < Math.min(5, positions.count); i++) {
-          console.log(`  Deformed Vertex ${i}: (${positions.getX(i).toFixed(2)}, ${positions.getY(i).toFixed(2)}, ${positions.getZ(i).toFixed(2)})`);
-        }
-
         positions.needsUpdate = true;
         if (uvs) uvs.needsUpdate = true;
         geometry.computeVertexNormals();
@@ -438,7 +450,7 @@ const FilterPageAI: React.FC = () => {
     const quaternion = new THREE.Quaternion().setFromUnitVectors(modelNormal, quadNormal);
     model.quaternion.copy(quaternion);
     model.position.copy(quadCenter);
-    model.position.z += 0.1; // Slight offset to ensure visibility
+    model.position.z += 0.1;
 
     const cameraDistance = cameraRef.current.position.z - quadCenter.z;
     cameraRef.current.position.set(quadCenter.x, quadCenter.y, quadCenter.z + cameraDistance);
@@ -465,7 +477,7 @@ const FilterPageAI: React.FC = () => {
     model.traverse((child) => {
       if (isMesh(child)) {
         child.renderOrder = 2;
-        child.visible = true; // Ensure visibility
+        child.visible = true;
       }
     });
 
@@ -519,11 +531,10 @@ const FilterPageAI: React.FC = () => {
       if (blindType.meshNameWood) applyMaterial("/materials/beige.png", "/3d/normals/wood.jpg", 1, 0.5, 0.3, 0.1, blindType.meshNameWood);
     }
     renderScene();
-
-    console.log(`[applyTextureToModel] Applied texture ${patternUrl} to ${blindType.type}`);
   };
 
-  const handleButtonClick = () => {
+  const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     switch (buttonText) {
       case "Start Camera":
         startCameraStream();
@@ -538,13 +549,20 @@ const FilterPageAI: React.FC = () => {
   };
 
   const startCameraStream = async () => {
-    setInstruction("Point your camera and click 'Capture'.");
+    setInstruction("Point your camera and tap 'Capture'.");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
       cameraStreamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play().then(() => setButtonText("Capture"));
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current!.play().then(() => {
+            setButtonText("Capture");
+          }).catch((err) => {
+            console.error("[startCameraStream] Play error:", err);
+            setInstruction("Failed to start camera. Try uploading an image.");
+          });
+        };
       }
     } catch (err) {
       console.error("[startCameraStream] Camera error:", err);
@@ -625,7 +643,7 @@ const FilterPageAI: React.FC = () => {
   const captureImage = async () => {
     if (!videoRef.current) return;
 
-    setInstruction("Adjust the quadrilateral, then click 'Submit'.");
+    setInstruction("Adjust the quadrilateral by dragging the corners, then tap 'Submit'.");
     const canvas = document.createElement("canvas");
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
@@ -644,7 +662,7 @@ const FilterPageAI: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setInstruction("Adjust the quadrilateral, then click 'Submit'.");
+    setInstruction("Adjust the quadrilateral by dragging the corners, then tap 'Submit'.");
     const reader = new FileReader();
     reader.onload = async (e) => {
       const imageData = e.target?.result as string;
@@ -674,10 +692,10 @@ const FilterPageAI: React.FC = () => {
   };
 
   const submitAndShowMenu = () => {
-    setInstruction("Select a blind type and pattern, then click 'Save Image'.");
+    setInstruction("Select a blind type and pattern, then tap 'Save Image'.");
     setShowBlindMenu(true);
     setIsCustomizerView(true);
-    setButtonText(""); // Clear button text to hide the main button
+    setButtonText("");
 
     const positions = cornerRefs.current.map((corner) => new THREE.Vector3(corner.position.x, corner.position.y, 0));
     createModelBox(positions, BLIND_TYPES.find((b) => b.type === selectedBlindType)!.modelUrl, true);
@@ -695,7 +713,6 @@ const FilterPageAI: React.FC = () => {
     if (isCustomizerView && quadParamsRef.current) {
       const blindType = BLIND_TYPES.find((b) => b.type === type);
       if (blindType) {
-        console.log(`[selectBlindType] Switching to ${type}`);
         createModelBox(quadParamsRef.current.corners, blindType.modelUrl, false);
       }
     }
@@ -719,7 +736,6 @@ const FilterPageAI: React.FC = () => {
     }
   };
 
-  // Handle back button navigation
   const handleBackClick = () => {
     window.location.href = "/";
   };
@@ -732,13 +748,14 @@ const FilterPageAI: React.FC = () => {
         background: !capturedImage && !isCustomizerView ? "url('/images/unsplashMain.jpeg') center/cover no-repeat" : "#FFFFFF",
       }}
     >
-      <div ref={mountRef} className="relative w-full h-auto min-h-screen">
-        <video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover z-[10]" />
+      <div ref={mountRef} className="relative w-full h-auto min-h-screen z-0">
+        <video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover z-10" />
       </div>
       {/* Back Button */}
       <button
         onClick={handleBackClick}
-        className="absolute top-5 left-5 p-2 bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300"
+        onTouchStart={handleBackClick}
+        className="fixed top-5 left-5 p-2 bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[200] transition duration-300 touch-manipulation"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -751,28 +768,31 @@ const FilterPageAI: React.FC = () => {
         </svg>
       </button>
       {instruction && (
-        <div className="fixed top-32 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 p-2 rounded shadow-md z-[100] text-brown-800 text-lg">
+        <div className="fixed top-32 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 p-2 rounded shadow-md z-[200] text-brown-800 text-lg">
           {instruction}
         </div>
       )}
       {isLoading && (
-        <div className="fixed inset-0 flex items-center justify-center z-[50] bg-black bg-opacity-50">
+        <div className="fixed inset-0 flex items-center justify-center z-[150] bg-black bg-opacity-50">
           <div className="text-white text-lg">Loading...</div>
         </div>
       )}
-      {/* Only show the main button if not in customizer view */}
+      {/* Main Button */}
       {!isCustomizerView && buttonText && (
         <button
           onClick={handleButtonClick}
-          className="fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300"
+          onTouchStart={handleButtonClick}
+          className="fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[200] transition duration-300 touch-manipulation"
         >
           {buttonText}
         </button>
       )}
+      {/* Upload Image Button */}
       {!capturedImage && buttonText === "Start Camera" && (
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300"
+          onTouchStart={() => fileInputRef.current?.click()}
+          className="fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[200] transition duration-300 touch-manipulation"
         >
           Upload Image
         </button>
@@ -780,25 +800,33 @@ const FilterPageAI: React.FC = () => {
       {isCustomizerView && (
         <button
           onClick={saveImage}
-          className="fixed bottom-16 right-5 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300"
+          onTouchStart={saveImage}
+          className="fixed bottom-16 right-5 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[200] transition duration-300 touch-manipulation"
         >
           Save Image
         </button>
       )}
       <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleImageUpload} />
       {showBlindMenu && isCustomizerView && (
-        <div className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen">
+        <div className="relative max-w-7xl mx-auto p-4 md:p-8 flex flex-col md:flex-row items-start justify-center gap-4 min-h-screen z-[200]">
           <div className="w-full md:w-1/4 bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
             <h3 className="bg-white p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">Select Type of Blind</h3>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
               {BLIND_TYPES.map(({ type, buttonImage }) => (
-                <div key={type} className="flex flex-col items-center text-center cursor-pointer px-[5px]" onClick={() => selectBlindType(type)}>
+                <div
+                  key={type}
+                  className="flex flex-col items-center text-center cursor-pointer px-[5px]"
+                  onClick={() => selectBlindType(type)}
+                  onTouchStart={() => selectBlindType(type)}
+                >
                   <img
                     src={buttonImage}
                     alt={`${type} Blind`}
                     className="w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
                   />
-                  <div className="mt-1 text-gray-700 text-[11px]">{type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}</div>
+                  <div className="mt-1 text-gray-700 text-[11px]">
+                    {type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}
+                  </div>
                 </div>
               ))}
             </div>
@@ -829,6 +857,7 @@ const FilterPageAI: React.FC = () => {
                     key={index}
                     className="flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
                     onClick={() => selectPattern(pattern.patternUrl)}
+                    onTouchStart={() => selectPattern(pattern.patternUrl)}
                   >
                     <img
                       src={pattern.image}
