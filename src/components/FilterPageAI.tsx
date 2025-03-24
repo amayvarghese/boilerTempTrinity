@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
-// Types and Constants
+// Types and Constants (unchanged)
 type Vector3D = { x: number; y: number; z: number };
 type BlindType = {
   type: string;
@@ -55,7 +55,6 @@ const PATTERNS: Pattern[] = [
   { name: "White", image: "/materials/white.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/white.png" },
 ];
 
-// Utility Functions
 const isMesh = (object: THREE.Object3D): object is THREE.Mesh => "isMesh" in object && (object.isMesh as boolean);
 
 const FilterPageAI: React.FC = () => {
@@ -87,10 +86,10 @@ const FilterPageAI: React.FC = () => {
     center: THREE.Vector3;
     cameraPosition: THREE.Vector3;
   } | null>(null);
-  const touchStartRef = useRef<{ id: number; x: number; y: number } | null>(null);
+  const activeTouchRef = useRef<number | null>(null);
 
   const raycaster = new THREE.Raycaster();
-  const mouse = new THREE.Vector2();
+  const pointer = new THREE.Vector2();
 
   const filteredPatterns = PATTERNS.filter(
     (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
@@ -131,81 +130,80 @@ const FilterPageAI: React.FC = () => {
     };
     animate();
 
-    const handleMouseDown = (event: MouseEvent) => {
-      event.preventDefault();
-      if (isCustomizerView) return;
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-      raycaster.setFromCamera(mouse, cameraRef.current!);
+    const getPointerPosition = (clientX: number, clientY: number) => {
+      if (!mountRef.current) return;
+      const rect = mountRef.current.getBoundingClientRect();
+      pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    };
+
+    const onPointerDown = (clientX: number, clientY: number) => {
+      if (isCustomizerView || !cameraRef.current) return;
+      getPointerPosition(clientX, clientY);
+      raycaster.setFromCamera(pointer, cameraRef.current);
       const intersects = raycaster.intersectObjects(cornerRefs.current);
       if (intersects.length > 0) {
         const selectedCorner = intersects[0].object as THREE.Mesh;
         selectedCorner.userData.isDragging = true;
       }
+    };
+
+    const onPointerMove = (clientX: number, clientY: number) => {
+      if (isCustomizerView || !cameraRef.current) return;
+      getPointerPosition(clientX, clientY);
+      raycaster.setFromCamera(pointer, cameraRef.current);
+      const intersects = raycaster.intersectObjects(sceneRef.current.children);
+      if (intersects.length > 0) {
+        cornerRefs.current.forEach((corner) => {
+          if (corner.userData.isDragging) {
+            const newPosition = intersects[0].point;
+            corner.position.set(newPosition.x, newPosition.y, 0.03);
+            updateWindowBoxShape();
+          }
+        });
+      }
+    };
+
+    const onPointerUp = () => {
+      cornerRefs.current.forEach((corner) => (corner.userData.isDragging = false));
+      activeTouchRef.current = null;
+    };
+
+    const handleMouseDown = (event: MouseEvent) => {
+      event.preventDefault();
+      onPointerDown(event.clientX, event.clientY);
     };
 
     const handleMouseMove = (event: MouseEvent) => {
       event.preventDefault();
-      if (isCustomizerView) return;
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-      raycaster.setFromCamera(mouse, cameraRef.current!);
-      const intersects = raycaster.intersectObjects(sceneRef.current.children);
-      if (intersects.length > 0) {
-        cornerRefs.current.forEach((corner) => {
-          if (corner.userData.isDragging) {
-            const newPosition = intersects[0].point;
-            corner.position.set(newPosition.x, newPosition.y, 0.03);
-            updateWindowBoxShape();
-          }
-        });
-      }
+      onPointerMove(event.clientX, event.clientY);
     };
 
-    const handleMouseUp = () => {
-      cornerRefs.current.forEach((corner) => (corner.userData.isDragging = false));
+    const handleMouseUp = (event: MouseEvent) => {
+      event.preventDefault();
+      onPointerUp();
     };
 
     const handleTouchStart = (event: TouchEvent) => {
       event.preventDefault();
-      if (isCustomizerView || event.touches.length !== 1) return;
+      if (event.touches.length !== 1) return;
       const touch = event.touches[0];
-      mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
-      raycaster.setFromCamera(mouse, cameraRef.current!);
-      const intersects = raycaster.intersectObjects(cornerRefs.current);
-      if (intersects.length > 0) {
-        const selectedCorner = intersects[0].object as THREE.Mesh;
-        selectedCorner.userData.isDragging = true;
-        touchStartRef.current = { id: touch.identifier, x: touch.clientX, y: touch.clientY };
-      }
+      activeTouchRef.current = touch.identifier;
+      onPointerDown(touch.clientX, touch.clientY);
     };
 
     const handleTouchMove = (event: TouchEvent) => {
       event.preventDefault();
-      if (isCustomizerView || !touchStartRef.current) return;
-      const touch = Array.from(event.touches).find(t => t.identifier === touchStartRef.current!.id);
-      if (!touch) return;
-      
-      mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
-      raycaster.setFromCamera(mouse, cameraRef.current!);
-      const intersects = raycaster.intersectObjects(sceneRef.current.children);
-      if (intersects.length > 0) {
-        cornerRefs.current.forEach((corner) => {
-          if (corner.userData.isDragging) {
-            const newPosition = intersects[0].point;
-            corner.position.set(newPosition.x, newPosition.y, 0.03);
-            updateWindowBoxShape();
-          }
-        });
+      if (activeTouchRef.current === null) return;
+      const touch = Array.from(event.touches).find(t => t.identifier === activeTouchRef.current);
+      if (touch) {
+        onPointerMove(touch.clientX, touch.clientY);
       }
     };
 
     const handleTouchEnd = (event: TouchEvent) => {
       event.preventDefault();
-      cornerRefs.current.forEach((corner) => (corner.userData.isDragging = false));
-      touchStartRef.current = null;
+      onPointerUp();
     };
 
     window.addEventListener("mousedown", handleMouseDown);
