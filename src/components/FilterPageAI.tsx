@@ -22,9 +22,13 @@ type Pattern = {
 type ModelData = { model: THREE.Group; gltf?: any };
 
 const BLIND_TYPES: BlindType[] = [
-  { type: "Roman Blind", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/models/shadeBake.glb", depthFactor: 0 },
-  { type: "Roller Blind", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/models/Black_Blind.glb", depthFactor: 0 },
+  { type: "Roller Blind", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/models/shadeBakeNew.glb", depthFactor: 0 },
+  { type: "Roman Blind", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/models/Black_Blind.glb", depthFactor: 0 },
   { type: "Classic Roman", buttonImage: "/images/blindTypes/classicRomanIcon.png", modelUrl: "/models/Gray_2_Blind.glb", depthFactor: 0 },
+  { type: "Zebra Blind", buttonImage: "/images/blindTypes/zebraBlindIcon.png", modelUrl: "/models/zebra_02.glb", depthFactor: 0 },
+  { type: "Vertical Sheet", buttonImage: "/images/blindTypes/verticalSheetBlindIcon.png", modelUrl: "/models/verticalSheetBlind.glb", depthFactor: 0 },
+  { type: "Plantation Shutter", buttonImage: "/images/blindTypes/plantationShutterIcon.png", modelUrl: "/models/plantationShutterNew.glb", depthFactor: 0 },
+  { type: "Sheet Blind", buttonImage: "/images/blindTypes/sheetBlindIcon.png", modelUrl: "/models/SheetBlindNew.glb", depthFactor: 0 },
 ];
 
 const PATTERNS: Pattern[] = [
@@ -54,7 +58,7 @@ const PATTERNS: Pattern[] = [
 // Utility Functions
 const isMesh = (object: THREE.Object3D): object is THREE.Mesh => "isMesh" in object && (object.isMesh as boolean);
 
-const FilterPageMerged: React.FC = () => {
+const FilterPageAI: React.FC = () => {
   const [showBlindMenu, setShowBlindMenu] = useState(false);
   const [selectedBlindType, setSelectedBlindType] = useState<string>(BLIND_TYPES[0].type);
   const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
@@ -293,25 +297,24 @@ const FilterPageMerged: React.FC = () => {
       console.error("[createModelBox] Invalid scene, corners, or camera");
       return;
     }
-  
+
     if (modelRef.current) {
       scene.remove(modelRef.current);
       modelRef.current = null;
     }
-  
+
     const modelData = preloadedModelsRef.current.get(modelUrl);
     if (!modelData) {
       console.error(`[createModelBox] Model not found for ${modelUrl}`);
       return;
     }
-  
+
     const blindType = BLIND_TYPES.find((b) => b.modelUrl === modelUrl) || BLIND_TYPES[0];
     const model = modelData.model.clone();
     modelRef.current = model;
-  
+
     console.log(`[createModelBox] Loading ${blindType.type} (${modelUrl})`);
-  
-    // Order corners: bottom-left, bottom-right, top-right, top-left
+
     const orderedCorners = [...corners];
     orderedCorners.sort((a, b) => a.y - b.y);
     const bottomCorners = orderedCorners.slice(0, 2);
@@ -319,20 +322,23 @@ const FilterPageMerged: React.FC = () => {
     bottomCorners.sort((a, b) => a.x - b.x);
     topCorners.sort((a, b) => a.x - b.x);
     const quadCorners = [bottomCorners[0], bottomCorners[1], topCorners[1], topCorners[0]];
-  
+
     const quadCenter = new THREE.Vector3();
     quadCorners.forEach((corner) => quadCenter.add(corner));
     quadCenter.divideScalar(4);
-  
+
     const v1 = new THREE.Vector3().subVectors(quadCorners[1], quadCorners[0]);
     const v2 = new THREE.Vector3().subVectors(quadCorners[3], quadCorners[0]);
     const quadNormal = new THREE.Vector3().crossVectors(v1, v2).normalize();
-  
+
+    const quadWidth = quadCorners[1].distanceTo(quadCorners[0]);
+    const quadHeight = quadCorners[0].distanceTo(quadCorners[3]);
+    const quadAspect = quadWidth / quadHeight;
+
     const box = new THREE.Box3().setFromObject(model);
     const modelSize = new THREE.Vector3();
     box.getSize(modelSize);
-  
-    // Deform geometry
+
     model.traverse((child) => {
       if (isMesh(child) && child.geometry) {
         const geometry = child.geometry.clone();
@@ -340,30 +346,28 @@ const FilterPageMerged: React.FC = () => {
         const bbox = geometry.boundingBox!;
         let min = bbox.min.clone();
         let max = bbox.max.clone();
-  
+
         let width = max.x - min.x || 0.01;
         let height = max.y - min.y || 0.01;
         let depth = max.z - min.z || 0.01;
-  
+
         console.log(`[Deform] ${child.name || "Unnamed"} in ${blindType.type}:`);
         console.log(`  BBox Before: min(${min.x.toFixed(2)}, ${min.y.toFixed(2)}, ${min.z.toFixed(2)}), max(${max.x.toFixed(2)}, ${max.y.toFixed(2)}, ${max.z.toFixed(2)})`);
-  
-        // Detect and correct orientation
+
         const dims = { x: width, y: height, z: depth };
         const sortedDims = Object.entries(dims).sort((a, b) => b[1] - a[1]);
-        let uAxis = 'x', vAxis = 'y', depthAxis = 'z';
-        if (sortedDims[0][0] === 'z' && sortedDims[1][0] === 'x') { // X/Z plane (Roller Blind)
+        if (sortedDims[0][0] === 'z' && sortedDims[1][0] === 'x') {
           console.log(`  Rotating X/Z to X/Y`);
-          geometry.rotateX(Math.PI / 2); // Z becomes Y, Y becomes -Z
+          geometry.rotateX(Math.PI / 2);
           geometry.computeBoundingBox();
           min = geometry.boundingBox!.min.clone();
           max = geometry.boundingBox!.max.clone();
           width = max.x - min.x || 0.01;
           height = max.y - min.y || 0.01;
           depth = max.z - min.z || 0.01;
-        } else if (sortedDims[0][0] === 'z' && sortedDims[1][0] === 'y') { // Y/Z plane
+        } else if (sortedDims[0][0] === 'z' && sortedDims[1][0] === 'y') {
           console.log(`  Rotating Y/Z to X/Y`);
-          geometry.rotateY(Math.PI / 2); // Adjust as needed
+          geometry.rotateY(Math.PI / 2);
           geometry.computeBoundingBox();
           min = geometry.boundingBox!.min.clone();
           max = geometry.boundingBox!.max.clone();
@@ -371,80 +375,76 @@ const FilterPageMerged: React.FC = () => {
           height = max.y - min.y || 0.01;
           depth = max.z - min.z || 0.01;
         }
-  
-        // Normalize huge scales (e.g., Vertical Blind)
-        const maxDim = Math.max(width, height, depth);
-        const scaleFactor = maxDim > 100 ? 50 / maxDim : 1; // Scale to Roman Blind size (~50 units)
-        if (scaleFactor !== 1) {
-          console.log(`  Scaling by ${scaleFactor.toFixed(3)}`);
-          geometry.scale(scaleFactor, scaleFactor, scaleFactor);
-          min.multiplyScalar(scaleFactor);
-          max.multiplyScalar(scaleFactor);
-          width *= scaleFactor;
-          height *= scaleFactor;
-          depth *= scaleFactor;
-        }
-  
+
+        // Fit to quad
+        const modelAspect = width / height;
+        const fitScale = Math.min(quadWidth / width, quadHeight / height);
+        console.log(`  Fitting: Model Aspect=${modelAspect.toFixed(2)}, Quad Aspect=${quadAspect.toFixed(2)}, Fit Scale=${fitScale.toFixed(3)}`);
+        geometry.scale(fitScale, fitScale, fitScale);
+        min.multiplyScalar(fitScale);
+        max.multiplyScalar(fitScale);
+        width *= fitScale;
+        height *= fitScale;
+        depth *= fitScale;
+
         console.log(`  BBox After: min(${min.x.toFixed(2)}, ${min.y.toFixed(2)}, ${min.z.toFixed(2)}), max(${max.x.toFixed(2)}, ${max.y.toFixed(2)}, ${max.z.toFixed(2)})`);
-  
+
         const positions = geometry.attributes.position;
         const uvs = geometry.attributes.uv;
-  
-        // Log original vertices
+
         for (let i = 0; i < Math.min(5, positions.count); i++) {
           console.log(`  Original Vertex ${i}: (${positions.getX(i).toFixed(2)}, ${positions.getY(i).toFixed(2)}, ${positions.getZ(i).toFixed(2)})`);
         }
-  
+
         for (let i = 0; i < positions.count; i++) {
           const x = positions.getX(i);
           const y = positions.getY(i);
           const z = positions.getZ(i);
-  
+
           const uNorm = (x - min.x) / width;
           const vNorm = (y - min.y) / height;
           const depthVal = (z - min.z) / depth;
-  
+
           const uClamped = Math.max(0, Math.min(1, uNorm));
           const vClamped = Math.max(0, Math.min(1, vNorm));
-  
+
           const bottom = quadCorners[0].clone().lerp(quadCorners[1], uClamped);
           const top = quadCorners[3].clone().lerp(quadCorners[2], uClamped);
-          let newPos = bottom.clone().lerp(top, vClamped);
-  
+          const newPos = bottom.clone().lerp(top, vClamped);
+
           const bottomWidth = quadCorners[1].distanceTo(quadCorners[0]);
           const topWidth = quadCorners[2].distanceTo(quadCorners[3]);
           const depthScale = bottomWidth === 0 ? 1 : 1 - (vClamped * (1 - topWidth / bottomWidth) * 0.5);
           newPos.z = quadCenter.z + (depthVal - 0.5) * depth * depthScale;
-  
+
           positions.setXYZ(i, newPos.x, newPos.y, newPos.z);
           if (uvs) uvs.setXY(i, uClamped, vClamped);
         }
-  
-        // Log deformed vertices
+
         for (let i = 0; i < Math.min(5, positions.count); i++) {
           console.log(`  Deformed Vertex ${i}: (${positions.getX(i).toFixed(2)}, ${positions.getY(i).toFixed(2)}, ${positions.getZ(i).toFixed(2)})`);
         }
-  
+
         positions.needsUpdate = true;
         if (uvs) uvs.needsUpdate = true;
         geometry.computeVertexNormals();
         child.geometry = geometry;
       }
     });
-  
+
     applyTextureToModel(model, selectedPattern || PATTERNS[0].patternUrl, blindType);
-  
+
     const modelNormal = new THREE.Vector3(0, 0, 1);
     const quaternion = new THREE.Quaternion().setFromUnitVectors(modelNormal, quadNormal);
     model.quaternion.copy(quaternion);
     model.position.copy(quadCenter);
-    model.position.z += modelSize.z * (blindType.depthFactor || 0);
-  
+    model.position.z += 0.1; // Slight offset to ensure visibility
+
     const cameraDistance = cameraRef.current.position.z - quadCenter.z;
     cameraRef.current.position.set(quadCenter.x, quadCenter.y, quadCenter.z + cameraDistance);
     cameraRef.current.lookAt(quadCenter);
     cameraRef.current.updateProjectionMatrix();
-  
+
     if (isInitial) {
       quadParamsRef.current = {
         corners: quadCorners.map((corner) => corner.clone()),
@@ -455,21 +455,20 @@ const FilterPageMerged: React.FC = () => {
     } else if (quadParamsRef.current) {
       model.position.copy(quadParamsRef.current.center);
       model.quaternion.copy(quaternion);
-      model.position.z += modelSize.z * (blindType.depthFactor || 0);
+      model.position.z += 0.1;
       cameraRef.current.position.copy(quadParamsRef.current.cameraPosition);
       cameraRef.current.lookAt(quadParamsRef.current.center);
       cameraRef.current.updateProjectionMatrix();
     }
-  
+
     model.renderOrder = 2;
     model.traverse((child) => {
       if (isMesh(child)) {
         child.renderOrder = 2;
-        child.material.depthTest = true;
-        child.material.depthWrite = true;
+        child.visible = true; // Ensure visibility
       }
     });
-  
+
     scene.add(model);
     renderScene();
   };
@@ -678,6 +677,7 @@ const FilterPageMerged: React.FC = () => {
     setInstruction("Select a blind type and pattern, then click 'Save Image'.");
     setShowBlindMenu(true);
     setIsCustomizerView(true);
+    setButtonText(""); // Clear button text to hide the main button
 
     const positions = cornerRefs.current.map((corner) => new THREE.Vector3(corner.position.x, corner.position.y, 0));
     createModelBox(positions, BLIND_TYPES.find((b) => b.type === selectedBlindType)!.modelUrl, true);
@@ -719,6 +719,11 @@ const FilterPageMerged: React.FC = () => {
     }
   };
 
+  // Handle back button navigation
+  const handleBackClick = () => {
+    window.location.href = "/";
+  };
+
   return (
     <div
       className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto"
@@ -730,6 +735,21 @@ const FilterPageMerged: React.FC = () => {
       <div ref={mountRef} className="relative w-full h-auto min-h-screen">
         <video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover z-[10]" />
       </div>
+      {/* Back Button */}
+      <button
+        onClick={handleBackClick}
+        className="absolute top-5 left-5 p-2 bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
       {instruction && (
         <div className="fixed top-32 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 p-2 rounded shadow-md z-[100] text-brown-800 text-lg">
           {instruction}
@@ -740,13 +760,16 @@ const FilterPageMerged: React.FC = () => {
           <div className="text-white text-lg">Loading...</div>
         </div>
       )}
-      <button
-        onClick={handleButtonClick}
-        className="fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300"
-      >
-        {buttonText}
-      </button>
-      {!capturedImage && (
+      {/* Only show the main button if not in customizer view */}
+      {!isCustomizerView && buttonText && (
+        <button
+          onClick={handleButtonClick}
+          className="fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300"
+        >
+          {buttonText}
+        </button>
+      )}
+      {!capturedImage && buttonText === "Start Camera" && (
         <button
           onClick={() => fileInputRef.current?.click()}
           className="fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300"
@@ -827,4 +850,4 @@ const FilterPageMerged: React.FC = () => {
   );
 };
 
-export default FilterPageMerged;
+export default FilterPageAI;
