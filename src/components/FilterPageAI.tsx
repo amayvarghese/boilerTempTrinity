@@ -68,6 +68,7 @@ const FilterPageAI: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [instruction, setInstruction] = useState("Click 'Start Camera' or upload an image to begin.");
   const [buttonText, setButtonText] = useState("Start Camera");
+  const [imageAspectRatio, setImageAspectRatio] = useState<number>(1);
 
   const sceneRef = useRef<THREE.Scene>(new THREE.Scene());
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -86,6 +87,7 @@ const FilterPageAI: React.FC = () => {
     center: THREE.Vector3;
     cameraPosition: THREE.Vector3;
   } | null>(null);
+  const touchStartRef = useRef<{ id: number; x: number; y: number } | null>(null);
 
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
@@ -99,7 +101,6 @@ const FilterPageAI: React.FC = () => {
     preloadModels();
   }, []);
 
-  // Setup Three.js scene, camera, and renderer
   const setupThreeJS = () => {
     if (!mountRef.current) return;
 
@@ -122,7 +123,6 @@ const FilterPageAI: React.FC = () => {
     directionalLight.position.set(5, 10, 5);
     sceneRef.current.add(directionalLight);
 
-    //
     const animate = () => {
       requestAnimationFrame(animate);
       if (rendererRef.current && sceneRef.current && cameraRef.current) {
@@ -132,6 +132,7 @@ const FilterPageAI: React.FC = () => {
     animate();
 
     const handleMouseDown = (event: MouseEvent) => {
+      event.preventDefault();
       if (isCustomizerView) return;
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -144,6 +145,7 @@ const FilterPageAI: React.FC = () => {
     };
 
     const handleMouseMove = (event: MouseEvent) => {
+      event.preventDefault();
       if (isCustomizerView) return;
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -164,18 +166,70 @@ const FilterPageAI: React.FC = () => {
       cornerRefs.current.forEach((corner) => (corner.userData.isDragging = false));
     };
 
+    const handleTouchStart = (event: TouchEvent) => {
+      event.preventDefault();
+      if (isCustomizerView || event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, cameraRef.current!);
+      const intersects = raycaster.intersectObjects(cornerRefs.current);
+      if (intersects.length > 0) {
+        const selectedCorner = intersects[0].object as THREE.Mesh;
+        selectedCorner.userData.isDragging = true;
+        touchStartRef.current = { id: touch.identifier, x: touch.clientX, y: touch.clientY };
+      }
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      event.preventDefault();
+      if (isCustomizerView || !touchStartRef.current) return;
+      const touch = Array.from(event.touches).find(t => t.identifier === touchStartRef.current!.id);
+      if (!touch) return;
+      
+      mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, cameraRef.current!);
+      const intersects = raycaster.intersectObjects(sceneRef.current.children);
+      if (intersects.length > 0) {
+        cornerRefs.current.forEach((corner) => {
+          if (corner.userData.isDragging) {
+            const newPosition = intersects[0].point;
+            corner.position.set(newPosition.x, newPosition.y, 0.03);
+            updateWindowBoxShape();
+          }
+        });
+      }
+    };
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      event.preventDefault();
+      cornerRefs.current.forEach((corner) => (corner.userData.isDragging = false));
+      touchStartRef.current = null;
+    };
+
     window.addEventListener("mousedown", handleMouseDown);
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("touchstart", handleTouchStart, { passive: false });
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchend", handleTouchEnd, { passive: false });
 
     const handleResize = () => {
       const newWidth = window.innerWidth;
       const newHeight = window.innerHeight;
       if (cameraRef.current && rendererRef.current) {
-        rendererRef.current.setSize(newWidth, newHeight);
-        cameraRef.current.aspect = newWidth / newHeight;
+        let renderWidth = newWidth;
+        let renderHeight = newHeight;
+        if (imageAspectRatio > newWidth / newHeight) {
+          renderHeight = newWidth / imageAspectRatio;
+        } else {
+          renderWidth = newHeight * imageAspectRatio;
+        }
+        rendererRef.current.setSize(renderWidth, renderHeight);
+        cameraRef.current.aspect = renderWidth / renderHeight;
         cameraRef.current.updateProjectionMatrix();
-        updateCameraPosition(newHeight);
+        updateCameraPosition(renderHeight);
       }
     };
     window.addEventListener("resize", handleResize);
@@ -185,14 +239,16 @@ const FilterPageAI: React.FC = () => {
         mountRef.current.removeChild(rendererRef.current.domElement);
         rendererRef.current.dispose();
       }
-      window.removeEventListener("resize", handleResize);
       window.removeEventListener("mousedown", handleMouseDown);
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+      window.removeEventListener("resize", handleResize);
     };
   };
 
-  // Preload all 3D models with vertex coordinate logging
   const preloadModels = async () => {
     setIsLoading(true);
     const loader = new GLTFLoader();
@@ -208,38 +264,12 @@ const FilterPageAI: React.FC = () => {
                   const bbox = new THREE.Box3().setFromObject(model);
                   const center = new THREE.Vector3();
                   bbox.getCenter(center);
-                  model.position.sub(center); // Center at origin
+                  model.position.sub(center);
                   preloadedModelsRef.current.set(blind.modelUrl, { model, gltf });
-                  const size = new THREE.Vector3();
-                  bbox.getSize(size);
-                  console.log(`[Preload] ${blind.type} Size:`, {
-                    x: size.x.toFixed(3),
-                    y: size.y.toFixed(3),
-                    z: size.z.toFixed(3),
-                  });
-
-                  // Log vertex coordinates for all meshes in the model
-                  console.log(`[Preload] Vertex Coordinates for ${blind.type} (${blind.modelUrl}):`);
-                  model.traverse((child) => {
-                    if (isMesh(child) && child.geometry) {
-                      const positions = child.geometry.attributes.position;
-                      console.log(`  Mesh: ${child.name || "Unnamed"}`);
-                      for (let i = 0; i < positions.count; i++) {
-                        const x = positions.getX(i);
-                        const y = positions.getY(i);
-                        const z = positions.getZ(i);
-                        // console.log(`    Vertex ${i}: (${x.toFixed(3)}, ${y.toFixed(3)}, ${z.toFixed(3)})`);
-                      }
-                    }
-                  });
-
                   resolve();
                 },
                 undefined,
-                (error) => {
-                  console.error(`[Preload Error] Failed to load ${blind.modelUrl}:`, error);
-                  reject(error);
-                }
+                (error) => reject(error)
               )
             )
         )
@@ -250,7 +280,6 @@ const FilterPageAI: React.FC = () => {
     setIsLoading(false);
   };
 
-  // Update camera position based on screen size
   const updateCameraPosition = (height: number) => {
     if (!cameraRef.current) return;
     const fovRad = cameraRef.current.fov * (Math.PI / 180);
@@ -260,7 +289,6 @@ const FilterPageAI: React.FC = () => {
     cameraRef.current.updateProjectionMatrix();
   };
 
-  // Update the window box shape based on corner positions
   const updateWindowBoxShape = () => {
     const scene = sceneRef.current;
     if (!scene || !windowBoxRef.current || cornerRefs.current.length !== 4) return;
@@ -291,13 +319,9 @@ const FilterPageAI: React.FC = () => {
     windowBoxRef.current = newBox;
   };
 
-  // Create and position the 3D model within the quadrilateral with debugging
   const createModelBox = (corners: THREE.Vector3[], modelUrl: string, isInitial: boolean = false) => {
     const scene = sceneRef.current;
-    if (!scene || corners.length !== 4 || !cameraRef.current) {
-      console.error("[createModelBox] Invalid scene, corners, or camera");
-      return;
-    }
+    if (!scene || corners.length !== 4 || !cameraRef.current) return;
 
     if (modelRef.current) {
       scene.remove(modelRef.current);
@@ -305,16 +329,11 @@ const FilterPageAI: React.FC = () => {
     }
 
     const modelData = preloadedModelsRef.current.get(modelUrl);
-    if (!modelData) {
-      console.error(`[createModelBox] Model not found for ${modelUrl}`);
-      return;
-    }
+    if (!modelData) return;
 
     const blindType = BLIND_TYPES.find((b) => b.modelUrl === modelUrl) || BLIND_TYPES[0];
     const model = modelData.model.clone();
     modelRef.current = model;
-
-    console.log(`[createModelBox] Loading ${blindType.type} (${modelUrl})`);
 
     const orderedCorners = [...corners];
     orderedCorners.sort((a, b) => a.y - b.y);
@@ -334,7 +353,6 @@ const FilterPageAI: React.FC = () => {
 
     const quadWidth = quadCorners[1].distanceTo(quadCorners[0]);
     const quadHeight = quadCorners[0].distanceTo(quadCorners[3]);
-    const quadAspect = quadWidth / quadHeight;
 
     const box = new THREE.Box3().setFromObject(model);
     const modelSize = new THREE.Vector3();
@@ -352,13 +370,9 @@ const FilterPageAI: React.FC = () => {
         let height = max.y - min.y || 0.01;
         let depth = max.z - min.z || 0.01;
 
-        console.log(`[Deform] ${child.name || "Unnamed"} in ${blindType.type}:`);
-        console.log(`  BBox Before: min(${min.x.toFixed(2)}, ${min.y.toFixed(2)}, ${min.z.toFixed(2)}), max(${max.x.toFixed(2)}, ${max.y.toFixed(2)}, ${max.z.toFixed(2)})`);
-
         const dims = { x: width, y: height, z: depth };
         const sortedDims = Object.entries(dims).sort((a, b) => b[1] - a[1]);
         if (sortedDims[0][0] === 'z' && sortedDims[1][0] === 'x') {
-          console.log(`  Rotating X/Z to X/Y`);
           geometry.rotateX(Math.PI / 2);
           geometry.computeBoundingBox();
           min = geometry.boundingBox!.min.clone();
@@ -367,7 +381,6 @@ const FilterPageAI: React.FC = () => {
           height = max.y - min.y || 0.01;
           depth = max.z - min.z || 0.01;
         } else if (sortedDims[0][0] === 'z' && sortedDims[1][0] === 'y') {
-          console.log(`  Rotating Y/Z to X/Y`);
           geometry.rotateY(Math.PI / 2);
           geometry.computeBoundingBox();
           min = geometry.boundingBox!.min.clone();
@@ -377,10 +390,7 @@ const FilterPageAI: React.FC = () => {
           depth = max.z - min.z || 0.01;
         }
 
-        // Fit to quad
-        const modelAspect = width / height;
         const fitScale = Math.min(quadWidth / width, quadHeight / height);
-        console.log(`  Fitting: Model Aspect=${modelAspect.toFixed(2)}, Quad Aspect=${quadAspect.toFixed(2)}, Fit Scale=${fitScale.toFixed(3)}`);
         geometry.scale(fitScale, fitScale, fitScale);
         min.multiplyScalar(fitScale);
         max.multiplyScalar(fitScale);
@@ -388,14 +398,8 @@ const FilterPageAI: React.FC = () => {
         height *= fitScale;
         depth *= fitScale;
 
-        console.log(`  BBox After: min(${min.x.toFixed(2)}, ${min.y.toFixed(2)}, ${min.z.toFixed(2)}), max(${max.x.toFixed(2)}, ${max.y.toFixed(2)}, ${max.z.toFixed(2)})`);
-
         const positions = geometry.attributes.position;
         const uvs = geometry.attributes.uv;
-
-        for (let i = 0; i < Math.min(5, positions.count); i++) {
-          console.log(`  Original Vertex ${i}: (${positions.getX(i).toFixed(2)}, ${positions.getY(i).toFixed(2)}, ${positions.getZ(i).toFixed(2)})`);
-        }
 
         for (let i = 0; i < positions.count; i++) {
           const x = positions.getX(i);
@@ -422,10 +426,6 @@ const FilterPageAI: React.FC = () => {
           if (uvs) uvs.setXY(i, uClamped, vClamped);
         }
 
-        for (let i = 0; i < Math.min(5, positions.count); i++) {
-          console.log(`  Deformed Vertex ${i}: (${positions.getX(i).toFixed(2)}, ${positions.getY(i).toFixed(2)}, ${positions.getZ(i).toFixed(2)})`);
-        }
-
         positions.needsUpdate = true;
         if (uvs) uvs.needsUpdate = true;
         geometry.computeVertexNormals();
@@ -439,7 +439,7 @@ const FilterPageAI: React.FC = () => {
     const quaternion = new THREE.Quaternion().setFromUnitVectors(modelNormal, quadNormal);
     model.quaternion.copy(quaternion);
     model.position.copy(quadCenter);
-    model.position.z += 0.1; // Slight offset to ensure visibility
+    model.position.z += 0.1;
 
     const cameraDistance = cameraRef.current.position.z - quadCenter.z;
     cameraRef.current.position.set(quadCenter.x, quadCenter.y, quadCenter.z + cameraDistance);
@@ -466,7 +466,7 @@ const FilterPageAI: React.FC = () => {
     model.traverse((child) => {
       if (isMesh(child)) {
         child.renderOrder = 2;
-        child.visible = true; // Ensure visibility
+        child.visible = true;
       }
     });
 
@@ -474,7 +474,6 @@ const FilterPageAI: React.FC = () => {
     renderScene();
   };
 
-  // Apply texture to the model based on blind type
   const applyTextureToModel = (model: THREE.Group, patternUrl: string, blindType: BlindType) => {
     const textureLoader = new THREE.TextureLoader();
     const applyMaterial = (
@@ -520,8 +519,6 @@ const FilterPageAI: React.FC = () => {
       if (blindType.meshNameWood) applyMaterial("/materials/beige.png", "/3d/normals/wood.jpg", 1, 0.5, 0.3, 0.1, blindType.meshNameWood);
     }
     renderScene();
-
-    console.log(`[applyTextureToModel] Applied texture ${patternUrl} to ${blindType.type}`);
   };
 
   const handleButtonClick = () => {
@@ -600,7 +597,7 @@ const FilterPageAI: React.FC = () => {
     scene.add(box);
     windowBoxRef.current = box;
 
-    const cornerGeometry = new THREE.SphereGeometry(0.01 * planeWidth, 16, 16);
+    const cornerGeometry = new THREE.SphereGeometry(0.03 * planeWidth, 16, 16);
     const cornerMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
     defaultCorners.forEach((pos) => {
       const corner = new THREE.Mesh(cornerGeometry, cornerMaterial);
@@ -616,8 +613,34 @@ const FilterPageAI: React.FC = () => {
       const textureLoader = new THREE.TextureLoader();
       textureLoader.load(imageData, (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace;
+        
+        const imageAspect = texture.image.width / texture.image.height;
+        setImageAspectRatio(imageAspect);
+        
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+        let renderWidth = screenWidth;
+        let renderHeight = screenHeight;
+        
+        if (imageAspect > screenWidth / screenHeight) {
+          renderHeight = screenWidth / imageAspect;
+        } else {
+          renderWidth = screenHeight * imageAspect;
+        }
+        
+        if (rendererRef.current) {
+          rendererRef.current.setSize(renderWidth, renderHeight);
+          rendererRef.current.domElement.style.margin = 'auto';
+          rendererRef.current.domElement.style.display = 'block';
+        }
+        if (cameraRef.current) {
+          cameraRef.current.aspect = renderWidth / renderHeight;
+          cameraRef.current.updateProjectionMatrix();
+          updateCameraPosition(renderHeight);
+        }
+        
         sceneRef.current.background = texture;
-        drawDefaultQuadrilateral(window.innerWidth, window.innerHeight);
+        drawDefaultQuadrilateral(renderWidth, renderHeight);
         resolve();
       });
     });
@@ -678,7 +701,7 @@ const FilterPageAI: React.FC = () => {
     setInstruction("Select a blind type and pattern, then click 'Save Image'.");
     setShowBlindMenu(true);
     setIsCustomizerView(true);
-    setButtonText(""); // Clear button text to hide the main button
+    setButtonText("");
 
     const positions = cornerRefs.current.map((corner) => new THREE.Vector3(corner.position.x, corner.position.y, 0));
     createModelBox(positions, BLIND_TYPES.find((b) => b.type === selectedBlindType)!.modelUrl, true);
@@ -696,7 +719,6 @@ const FilterPageAI: React.FC = () => {
     if (isCustomizerView && quadParamsRef.current) {
       const blindType = BLIND_TYPES.find((b) => b.type === type);
       if (blindType) {
-        console.log(`[selectBlindType] Switching to ${type}`);
         createModelBox(quadParamsRef.current.corners, blindType.modelUrl, false);
       }
     }
@@ -720,7 +742,6 @@ const FilterPageAI: React.FC = () => {
     }
   };
 
-  // Handle back button navigation
   const handleBackClick = () => {
     window.location.href = "/";
   };
@@ -732,11 +753,11 @@ const FilterPageAI: React.FC = () => {
         fontFamily: "Poppins, sans-serif",
         background: !capturedImage && !isCustomizerView ? "url('/images/unsplashMain.jpeg') center/cover no-repeat" : "#FFFFFF",
       }}
+      onContextMenu={(e) => e.preventDefault()}
     >
-      <div ref={mountRef} className="relative w-full h-auto min-h-screen">
+      <div ref={mountRef} className="relative w-full h-auto min-h-screen" style={{ touchAction: 'none' }}>
         <video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover z-[10]" />
       </div>
-      {/* Back Button */}
       <button
         onClick={handleBackClick}
         className="absolute top-5 left-5 p-2 bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300"
@@ -761,7 +782,6 @@ const FilterPageAI: React.FC = () => {
           <div className="text-white text-lg">Loading...</div>
         </div>
       )}
-      {/* Only show the main button if not in customizer view */}
       {!isCustomizerView && buttonText && (
         <button
           onClick={handleButtonClick}
