@@ -998,7 +998,7 @@ const FilterPageUI: React.FC = () => {
     if (!blindType.meshNameFabric && !blindType.meshNameWood) applyMaterial(patternUrl, null, 8, 0, 0.5, 0.1);
     else {
       if (blindType.meshNameFabric) applyMaterial(patternUrl, "/3d/normals/clothTex.jpg", 6, .5, 0.3, 0.1, blindType.meshNameFabric);
-      if (blindType.meshNameWood) applyMaterial("/materials/beige.png", "/3d/normals/wood.jpg", 1, 0.5, .3, 0.1, blindType.meshNameWood);
+      if (blindType.meshNameWood) applyMaterial("/materials/iron.png", "/3d/normals/wood.jpg", 1, 0.5, .3, 0.1, blindType.meshNameWood);
     }
     renderScene();
   };
