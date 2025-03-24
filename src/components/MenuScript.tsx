@@ -105,7 +105,7 @@ const MenuScript: React.FC = () => {
         </div>
       ) : activeComponent === "filterPage"? (
         <div className="w-screen h-screen bg-gray-100 absolute top-0 left-0">
-          <FilterPageAI />
+          <FilterPageUI />
         </div>
       ) : null}
     </div> 
