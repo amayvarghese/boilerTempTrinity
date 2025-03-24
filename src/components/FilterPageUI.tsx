@@ -849,7 +849,7 @@ const FilterPageUI: React.FC = () => {
         const img = new Image();
         img.crossOrigin = "Anonymous";
         img.onload = () => resolve(img);
-        img.onerror = (err) => reject(new Error(`Failed to load ${description}: ${src}`));
+        img.onerror = () => reject(new Error(`Failed to load ${description}: ${src}`));
         img.src = src;
       });
 
