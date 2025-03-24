@@ -122,6 +122,7 @@ const FilterPageAI: React.FC = () => {
     directionalLight.position.set(5, 10, 5);
     sceneRef.current.add(directionalLight);
 
+    //
     const animate = () => {
       requestAnimationFrame(animate);
       if (rendererRef.current && sceneRef.current && cameraRef.current) {
