@@ -4,6 +4,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 // Types and Constants
 type Vector3D = { x: number; y: number; z: number };
+
 type BlindType = {
   type: string;
   buttonImage: string;
@@ -13,6 +14,7 @@ type BlindType = {
   rotation: Vector3D;
   baseScale: Vector3D;
   basePosition: Vector3D;
+  animationName?: string; // Optional animation parameter
 };
 type Pattern = {
   name: string;
@@ -21,7 +23,7 @@ type Pattern = {
   filterTags: string[];
   patternUrl: string;
 };
-type ModelData = { model: THREE.Group; gltf?: any };
+type ModelData = { model: THREE.Group; gltf?: any; mixer?: THREE.AnimationMixer; action?: THREE.AnimationAction }; // Added action to ModelData
 type SelectionBoxParams = {
   targetWidth: number;
   targetHeight: number;
@@ -31,13 +33,13 @@ type SelectionBoxParams = {
 type InitialModelParams = { scale: THREE.Vector3; position: THREE.Vector3 };
 
 const BLIND_TYPES: BlindType[] = [
-  { type: "classicRoman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/models/classicRomanNew.glb", meshNameFabric: "Cloth", meshNameWood:"Cube", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: -45, y: -25, z: 10 } },
-  { type: "roller", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/3d/ROLLER_SHADES.glb", meshNameFabric: "ROLLER_SHADES",  meshNameWood:"Cube",rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2.1, z: 1 }, basePosition: { x: -45.5, y: -30, z: 5 } },
-  { type: "roman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/ROMAN_SHADES_01.glb", meshNameFabric: "polySurface1", meshNameWood: "polySurface3", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
-  { type: "Sheet Blind", buttonImage: "/images/blindTypes/sheetBlindIcon.png", modelUrl: "/models/curtainBlindN.glb", meshNameFabric: "Cloth", meshNameWood: "Rod", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 2 }, basePosition: { x: -45, y: -28, z: 10 } },
-  { type: "PlantationShutter", buttonImage: "/images/blindTypes/plantationShutterIcon.png", modelUrl: "/3d/PlantationShutter.glb", meshNameWood: "PLANTATION__SHUTTER", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2, z: 1 }, basePosition: { x: -46, y: -27, z: 5 } },
-  { type: "VerticalBlind", buttonImage: "/images/blindTypes/verticalSheetBlindIcon.png", modelUrl: "/3d/VerticalSheet.glb", meshNameWood: "Wood", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.45, y: 2.1, z: 1 }, basePosition: { x: -45, y: -28, z: 5 } },
-  { type: "zebraBlinds", buttonImage: "/images/blindTypes/zebraBlindIcon.png", modelUrl: "/3d/zebra_blinds.glb",  meshNameWood:"Cube", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
+  { type: "classicRoman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/animated/classicRomanAnim.glb", meshNameFabric: "Cloth", meshNameWood: "Cube", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: -45, y: -25, z: 10 } },
+  { type: "roller", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/3d/animated/rollerBlindAnim.glb", meshNameFabric: "ROLLER_SHADES", meshNameWood: "Cube", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2.1, z: 1 }, basePosition: { x: -45.5, y: -30, z: 5 } },
+  { type: "roman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/animated/romanBlindAnim.glb", meshNameFabric: "polySurface1", meshNameWood: "polySurface3", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
+  { type: "Sheet Blind", buttonImage: "/images/blindTypes/sheetBlindIcon.png", modelUrl: "/3d/animated/SheetBlindAnim.glb", meshNameFabric: "Cloth", meshNameWood: "Rod", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 2 }, basePosition: { x: -45, y: -28, z: 10 }, animationName: "ClothAction" }, // Added animationName
+  { type: "PlantationShutter", buttonImage: "/images/blindTypes/plantationShutterIcon.png", modelUrl: "/3d/animated/plantationShutterAnim.glb", meshNameWood: "PLANTATION__SHUTTER", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2, z: 1 }, basePosition: { x: -46, y: -27, z: 5 } },
+  { type: "VerticalBlind", buttonImage: "/images/blindTypes/verticalSheetBlindIcon.png", modelUrl: "/3d/animated/verticalBlindAnim.glb", meshNameWood: "Wood", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.45, y: 2.1, z: 1 }, basePosition: { x: -45, y: -28, z: 5 } },
+  { type: "zebraBlinds", buttonImage: "/images/blindTypes/zebraBlindIcon.png", modelUrl: "/3d/animated/zebraBlindAnim.glb", meshNameWood: "Cube", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
 ];
 
 const PATTERNS: Pattern[] = [
@@ -49,7 +51,7 @@ const PATTERNS: Pattern[] = [
   { name: "Driftwood Sand", image: "/materials/driftwoodsand.png", price: "$100", filterTags: ["pattern"], patternUrl: "/materials/driftwoodsand.png" },
   { name: "Iron", image: "/materials/iron.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/iron.png" },
   { name: "Ivory", image: "/materials/ivory.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/ivory.png" },
-  { name: "Kaki", image: "/materials/kaki.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/kaki.png" }, // Fixed STARTfilterTags to filterTags
+  { name: "Kaki", image: "/materials/kaki.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/kaki.png" },
   { name: "Mocha", image: "/materials/mocha.png", price: "$45", filterTags: ["pattern", "natural"], patternUrl: "/materials/mocha.png" },
   { name: "Noir", image: "/materials/noir.png", price: "$150", filterTags: ["pattern", "natural"], patternUrl: "/materials/noir.png" },
   { name: "Oatmeal", image: "/materials/oatmeal.png", price: "$150", filterTags: ["natural", "pattern"], patternUrl: "/materials/oatmeal.png" },
@@ -68,7 +70,7 @@ const PATTERNS: Pattern[] = [
 const isMesh = (object: THREE.Object3D): object is THREE.Mesh => "isMesh" in object && (object.isMesh as boolean);
 
 const FilterPageUI: React.FC = () => {
-  // State and Refs (unchanged)
+  // State and Refs
   const [showBlindMenu, setShowBlindMenu] = useState(false);
   const [selectedBlindType, setSelectedBlindType] = useState<string | null>(null);
   const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
@@ -97,6 +99,8 @@ const FilterPageUI: React.FC = () => {
   const redoButtonRef = useRef<HTMLButtonElement | null>(null);
   const levelIndicatorRef = useRef<HTMLDivElement | null>(null);
   const addWindowButtonRef = useRef<HTMLButtonElement | null>(null);
+  const playForwardButtonRef = useRef<HTMLButtonElement | null>(null); // Added forward button ref
+  const playReverseButtonRef = useRef<HTMLButtonElement | null>(null); // Added reverse button ref
   const modelsRef = useRef<ModelData[]>([]);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const backgroundPlaneRef = useRef<THREE.Mesh | null>(null);
@@ -162,7 +166,7 @@ const FilterPageUI: React.FC = () => {
     secondaryLight.position.set(-5, 5, -5);
     sceneRef.current.add(secondaryLight);
 
-    animate();
+    animate(); // Start animation loop
 
     const handleResize = () => {
       const { innerWidth: width, innerHeight: height } = window;
@@ -179,6 +183,11 @@ const FilterPageUI: React.FC = () => {
       renderer.dispose();
       window.removeEventListener("resize", handleResize);
       cleanupThreeJs();
+      modelsRef.current.forEach(modelData => {
+        if (modelData.mixer) {
+          modelData.mixer.stopAllAction();
+        }
+      });
     };
   }, []);
 
@@ -212,7 +221,7 @@ const FilterPageUI: React.FC = () => {
     preloadModels();
   }, []);
 
-  // UI Elements Setup
+  // UI Elements Setup (Added Animation Buttons)
   useEffect(() => {
     if (!mountRef.current) return;
 
@@ -240,16 +249,106 @@ const FilterPageUI: React.FC = () => {
     redoButtonRef.current?.addEventListener("click", handleRedoSelection);
     addWindowButtonRef.current = addElement<HTMLButtonElement>("button", { id: "addWindowButton", textContent: "Add Blind", className: "fixed bottom-12 left-5 py-2 px-4 text-md bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden" });
     addWindowButtonRef.current?.addEventListener("click", addAnotherWindow);
+    playForwardButtonRef.current = addElement<HTMLButtonElement>("button", { id: "playForwardButton", className: "fixed bottom-28 left-10 py-2 px-4 text-lg bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden" });
+    playForwardButtonRef.current.appendChild(
+      addElement("img", {
+        src: "/images/rolldown.png", // Replace with your forward icon path
+        alt: "Play Forward",
+        className: "w-6 h-6", // Adjust size as needed
+      })
+    );
+    playReverseButtonRef.current = addElement<HTMLButtonElement>("button", { id: "playReverseButton", className: "fixed bottom-12 left-10 py-2 px-4 text-lg bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden" });
+    playReverseButtonRef.current.appendChild(
+      addElement("img", {
+        src: "/images/rollup.png", // Replace with your forward icon path
+        alt: "Play Forward",
+        className: "w-6 h-6", // Adjust size as needed
+      })
+    );
     addElement("button", { id: "backButton", innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>', className: "absolute top-5 left-5 p-2 bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300" }).addEventListener("click", () => window.location.href = "/");
     levelIndicatorRef.current = addElement<HTMLDivElement>("div", { className: "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-2 bg-red-500 rounded-full z-[100] hidden", style: { transition: "background-color 0.3s ease, border 0.3s ease" } }, mount);
     const mobileOverlayRef = addElement<HTMLDivElement>("div", { id: "mobileOverlay", className: "fixed inset-0 z-[35] pointer-events-none hidden md:hidden" }, mount);
 
     return () => {
       [videoRef, canvasRef, levelIndicatorRef].forEach((ref) => ref.current && mount.removeChild(ref.current));
-      [controlButtonRef, uploadButtonRef, saveButtonRef, redoButtonRef, addWindowButtonRef].forEach((ref) => ref.current && document.body.removeChild(ref.current));
+      [controlButtonRef, uploadButtonRef, saveButtonRef, redoButtonRef, addWindowButtonRef, playForwardButtonRef, playReverseButtonRef].forEach((ref) => ref.current && document.body.removeChild(ref.current));
       mobileOverlayRef && mount.removeChild(mobileOverlayRef);
     };
   }, []);
+
+  // Animation Control Handlers
+  const handlePlayForward = (e: Event) => {
+    e.preventDefault();
+    modelsRef.current.forEach((modelData) => {
+      if (modelData.action) {
+        modelData.action.timeScale = 1; // Forward direction
+        modelData.action.paused = false; // Resume from current position
+        if (!modelData.action.isRunning()) {
+          modelData.action.reset().play();
+        }
+        console.log(`Playing forward: ${modelData.action.getClip().name}`);
+      }
+    });
+  };
+
+  const handlePlayReverse = (e: Event) => {
+    e.preventDefault();
+    modelsRef.current.forEach((modelData) => {
+      if (modelData.action) {
+        modelData.action.timeScale = -1; // Reverse direction
+        modelData.action.paused = false; // Resume from current position
+        if (!modelData.action.isRunning()) {
+          modelData.action.reset().play();
+        }
+        console.log(`Playing reverse: ${modelData.action.getClip().name}`);
+      }
+    });
+  };
+
+  const handlePause = (e: Event) => {
+    e.preventDefault();
+    modelsRef.current.forEach((modelData) => {
+      if (modelData.action) {
+        modelData.action.paused = true; // Pause at current position
+        console.log(`Paused: ${modelData.action.getClip().name} at ${modelData.action.time}s`);
+      }
+    });
+  };
+
+  // Setup Animation Button Events
+  useEffect(() => {
+    const forwardBtn = playForwardButtonRef.current;
+    const reverseBtn = playReverseButtonRef.current;
+
+    if (forwardBtn) {
+      forwardBtn.addEventListener("mousedown", handlePlayForward, { passive: false });
+      forwardBtn.addEventListener("mouseup", handlePause, { passive: false });
+      forwardBtn.addEventListener("touchstart", handlePlayForward, { passive: false });
+      forwardBtn.addEventListener("touchend", handlePause, { passive: false });
+    }
+
+    if (reverseBtn) {
+      reverseBtn.addEventListener("mousedown", handlePlayReverse, { passive: false });
+      reverseBtn.addEventListener("mouseup", handlePause, { passive: false });
+      reverseBtn.addEventListener("touchstart", handlePlayReverse, { passive: false });
+      reverseBtn.addEventListener("touchend", handlePause, { passive: false });
+    }
+
+    return () => {
+      if (forwardBtn) {
+        forwardBtn.removeEventListener("mousedown", handlePlayForward);
+        forwardBtn.removeEventListener("mouseup", handlePause);
+        forwardBtn.removeEventListener("touchstart", handlePlayForward);
+        forwardBtn.removeEventListener("touchend", handlePause);
+      }
+      if (reverseBtn) {
+        reverseBtn.removeEventListener("mousedown", handlePlayReverse);
+        reverseBtn.removeEventListener("mouseup", handlePause);
+        reverseBtn.removeEventListener("touchstart", handlePlayReverse);
+        reverseBtn.removeEventListener("touchend", handlePause);
+      }
+    };
+  }, [modelsRef.current.length]); // Re-run when number of models changes
 
   const updateCameraPosition = (width: number, height: number) => {
     if (!cameraRef.current) return;
@@ -301,7 +400,7 @@ const FilterPageUI: React.FC = () => {
           const drawFrame = () => {
             if (!videoRef.current || !canvasRef.current || !ctx) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const videoAspect = videoRef.current.videoWidth / videoRef.current.videoHeight; // Fixed typo here
+            const videoAspect = videoRef.current.videoWidth / videoRef.current.videoHeight;
             const canvasAspect = canvas.width / canvas.height;
             let drawWidth, drawHeight, offsetX, offsetY;
             if (videoAspect > canvasAspect) {
@@ -515,6 +614,9 @@ const FilterPageUI: React.FC = () => {
     }
 
     const model = modelData.model.clone();
+    const mixer = new THREE.AnimationMixer(model);
+    const newModelData = { model, gltf: modelData.gltf, mixer };
+    
     applyTextureToModel(model, selectedPattern || "/materials/mocha.png", defaultBlindType);
 
     const box = new THREE.Box3().setFromObject(model);
@@ -542,9 +644,11 @@ const FilterPageUI: React.FC = () => {
     model.userData.isDraggable = !isSubmitted;
 
     sceneRef.current.add(model);
-    modelsRef.current.push({ model, gltf: modelData.gltf });
+    modelsRef.current.push(newModelData);
     if (!isCustomizerView) addWindowButtonRef.current?.classList.remove("hidden");
 
+    // Prepare animation but don't play it automatically
+    playModelAnimation(newModelData, defaultBlindType.animationName);
     fadeInModel(model);
     renderScene();
 
@@ -561,6 +665,9 @@ const FilterPageUI: React.FC = () => {
     if (!modelData) return;
 
     const newModel = modelData.model.clone();
+    const newMixer = new THREE.AnimationMixer(newModel);
+    const newModelData = { model: newModel, gltf: modelData.gltf, mixer: newMixer };
+
     newModel.position.copy(sourceModel.position);
     newModel.position.x += 2;
     newModel.scale.copy(sourceModel.scale);
@@ -568,8 +675,11 @@ const FilterPageUI: React.FC = () => {
 
     applyTextureToModel(newModel, selectedPattern || "/materials/mocha.png", BLIND_TYPES.find(b => b.type === selectedBlindType) || BLIND_TYPES[0]);
     sceneRef.current.add(newModel);
-    modelsRef.current.push({ model: newModel, gltf: modelData.gltf });
+    modelsRef.current.push(newModelData);
 
+    // Prepare animation for the new model but don't play it
+    const blindType = BLIND_TYPES.find(b => b.type === selectedBlindType) || BLIND_TYPES[0];
+    playModelAnimation(newModelData, blindType.animationName);
     fadeInModel(newModel);
     renderScene();
   };
@@ -707,6 +817,9 @@ const FilterPageUI: React.FC = () => {
     const updatedModels: ModelData[] = [];
     currentModels.forEach(({ position, isDraggable }) => {
       const newModel = modelData.model.clone();
+      const newMixer = new THREE.AnimationMixer(newModel);
+      const newModelData = { model: newModel, gltf: modelData.gltf, mixer: newMixer };
+      
       newModel.position.copy(position);
       if (initialModelParamsRef.current) {
         newModel.scale.copy(initialModelParamsRef.current.scale);
@@ -714,13 +827,20 @@ const FilterPageUI: React.FC = () => {
       newModel.rotation.set(blindType.rotation.x, blindType.rotation.y, blindType.rotation.z);
       newModel.userData.isDraggable = isDraggable;
       applyTextureToModel(newModel, selectedPattern || "/materials/mocha.png", blindType);
+      
       sceneRef.current.add(newModel);
-      updatedModels.push({ model: newModel, gltf: modelData.gltf });
+      updatedModels.push(newModelData);
+      
+      // Prepare animation but don't play it
+      playModelAnimation(newModelData, blindType.animationName);
       fadeInModel(newModel);
     });
 
     if (updatedModels.length === 0) {
       const newModel = modelData.model.clone();
+      const newMixer = new THREE.AnimationMixer(newModel);
+      const newModelData = { model: newModel, gltf: modelData.gltf, mixer: newMixer };
+      
       if (initialModelParamsRef.current) {
         newModel.scale.copy(initialModelParamsRef.current.scale);
         newModel.position.copy(initialModelParamsRef.current.position);
@@ -728,7 +848,10 @@ const FilterPageUI: React.FC = () => {
       newModel.rotation.set(blindType.rotation.x, blindType.rotation.y, blindType.rotation.z);
       applyTextureToModel(newModel, selectedPattern || "/materials/beige.png", blindType);
       sceneRef.current.add(newModel);
-      updatedModels.push({ model: newModel, gltf: modelData.gltf }); // Fixed gtf to gltf
+      updatedModels.push(newModelData);
+      
+      // Prepare animation for default model but don't play it
+      playModelAnimation(newModelData, blindType.animationName);
       fadeInModel(newModel);
     }
 
@@ -955,7 +1078,7 @@ const FilterPageUI: React.FC = () => {
     const rect = mountRef.current.getBoundingClientRect();
     const vector = new THREE.Vector3((x / rect.width) * 2 - 1, -(y / rect.height) * 2 + 1, 0);
     vector.unproject(cameraRef.current);
-    const dir = vector.sub(cameraRef.current.position).normalize();
+    const dir = vector.sub(cameraRef.current.position).normalize(); // Fixed line
     const distance = (depth - cameraRef.current.position.z) / dir.z;
     return cameraRef.current.position.clone().add(dir.multiplyScalar(distance));
   };
@@ -964,7 +1087,7 @@ const FilterPageUI: React.FC = () => {
     if (!model) return;
     const textureLoader = new THREE.TextureLoader();
     const applyMaterial = (textureUrl: string, normalUrl: string | null, repeat: number, normalScale: number, roughness: number, metalness: number, meshName?: string) => {
-      const texture = textureLoader.load(textureUrl, undefined, undefined, (_) => console.error(`Texture load failed: ${textureUrl}`)); // Changed err to _ since it's unused
+      const texture = textureLoader.load(textureUrl, undefined, undefined, (_) => console.error(`Texture load failed: ${textureUrl}`));
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
       texture.repeat.set(repeat, repeat);
       texture.colorSpace = THREE.SRGBColorSpace;
@@ -1038,6 +1161,9 @@ const FilterPageUI: React.FC = () => {
         };
         requestAnimationFrame(fadeOut);
       });
+      if (modelData.mixer) {
+        modelData.mixer.stopAllAction();
+      }
       sceneRef.current.remove(modelData.model);
     }));
     modelsRef.current = [];
@@ -1048,11 +1174,56 @@ const FilterPageUI: React.FC = () => {
   const loadModel = (modelUrl: string) => new Promise<ModelData>((resolve, reject) => {
     new GLTFLoader().load(
       modelUrl,
-      (gltf) => resolve({ model: gltf.scene, gltf }),
+      (gltf) => {
+        const mixer = new THREE.AnimationMixer(gltf.scene);
+        const modelData = { model: gltf.scene, gltf, mixer };
+        
+        console.log(`Loaded model ${modelUrl}:`);
+        console.log('Available animations:', gltf.animations.map(a => ({
+          name: a.name,
+          duration: a.duration
+        })));
+        
+        resolve(modelData);
+      },
       undefined,
       (err) => reject(err)
     );
   });
+
+  const playModelAnimation = (modelData: ModelData, animationName?: string) => {
+    if (!modelData.mixer || !modelData.gltf?.animations?.length) {
+      console.log('No animations available for this model');
+      return;
+    }
+
+    const animations = modelData.gltf.animations;
+    let animationClip: THREE.AnimationClip | undefined;
+
+    if (animationName) {
+      animationClip = animations.find(a => a.name.toLowerCase() === animationName.toLowerCase());
+      console.log(`Attempting to prepare specified animation: ${animationName}`);
+      if (!animationClip) {
+        console.warn(`Animation "${animationName}" not found. Available animations:`, 
+          animations.map(a => a.name));
+        animationClip = animations[0]; // Fallback to first animation
+      }
+    } else {
+      animationClip = animations[0];
+      console.log('No specific animation requested, preparing first available animation');
+    }
+
+    if (animationClip) {
+      const action = modelData.mixer.clipAction(animationClip);
+      action.setLoop(THREE.LoopOnce, 1); // Ensure it doesn't loop automatically
+      action.clampWhenFinished = true; // Stay at end frame when finished
+      action.paused = true; // Start paused, controlled by buttons
+      modelData.action = action; // Store action for later control
+      console.log(`Prepared animation: ${animationClip.name}, Duration: ${animationClip.duration}s`);
+    } else {
+      console.log('No valid animation clip found to prepare');
+    }
+  };
 
   const renderScene = () => {
     if (rendererRef.current && cameraRef.current) {
@@ -1062,6 +1233,12 @@ const FilterPageUI: React.FC = () => {
 
   const animate = () => {
     requestAnimationFrame(animate);
+    const delta = 1/60; // Assuming 60 FPS
+    modelsRef.current.forEach(modelData => {
+      if (modelData.mixer) {
+        modelData.mixer.update(delta);
+      }
+    });
     renderScene();
   };
 
@@ -1085,71 +1262,71 @@ const FilterPageUI: React.FC = () => {
     setShowBlindMenu(true);
     setIsCustomizerView(true);
     setIsSubmitted(true);
-
+  
     controlButtonRef.current && document.body.removeChild(controlButtonRef.current);
     uploadButtonRef.current && document.body.removeChild(uploadButtonRef.current);
     redoButtonRef.current?.classList.add("hidden");
     saveButtonRef.current?.classList.remove("hidden");
     addWindowButtonRef.current?.classList.add("hidden");
-
+  
+    // Show animation control buttons
+    playForwardButtonRef.current?.classList.remove("hidden");
+    playReverseButtonRef.current?.classList.remove("hidden");
+  
     if (rendererRef.current && backgroundPlaneRef.current) {
       const texture = (backgroundPlaneRef.current.material as THREE.MeshBasicMaterial).map;
       if (texture) {
-        const imgWidth = texture.image.width;
-        const imgHeight = texture.image.height;
-        const imgAspect = imgWidth / imgHeight;
-        const maxWidth = window.innerWidth * 0.9;
-        const maxHeight = window.innerHeight * 0.9;
-
-        let canvasWidth = imgWidth;
-        let canvasHeight = imgHeight;
-
-        if (canvasWidth > maxWidth || canvasHeight > maxHeight) {
-          const scale = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
-          canvasWidth = imgWidth * scale;
-          canvasHeight = imgHeight * scale;
-        }
-
-        rendererRef.current.setSize(canvasWidth, canvasHeight);
-        cameraRef.current!.aspect = canvasWidth / canvasHeight;
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+  
+        // Keep renderer size as window size (same as initial setup)
+        rendererRef.current.setSize(width, height);
+        cameraRef.current!.aspect = width / height;
         cameraRef.current!.updateProjectionMatrix();
-
-        const planeWidth = canvasWidth / 100;
-        const planeHeight = canvasHeight / 100;
+  
+        // Recalculate plane size to match initial loadTextureAndCreatePlane logic
+        const aspect = width / height;
+        const imgAspect = texture.image.width / texture.image.height;
+        const [planeWidth, planeHeight] = imgAspect > aspect 
+          ? [width / 100, (width / 100) / imgAspect] 
+          : [(height / 100) * imgAspect, height / 100];
         backgroundPlaneRef.current.geometry.dispose();
         backgroundPlaneRef.current.geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
         backgroundPlaneRef.current.position.set(0, 0, -0.1);
-
-        const distance = (canvasHeight / 100 / 2) / Math.tan((cameraRef.current!.fov * Math.PI / 180) / 2);
+  
+        // Update camera position to match initial setup
+        const distance = (height / 100 / 2) / Math.tan((cameraRef.current!.fov * Math.PI / 180) / 2);
         cameraRef.current!.position.set(0, 0, distance);
         cameraRef.current!.lookAt(0, 0, 0);
-
-        rendererRef.current.domElement.style.width = `${canvasWidth}px`;
-        rendererRef.current.domElement.style.height = `${canvasHeight}px`;
+  
+        // Ensure canvas styling matches window size
+        rendererRef.current.domElement.style.width = `${width}px`;
+        rendererRef.current.domElement.style.height = `${height}px`;
         rendererRef.current.domElement.style.maxWidth = "100%";
         rendererRef.current.domElement.style.maxHeight = "100%";
-        rendererRef.current.domElement.style.margin = "auto";
+        rendererRef.current.domElement.style.margin = "0";
         rendererRef.current.domElement.style.display = "block";
-
+  
         if (mountRef.current) {
           mountRef.current.style.overflowY = "auto";
-          mountRef.current.style.display = "flex";
-          mountRef.current.style.justifyContent = "center";
-          mountRef.current.style.alignItems = "center";
+          mountRef.current.style.overflowX = "hidden";
+          mountRef.current.style.display = "block"; // Reset to block to match initial layout
+          mountRef.current.style.justifyContent = "unset";
+          mountRef.current.style.alignItems = "unset";
           mountRef.current.style.minHeight = "100vh";
+          mountRef.current.style.width = "100%";
         }
-
+  
         renderScene();
       }
     }
-
+  
     const mobileOverlay = document.getElementById("mobileOverlay");
     if (mobileOverlay) {
       mobileOverlay.classList.remove("hidden");
       mobileOverlay.style.pointerEvents = "none";
     }
   };
-
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setFilters((prev) => e.target.checked ? [...prev, e.target.value] : prev.filter((tag) => tag !== e.target.value));
 
