@@ -23,7 +23,7 @@ type Pattern = {
   filterTags: string[];
   patternUrl: string;
 };
-type ModelData = { model: THREE.Group; gltf?: any; mixer?: THREE.AnimationMixer; action?: THREE.AnimationAction };
+type ModelData = { model: THREE.Group; gltf?: any; mixer?: THREE.AnimationMixer; action?: THREE.AnimationAction }; // Added action to ModelData
 type SelectionBoxParams = {
   targetWidth: number;
   targetHeight: number;
@@ -520,9 +520,15 @@ const FilterPageUI: React.FC = () => {
       style: { zIndex: "25", transition: "none" },
     });
     mountRef.current.appendChild(selectionBoxRef.current);
-
+  
+    // Add instruction for drawing the box
+    const instructionDiv = document.createElement("div");
+    instructionDiv.textContent = "Draw a box over the window to place the blind";
+    instructionDiv.className = "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white bg-opacity-80 p-4 rounded shadow-md z-[100] text-gray-800 text-lg pointer-events-none";
+    mountRef.current.appendChild(instructionDiv);
+  
     let startX = 0, startY = 0, isDragging = false;
-
+  
     const startSelection = (e: MouseEvent | Touch) => {
       if (isSelectionBoxUsed) return;
       const rect = mountRef.current!.getBoundingClientRect();
@@ -533,7 +539,7 @@ const FilterPageUI: React.FC = () => {
         isDragging = true;
       }
     };
-
+  
     const updateSelection = (e: MouseEvent | Touch) => {
       if (!isDragging || !selectionBoxRef.current) return;
       const rect = mountRef.current!.getBoundingClientRect();
@@ -550,7 +556,7 @@ const FilterPageUI: React.FC = () => {
         }
       });
     };
-
+  
     const endSelection = (e: MouseEvent | Touch) => {
       if (!isDragging || !selectionBoxRef.current) return;
       selectionBoxRef.current.style.display = "none";
@@ -559,8 +565,12 @@ const FilterPageUI: React.FC = () => {
       createDefaultModel(startX, startY, e.clientX - rect.left, e.clientY - rect.top);
       setIsSelectionBoxUsed(true);
       cleanupSelectionBox();
+      // Remove instruction when selection ends
+      if (instructionDiv && mountRef.current) {
+        mountRef.current.removeChild(instructionDiv);
+      }
     };
-
+  
     const handlers = {
       mousedown: (e: MouseEvent) => { if (e.button === 0) startSelection(e); },
       mousemove: (e: MouseEvent) => updateSelection(e),
@@ -569,11 +579,11 @@ const FilterPageUI: React.FC = () => {
       touchmove: (e: TouchEvent) => updateSelection(e.touches[0]),
       touchend: (e: TouchEvent) => endSelection(e.changedTouches[0]),
     };
-
+  
     Object.entries(handlers).forEach(([event, handler]) =>
       mountRef.current!.addEventListener(event, handler as EventListener, { passive: false })
     );
-
+  
     const cleanupSelectionBox = () => {
       Object.entries(handlers).forEach(([event, handler]) =>
         mountRef.current?.removeEventListener(event, handler as EventListener)
