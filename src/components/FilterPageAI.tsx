@@ -22,7 +22,7 @@ type Pattern = {
 type ModelData = { model: THREE.Group; gltf?: any };
 
 const BLIND_TYPES: BlindType[] = [
-  { type: "Roller Blind", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/models/shadeBakeNew.glb", depthFactor: 0 },
+  { type: "Roller Blind", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/3d/animated/rollerBlindAnim.glb", depthFactor: 0 },
   { type: "Roman Blind", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/models/Black_Blind.glb", depthFactor: 0 },
   { type: "Classic Roman", buttonImage: "/images/blindTypes/classicRomanIcon.png", modelUrl: "/models/Gray_2_Blind.glb", depthFactor: 0 },
   { type: "Zebra Blind", buttonImage: "/images/blindTypes/zebraBlindIcon.png", modelUrl: "/models/zebra_02.glb", depthFactor: 0 },

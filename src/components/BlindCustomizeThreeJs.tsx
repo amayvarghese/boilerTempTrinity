@@ -24,13 +24,13 @@ type Pattern = {
 type ModelData = { model: THREE.Group; gltf?: any };
 
 const BLIND_TYPES: BlindType[] = [
-  { type: "classicRoman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/models/classicRomanNew.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: -45, y: -25, z: 10 } },
-  { type: "roller", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/3d/ROLLER_SHADES.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2.1, z: 1 }, basePosition: { x: -45.5, y: -30, z: 5 }, meshNameFabric: "ROLLER_SHADES", meshNameWood: "Cube" },
-  { type: "roman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/ROMAN_SHADES_01.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 }, meshNameFabric: "polySurface1", meshNameWood: "polySurface3" },
-  { type: "Sheet Blind", buttonImage: "/images/blindTypes/sheetBlindIcon.png", modelUrl: "/models/curtainBlindN.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -28, z: 20 }, meshNameFabric: "Cloth", meshNameWood: "Rod" },
+  { type: "classicRoman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/animated/classicRomanAnim.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: -45, y: -25, z: 10 } },
+  { type: "roller", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/3d/animated/rollerBlindAnim.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2.1, z: 1 }, basePosition: { x: -45.5, y: -30, z: 5 }, meshNameFabric: "ROLLER_SHADES", meshNameWood: "Cube" },
+  { type: "roman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/animated/romanBlindAnim.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 }, meshNameFabric: "polySurface1", meshNameWood: "polySurface3" },
+  { type: "Sheet Blind", buttonImage: "/images/blindTypes/sheetBlindIcon.png", modelUrl: "/3d/animated/SheetBlindAnim.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -28, z: 20 }, meshNameFabric: "Cloth", meshNameWood: "Rod" },
   { type: "PlantationShutter", buttonImage: "/images/blindTypes/plantationShutterIcon.png", modelUrl: "/3d/PLANTATION__SHUTTER.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 150, y: 230, z: 1 }, basePosition: { x: -46, y: -30, z: 5 }, meshNameWood: "Wood" },
   { type: "VerticalSheet", buttonImage: "/images/blindTypes/verticalSheetBlindIcon.png", modelUrl: "/3d/VerticalSheet.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.45, y: 2.1, z: 1 }, basePosition: { x: -45, y: -28, z: 5 }, meshNameWood: "Wood" },
-  { type: "zebraBlinds", buttonImage: "/images/blindTypes/zebraBlindIcon.png", modelUrl: "/3d/zebra_blinds.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2.2, z: 1 }, basePosition: { x: -45, y: -29, z: 5 }, meshNameWood: "zebra_blinds" },
+  { type: "zebraBlinds", buttonImage: "/images/blindTypes/zebraBlindIcon.png", modelUrl: "/3d/animated/zebraBlindAnim.glb", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2.2, z: 1 }, basePosition: { x: -45, y: -29, z: 5 }, meshNameWood: "zebra_blinds" },
 ];
 
 const PATTERNS: Pattern[] = [
