@@ -1,5 +1,13 @@
 import React from "react";
-import DebugComponent from "../components/DebugComponent";
+import DebugComponentBase from "../components/DebugComponent";
+import * as THREE from "three";
+
+interface DebugComponentProps {
+  modelData: { model: THREE.Group; gltf?: any };
+  position: { x: number; y: number; z: number };
+}
+
+const DebugComponent = DebugComponentBase as React.FC<DebugComponentProps>;
 
 type DebugComponentPageProps = {
   preloadedModels: Map<string, { model: THREE.Group; gltf?: any }>;

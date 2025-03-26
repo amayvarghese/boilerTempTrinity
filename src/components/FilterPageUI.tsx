@@ -23,7 +23,7 @@ type Pattern = {
   filterTags: string[];
   patternUrl: string;
 };
-type ModelData = { model: THREE.Group; gltf?: any; mixer?: THREE.AnimationMixer; action?: THREE.AnimationAction }; // Added action to ModelData
+type ModelData = { model: THREE.Group; gltf?: any; mixer?: THREE.AnimationMixer; action?: THREE.AnimationAction };
 type SelectionBoxParams = {
   targetWidth: number;
   targetHeight: number;
