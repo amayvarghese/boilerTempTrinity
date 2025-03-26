@@ -907,76 +907,46 @@ const FilterPageUI: React.FC = () => {
       setNewProcess("save-error", "Missing required components. Please try again.");
       return;
     }
-
+  
     setNewProcess("save", "Saving image... Please wait.");
     if (!confirm("Would you like to save the customized image?")) return;
-
+  
     setIsLoading(true);
     setShowBlindMenu(false);
     saveButtonRef.current?.classList.add("hidden");
-
-    const originalModelData = modelsRef.current.map(({ model }) => ({
-      model,
-      scale: model.scale.clone(),
-      position: model.position.clone(),
-    }));
-    const originalCameraPosition = cameraRef.current.position.clone();
-
-    let effectiveCapturedImage = capturedImage || localStorage.getItem("capturedImage");
-
-    const material = backgroundPlaneRef.current.material as THREE.MeshBasicMaterial;
-    const texture = material.map;
-
-    if (!texture || !texture.image || !effectiveCapturedImage) {
-      console.error("Texture or captured image is invalid:", { texture, capturedImage: effectiveCapturedImage });
-      setNewProcess("save-error", "No image captured or uploaded. Please capture or upload an image first.");
-      restoreRenderer(originalModelData, originalCameraPosition);
-      return;
-    }
-
-    const capturedWidth = texture.image.width;
-    const capturedHeight = texture.image.height;
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-
-    const widthScaleFactor = capturedWidth / screenWidth;
-    const heightScaleFactor = capturedHeight / screenHeight;
-    const scaleFactor = Math.min(widthScaleFactor, heightScaleFactor);
-    originalModelData.forEach(({ model }) => {
-      model.scale.multiplyScalar(scaleFactor);
-      model.position.multiplyScalar(scaleFactor);
-    });
-
-    rendererRef.current.setSize(capturedWidth, capturedHeight);
-    cameraRef.current.aspect = capturedWidth / capturedHeight;
-    const distance = (screenHeight / 100 / 2) / Math.tan((cameraRef.current.fov * Math.PI / 180) / 2);
-    cameraRef.current.position.set(0, 0, distance * (capturedHeight / screenHeight));
-    cameraRef.current.lookAt(0, 0, 0);
-    cameraRef.current.updateProjectionMatrix();
-    adjustBackgroundPlane(capturedWidth, capturedHeight);
-
+  
+    // Get current window dimensions (matches renderer size)
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+  
+    // Render the current scene (models over transparent background)
     rendererRef.current.clear();
     rendererRef.current.render(sceneRef.current, cameraRef.current);
     const sceneDataUrl = rendererRef.current.domElement.toDataURL("image/png");
-
+  
     if (!sceneDataUrl || sceneDataUrl === "data:,") {
       console.error("Failed to render scene to data URL");
       setNewProcess("save-error", "Failed to render the scene. Please try again.");
-      restoreRenderer(originalModelData, originalCameraPosition);
+      setIsLoading(false);
+      setShowBlindMenu(true);
+      saveButtonRef.current?.classList.remove("hidden");
       return;
     }
-
+  
+    // Create a canvas to combine background, scene, and logo
     const canvas = document.createElement("canvas");
-    canvas.width = capturedWidth;
-    canvas.height = capturedHeight;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext("2d");
     if (!ctx) {
       console.error("Failed to get 2D context for canvas");
       setNewProcess("save-error", "Canvas context unavailable. Please try again.");
-      restoreRenderer(originalModelData, originalCameraPosition);
+      setIsLoading(false);
+      setShowBlindMenu(true);
+      saveButtonRef.current?.classList.remove("hidden");
       return;
     }
-
+  
     const loadImage = (src: string, description: string) =>
       new Promise<HTMLImageElement>((resolve, reject) => {
         const img = new Image();
@@ -985,28 +955,38 @@ const FilterPageUI: React.FC = () => {
         img.onerror = () => reject(new Error(`Failed to load ${description}: ${src}`));
         img.src = src;
       });
-
+  
     try {
+      // Draw the background image (capturedImage) at screen size
+      let effectiveCapturedImage = capturedImage || localStorage.getItem("capturedImage");
+      if (!effectiveCapturedImage) {
+        console.error("No captured image available");
+        throw new Error("No background image to save");
+      }
       const backgroundImg = await loadImage(effectiveCapturedImage, "Background image");
-      ctx.drawImage(backgroundImg, 0, 0, capturedWidth, capturedHeight);
-
+      ctx.drawImage(backgroundImg, 0, 0, width, height);
+  
+      // Draw the rendered scene (models) on top
       const sceneImg = await loadImage(sceneDataUrl, "Scene image");
-      ctx.drawImage(sceneImg, 0, 0, capturedWidth, capturedHeight);
-
+      ctx.drawImage(sceneImg, 0, 0, width, height);
+  
+      // Draw the logo at the top center (matching on-screen position and size)
       const logoImg = await loadImage("/images/baelogoN.png", "Logo image");
-      const logoSize = capturedHeight * 0.1;
-      const logoX = (capturedWidth - logoSize) / 2;
-      const logoY = 16;
+      const logoSize = height * 0.24; // Matches w-24 h-24 (assuming 100px = 1 unit, adjust if needed)
+      const logoX = (width - logoSize) / 2;
+      const logoY = 16; // Matches top-4 (assuming 1rem = 16px)
       ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
-
+  
+      // Generate the final image
       const finalDataUrl = canvas.toDataURL("image/png");
       if (!finalDataUrl || finalDataUrl === "data:,") {
         throw new Error("Final data URL is empty");
       }
-
+  
       const blob = await (await fetch(finalDataUrl)).blob();
       const file = new File([blob], "custom_blind_image.png", { type: "image/png" });
-
+  
+      // Attempt to share or download
       if (navigator.share && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
@@ -1029,7 +1009,10 @@ const FilterPageUI: React.FC = () => {
       const errorMessage = error instanceof Error ? error.message : String(error);
       setNewProcess("save-error", `Failed to save image: ${errorMessage}. Please try again.`);
     } finally {
-      restoreRenderer(originalModelData, originalCameraPosition);
+      setIsLoading(false);
+      setShowBlindMenu(true);
+      saveButtonRef.current?.classList.remove("hidden");
+      renderScene(); // Re-render to ensure the scene is visible again
     }
   };
 
