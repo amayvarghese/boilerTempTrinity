@@ -23,7 +23,7 @@ type Pattern = {
   filterTags: string[];
   patternUrl: string;
 };
-type ModelData = { model: THREE.Group; gltf?: any; mixer?: THREE.AnimationMixer; action?: THREE.AnimationAction }; // Added action to ModelData
+type ModelData = { model: THREE.Group; gltf?: any; mixer?: THREE.AnimationMixer; action?: THREE.AnimationAction };
 type SelectionBoxParams = {
   targetWidth: number;
   targetHeight: number;
@@ -36,7 +36,7 @@ const BLIND_TYPES: BlindType[] = [
   { type: "classicRoman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/animated/classicRomanAnim.glb", meshNameFabric: "Cloth", meshNameWood: "Cube", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: -45, y: -25, z: 10 } },
   { type: "roller", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/3d/animated/rollerBlindAnim.glb", meshNameFabric: "ROLLER_SHADES", meshNameWood: "Cube", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2.1, z: 1 }, basePosition: { x: -45.5, y: -30, z: 5 } },
   { type: "roman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/animated/romanBlindAnim.glb", meshNameFabric: "polySurface1", meshNameWood: "polySurface3", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
-  { type: "Sheet Blind", buttonImage: "/images/blindTypes/sheetBlindIcon.png", modelUrl: "/3d/animated/SheetBlindAnim.glb", meshNameFabric: "Cloth", meshNameWood: "Rod", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 2 }, basePosition: { x: -45, y: -28, z: 10 }, animationName: "ClothAction" }, // Added animationName
+  { type: "Sheet Blind", buttonImage: "/images/blindTypes/sheetBlindIcon.png", modelUrl: "/3d/animated/SheetBlindAnim.glb", meshNameFabric: "Cloth", meshNameWood: "Rod", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 2 }, basePosition: { x: -45, y: -28, z: 10 }, animationName: "ClothAction" },
   { type: "PlantationShutter", buttonImage: "/images/blindTypes/plantationShutterIcon.png", modelUrl: "/3d/animated/plantationShutterAnim.glb", meshNameWood: "PLANTATION__SHUTTER", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2, z: 1 }, basePosition: { x: -46, y: -27, z: 5 } },
   { type: "VerticalBlind", buttonImage: "/images/blindTypes/verticalSheetBlindIcon.png", modelUrl: "/3d/animated/verticalBlindAnim.glb", meshNameWood: "Wood", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.45, y: 2.1, z: 1 }, basePosition: { x: -45, y: -28, z: 5 } },
   { type: "zebraBlinds", buttonImage: "/images/blindTypes/zebraBlindIcon.png", modelUrl: "/3d/animated/zebraBlindAnim.glb", meshNameWood: "Cube", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
@@ -99,8 +99,8 @@ const FilterPageUI: React.FC = () => {
   const redoButtonRef = useRef<HTMLButtonElement | null>(null);
   const levelIndicatorRef = useRef<HTMLDivElement | null>(null);
   const addWindowButtonRef = useRef<HTMLButtonElement | null>(null);
-  const playForwardButtonRef = useRef<HTMLButtonElement | null>(null); // Added forward button ref
-  const playReverseButtonRef = useRef<HTMLButtonElement | null>(null); // Added reverse button ref
+  const playForwardButtonRef = useRef<HTMLButtonElement | null>(null);
+  const playReverseButtonRef = useRef<HTMLButtonElement | null>(null);
   const modelsRef = useRef<ModelData[]>([]);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const backgroundPlaneRef = useRef<THREE.Mesh | null>(null);
@@ -221,7 +221,7 @@ const FilterPageUI: React.FC = () => {
     preloadModels();
   }, []);
 
-  // UI Elements Setup (Added Animation Buttons)
+  // UI Elements Setup (Updated Animation Buttons)
   useEffect(() => {
     if (!mountRef.current) return;
 
@@ -252,17 +252,19 @@ const FilterPageUI: React.FC = () => {
     playForwardButtonRef.current = addElement<HTMLButtonElement>("button", { id: "playForwardButton", className: "fixed bottom-28 left-10 py-2 px-4 text-lg bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden" });
     playForwardButtonRef.current.appendChild(
       addElement("img", {
-        src: "/images/rolldown.png", // Replace with your forward icon path
+        src: "/images/rolldown.png",
         alt: "Play Forward",
-        className: "w-6 h-6", // Adjust size as needed
+        className: "w-6 h-6 pointer-events-none select-none",
+        draggable: false
       })
     );
     playReverseButtonRef.current = addElement<HTMLButtonElement>("button", { id: "playReverseButton", className: "fixed bottom-12 left-10 py-2 px-4 text-lg bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden" });
     playReverseButtonRef.current.appendChild(
       addElement("img", {
-        src: "/images/rollup.png", // Replace with your forward icon path
-        alt: "Play Forward",
-        className: "w-6 h-6", // Adjust size as needed
+        src: "/images/rollup.png",
+        alt: "Play Reverse",
+        className: "w-6 h-6 pointer-events-none select-none",
+        draggable: false
       })
     );
     addElement("button", { id: "backButton", innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>', className: "absolute top-5 left-5 p-2 bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300" }).addEventListener("click", () => window.location.href = "/");
@@ -281,8 +283,8 @@ const FilterPageUI: React.FC = () => {
     e.preventDefault();
     modelsRef.current.forEach((modelData) => {
       if (modelData.action) {
-        modelData.action.timeScale = 1; // Forward direction
-        modelData.action.paused = false; // Resume from current position
+        modelData.action.timeScale = 1;
+        modelData.action.paused = false;
         if (!modelData.action.isRunning()) {
           modelData.action.reset().play();
         }
@@ -295,8 +297,8 @@ const FilterPageUI: React.FC = () => {
     e.preventDefault();
     modelsRef.current.forEach((modelData) => {
       if (modelData.action) {
-        modelData.action.timeScale = -1; // Reverse direction
-        modelData.action.paused = false; // Resume from current position
+        modelData.action.timeScale = -1;
+        modelData.action.paused = false;
         if (!modelData.action.isRunning()) {
           modelData.action.reset().play();
         }
@@ -309,13 +311,13 @@ const FilterPageUI: React.FC = () => {
     e.preventDefault();
     modelsRef.current.forEach((modelData) => {
       if (modelData.action) {
-        modelData.action.paused = true; // Pause at current position
+        modelData.action.paused = true;
         console.log(`Paused: ${modelData.action.getClip().name} at ${modelData.action.time}s`);
       }
     });
   };
 
-  // Setup Animation Button Events
+  // Setup Animation Button Events (Updated)
   useEffect(() => {
     const forwardBtn = playForwardButtonRef.current;
     const reverseBtn = playReverseButtonRef.current;
@@ -325,6 +327,7 @@ const FilterPageUI: React.FC = () => {
       forwardBtn.addEventListener("mouseup", handlePause, { passive: false });
       forwardBtn.addEventListener("touchstart", handlePlayForward, { passive: false });
       forwardBtn.addEventListener("touchend", handlePause, { passive: false });
+      forwardBtn.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
     }
 
     if (reverseBtn) {
@@ -332,7 +335,20 @@ const FilterPageUI: React.FC = () => {
       reverseBtn.addEventListener("mouseup", handlePause, { passive: false });
       reverseBtn.addEventListener("touchstart", handlePlayReverse, { passive: false });
       reverseBtn.addEventListener("touchend", handlePause, { passive: false });
+      reverseBtn.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
     }
+
+    const setImageStyles = (btn: HTMLButtonElement | null) => {
+      const img = btn?.querySelector("img");
+      if (img) {
+        img.style.pointerEvents = "none";
+        img.style.userSelect = "none";
+        img.setAttribute("draggable", "false");
+      }
+    };
+
+    setImageStyles(forwardBtn);
+    setImageStyles(reverseBtn);
 
     return () => {
       if (forwardBtn) {
@@ -340,15 +356,17 @@ const FilterPageUI: React.FC = () => {
         forwardBtn.removeEventListener("mouseup", handlePause);
         forwardBtn.removeEventListener("touchstart", handlePlayForward);
         forwardBtn.removeEventListener("touchend", handlePause);
+        forwardBtn.removeEventListener("touchmove", (e) => e.preventDefault());
       }
       if (reverseBtn) {
         reverseBtn.removeEventListener("mousedown", handlePlayReverse);
         reverseBtn.removeEventListener("mouseup", handlePause);
         reverseBtn.removeEventListener("touchstart", handlePlayReverse);
         reverseBtn.removeEventListener("touchend", handlePause);
+        reverseBtn.removeEventListener("touchmove", (e) => e.preventDefault());
       }
     };
-  }, [modelsRef.current.length]); // Re-run when number of models changes
+  }, [modelsRef.current.length]);
 
   const updateCameraPosition = (width: number, height: number) => {
     if (!cameraRef.current) return;
@@ -520,15 +538,14 @@ const FilterPageUI: React.FC = () => {
       style: { zIndex: "25", transition: "none" },
     });
     mountRef.current.appendChild(selectionBoxRef.current);
-  
-    // Add instruction for drawing the box
+
     const instructionDiv = document.createElement("div");
     instructionDiv.textContent = "Draw a box over the window to place the blind";
     instructionDiv.className = "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white bg-opacity-80 p-4 rounded shadow-md z-[100] text-gray-800 text-lg pointer-events-none";
     mountRef.current.appendChild(instructionDiv);
-  
+
     let startX = 0, startY = 0, isDragging = false;
-  
+
     const startSelection = (e: MouseEvent | Touch) => {
       if (isSelectionBoxUsed) return;
       const rect = mountRef.current!.getBoundingClientRect();
@@ -539,7 +556,7 @@ const FilterPageUI: React.FC = () => {
         isDragging = true;
       }
     };
-  
+
     const updateSelection = (e: MouseEvent | Touch) => {
       if (!isDragging || !selectionBoxRef.current) return;
       const rect = mountRef.current!.getBoundingClientRect();
@@ -556,7 +573,7 @@ const FilterPageUI: React.FC = () => {
         }
       });
     };
-  
+
     const endSelection = (e: MouseEvent | Touch) => {
       if (!isDragging || !selectionBoxRef.current) return;
       selectionBoxRef.current.style.display = "none";
@@ -565,12 +582,11 @@ const FilterPageUI: React.FC = () => {
       createDefaultModel(startX, startY, e.clientX - rect.left, e.clientY - rect.top);
       setIsSelectionBoxUsed(true);
       cleanupSelectionBox();
-      // Remove instruction when selection ends
       if (instructionDiv && mountRef.current) {
         mountRef.current.removeChild(instructionDiv);
       }
     };
-  
+
     const handlers = {
       mousedown: (e: MouseEvent) => { if (e.button === 0) startSelection(e); },
       mousemove: (e: MouseEvent) => updateSelection(e),
@@ -579,11 +595,11 @@ const FilterPageUI: React.FC = () => {
       touchmove: (e: TouchEvent) => updateSelection(e.touches[0]),
       touchend: (e: TouchEvent) => endSelection(e.changedTouches[0]),
     };
-  
+
     Object.entries(handlers).forEach(([event, handler]) =>
       mountRef.current!.addEventListener(event, handler as EventListener, { passive: false })
     );
-  
+
     const cleanupSelectionBox = () => {
       Object.entries(handlers).forEach(([event, handler]) =>
         mountRef.current?.removeEventListener(event, handler as EventListener)
@@ -626,7 +642,7 @@ const FilterPageUI: React.FC = () => {
     const model = modelData.model.clone();
     const mixer = new THREE.AnimationMixer(model);
     const newModelData = { model, gltf: modelData.gltf, mixer };
-    
+
     applyTextureToModel(model, selectedPattern || "/materials/mocha.png", defaultBlindType);
 
     const box = new THREE.Box3().setFromObject(model);
@@ -657,7 +673,6 @@ const FilterPageUI: React.FC = () => {
     modelsRef.current.push(newModelData);
     if (!isCustomizerView) addWindowButtonRef.current?.classList.remove("hidden");
 
-    // Prepare animation but don't play it automatically
     playModelAnimation(newModelData, defaultBlindType.animationName);
     fadeInModel(model);
     renderScene();
@@ -687,7 +702,6 @@ const FilterPageUI: React.FC = () => {
     sceneRef.current.add(newModel);
     modelsRef.current.push(newModelData);
 
-    // Prepare animation for the new model but don't play it
     const blindType = BLIND_TYPES.find(b => b.type === selectedBlindType) || BLIND_TYPES[0];
     playModelAnimation(newModelData, blindType.animationName);
     fadeInModel(newModel);
@@ -829,7 +843,7 @@ const FilterPageUI: React.FC = () => {
       const newModel = modelData.model.clone();
       const newMixer = new THREE.AnimationMixer(newModel);
       const newModelData = { model: newModel, gltf: modelData.gltf, mixer: newMixer };
-      
+
       newModel.position.copy(position);
       if (initialModelParamsRef.current) {
         newModel.scale.copy(initialModelParamsRef.current.scale);
@@ -837,11 +851,10 @@ const FilterPageUI: React.FC = () => {
       newModel.rotation.set(blindType.rotation.x, blindType.rotation.y, blindType.rotation.z);
       newModel.userData.isDraggable = isDraggable;
       applyTextureToModel(newModel, selectedPattern || "/materials/mocha.png", blindType);
-      
+
       sceneRef.current.add(newModel);
       updatedModels.push(newModelData);
-      
-      // Prepare animation but don't play it
+
       playModelAnimation(newModelData, blindType.animationName);
       fadeInModel(newModel);
     });
@@ -850,7 +863,7 @@ const FilterPageUI: React.FC = () => {
       const newModel = modelData.model.clone();
       const newMixer = new THREE.AnimationMixer(newModel);
       const newModelData = { model: newModel, gltf: modelData.gltf, mixer: newMixer };
-      
+
       if (initialModelParamsRef.current) {
         newModel.scale.copy(initialModelParamsRef.current.scale);
         newModel.position.copy(initialModelParamsRef.current.position);
@@ -859,8 +872,7 @@ const FilterPageUI: React.FC = () => {
       applyTextureToModel(newModel, selectedPattern || "/materials/beige.png", blindType);
       sceneRef.current.add(newModel);
       updatedModels.push(newModelData);
-      
-      // Prepare animation for default model but don't play it
+
       playModelAnimation(newModelData, blindType.animationName);
       fadeInModel(newModel);
     }
@@ -907,23 +919,21 @@ const FilterPageUI: React.FC = () => {
       setNewProcess("save-error", "Missing required components. Please try again.");
       return;
     }
-  
+
     setNewProcess("save", "Saving image... Please wait.");
     if (!confirm("Would you like to save the customized image?")) return;
-  
+
     setIsLoading(true);
     setShowBlindMenu(false);
     saveButtonRef.current?.classList.add("hidden");
-  
-    // Get current window dimensions (matches renderer size)
+
     const width = window.innerWidth;
     const height = window.innerHeight;
-  
-    // Render the current scene (models over transparent background)
+
     rendererRef.current.clear();
     rendererRef.current.render(sceneRef.current, cameraRef.current);
     const sceneDataUrl = rendererRef.current.domElement.toDataURL("image/png");
-  
+
     if (!sceneDataUrl || sceneDataUrl === "data:,") {
       console.error("Failed to render scene to data URL");
       setNewProcess("save-error", "Failed to render the scene. Please try again.");
@@ -932,8 +942,7 @@ const FilterPageUI: React.FC = () => {
       saveButtonRef.current?.classList.remove("hidden");
       return;
     }
-  
-    // Create a canvas to combine background, scene, and logo
+
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
@@ -946,7 +955,7 @@ const FilterPageUI: React.FC = () => {
       saveButtonRef.current?.classList.remove("hidden");
       return;
     }
-  
+
     const loadImage = (src: string, description: string) =>
       new Promise<HTMLImageElement>((resolve, reject) => {
         const img = new Image();
@@ -955,9 +964,8 @@ const FilterPageUI: React.FC = () => {
         img.onerror = () => reject(new Error(`Failed to load ${description}: ${src}`));
         img.src = src;
       });
-  
+
     try {
-      // Draw the background image (capturedImage) at screen size
       let effectiveCapturedImage = capturedImage || localStorage.getItem("capturedImage");
       if (!effectiveCapturedImage) {
         console.error("No captured image available");
@@ -965,28 +973,24 @@ const FilterPageUI: React.FC = () => {
       }
       const backgroundImg = await loadImage(effectiveCapturedImage, "Background image");
       ctx.drawImage(backgroundImg, 0, 0, width, height);
-  
-      // Draw the rendered scene (models) on top
+
       const sceneImg = await loadImage(sceneDataUrl, "Scene image");
       ctx.drawImage(sceneImg, 0, 0, width, height);
-  
-      // Draw the logo at the top center (matching on-screen position and size)
+
       const logoImg = await loadImage("/images/baelogoN.png", "Logo image");
-      const logoSize = height * 0.24; // Matches w-24 h-24 (assuming 100px = 1 unit, adjust if needed)
+      const logoSize = height * 0.24;
       const logoX = (width - logoSize) / 2;
-      const logoY = 16; // Matches top-4 (assuming 1rem = 16px)
+      const logoY = 16;
       ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
-  
-      // Generate the final image
+
       const finalDataUrl = canvas.toDataURL("image/png");
       if (!finalDataUrl || finalDataUrl === "data:,") {
         throw new Error("Final data URL is empty");
       }
-  
+
       const blob = await (await fetch(finalDataUrl)).blob();
       const file = new File([blob], "custom_blind_image.png", { type: "image/png" });
-  
-      // Attempt to share or download
+
       if (navigator.share && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
@@ -1012,7 +1016,7 @@ const FilterPageUI: React.FC = () => {
       setIsLoading(false);
       setShowBlindMenu(true);
       saveButtonRef.current?.classList.remove("hidden");
-      renderScene(); // Re-render to ensure the scene is visible again
+      renderScene();
     }
   };
 
@@ -1071,7 +1075,7 @@ const FilterPageUI: React.FC = () => {
     const rect = mountRef.current.getBoundingClientRect();
     const vector = new THREE.Vector3((x / rect.width) * 2 - 1, -(y / rect.height) * 2 + 1, 0);
     vector.unproject(cameraRef.current);
-    const dir = vector.sub(cameraRef.current.position).normalize(); // Fixed line
+    const dir = vector.sub(cameraRef.current.position).normalize();
     const distance = (depth - cameraRef.current.position.z) / dir.z;
     return cameraRef.current.position.clone().add(dir.multiplyScalar(distance));
   };
@@ -1170,13 +1174,13 @@ const FilterPageUI: React.FC = () => {
       (gltf) => {
         const mixer = new THREE.AnimationMixer(gltf.scene);
         const modelData = { model: gltf.scene, gltf, mixer };
-        
+
         console.log(`Loaded model ${modelUrl}:`);
         console.log('Available animations:', gltf.animations.map(a => ({
           name: a.name,
           duration: a.duration
         })));
-        
+
         resolve(modelData);
       },
       undefined,
@@ -1199,7 +1203,7 @@ const FilterPageUI: React.FC = () => {
       if (!animationClip) {
         console.warn(`Animation "${animationName}" not found. Available animations:`, 
           animations.map(a => a.name));
-        animationClip = animations[0]; // Fallback to first animation
+        animationClip = animations[0];
       }
     } else {
       animationClip = animations[0];
@@ -1208,10 +1212,10 @@ const FilterPageUI: React.FC = () => {
 
     if (animationClip) {
       const action = modelData.mixer.clipAction(animationClip);
-      action.setLoop(THREE.LoopOnce, 1); // Ensure it doesn't loop automatically
-      action.clampWhenFinished = true; // Stay at end frame when finished
-      action.paused = true; // Start paused, controlled by buttons
-      modelData.action = action; // Store action for later control
+      action.setLoop(THREE.LoopOnce, 1);
+      action.clampWhenFinished = true;
+      action.paused = true;
+      modelData.action = action;
       console.log(`Prepared animation: ${animationClip.name}, Duration: ${animationClip.duration}s`);
     } else {
       console.log('No valid animation clip found to prepare');
@@ -1226,7 +1230,7 @@ const FilterPageUI: React.FC = () => {
 
   const animate = () => {
     requestAnimationFrame(animate);
-    const delta = 1/60; // Assuming 60 FPS
+    const delta = 1/60;
     modelsRef.current.forEach(modelData => {
       if (modelData.mixer) {
         modelData.mixer.update(delta);
@@ -1255,29 +1259,26 @@ const FilterPageUI: React.FC = () => {
     setShowBlindMenu(true);
     setIsCustomizerView(true);
     setIsSubmitted(true);
-  
+
     controlButtonRef.current && document.body.removeChild(controlButtonRef.current);
     uploadButtonRef.current && document.body.removeChild(uploadButtonRef.current);
     redoButtonRef.current?.classList.add("hidden");
     saveButtonRef.current?.classList.remove("hidden");
     addWindowButtonRef.current?.classList.add("hidden");
-  
-    // Show animation control buttons
+
     playForwardButtonRef.current?.classList.remove("hidden");
     playReverseButtonRef.current?.classList.remove("hidden");
-  
+
     if (rendererRef.current && backgroundPlaneRef.current) {
       const texture = (backgroundPlaneRef.current.material as THREE.MeshBasicMaterial).map;
       if (texture) {
         const width = window.innerWidth;
         const height = window.innerHeight;
-  
-        // Keep renderer size as window size (same as initial setup)
+
         rendererRef.current.setSize(width, height);
         cameraRef.current!.aspect = width / height;
         cameraRef.current!.updateProjectionMatrix();
-  
-        // Recalculate plane size to match initial loadTextureAndCreatePlane logic
+
         const aspect = width / height;
         const imgAspect = texture.image.width / texture.image.height;
         const [planeWidth, planeHeight] = imgAspect > aspect 
@@ -1286,40 +1287,39 @@ const FilterPageUI: React.FC = () => {
         backgroundPlaneRef.current.geometry.dispose();
         backgroundPlaneRef.current.geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
         backgroundPlaneRef.current.position.set(0, 0, -0.1);
-  
-        // Update camera position to match initial setup
+
         const distance = (height / 100 / 2) / Math.tan((cameraRef.current!.fov * Math.PI / 180) / 2);
         cameraRef.current!.position.set(0, 0, distance);
         cameraRef.current!.lookAt(0, 0, 0);
-  
-        // Ensure canvas styling matches window size
+
         rendererRef.current.domElement.style.width = `${width}px`;
         rendererRef.current.domElement.style.height = `${height}px`;
         rendererRef.current.domElement.style.maxWidth = "100%";
         rendererRef.current.domElement.style.maxHeight = "100%";
         rendererRef.current.domElement.style.margin = "0";
         rendererRef.current.domElement.style.display = "block";
-  
+
         if (mountRef.current) {
           mountRef.current.style.overflowY = "auto";
           mountRef.current.style.overflowX = "hidden";
-          mountRef.current.style.display = "block"; // Reset to block to match initial layout
+          mountRef.current.style.display = "block";
           mountRef.current.style.justifyContent = "unset";
           mountRef.current.style.alignItems = "unset";
           mountRef.current.style.minHeight = "100vh";
           mountRef.current.style.width = "100%";
         }
-  
+
         renderScene();
       }
     }
-  
+
     const mobileOverlay = document.getElementById("mobileOverlay");
     if (mobileOverlay) {
       mobileOverlay.classList.remove("hidden");
       mobileOverlay.style.pointerEvents = "none";
     }
   };
+
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setFilters((prev) => e.target.checked ? [...prev, e.target.value] : prev.filter((tag) => tag !== e.target.value));
 
