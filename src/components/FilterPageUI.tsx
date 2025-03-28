@@ -85,6 +85,7 @@ const FilterPageUI: React.FC = () => {
     completed: false,
   });
   const [isSelectionBoxUsed, setIsSelectionBoxUsed] = useState(false);
+  const [isSelectionBoxDrawn, setIsSelectionBoxDrawn] = useState(false); // New state to track if selection box is drawn
 
   const sceneRef = useRef<THREE.Scene>(new THREE.Scene());
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -222,72 +223,72 @@ const FilterPageUI: React.FC = () => {
   }, []);
 
   // UI Elements Setup (Updated Animation Buttons)
-useEffect(() => {
-  if (!mountRef.current) return;
+  useEffect(() => {
+    if (!mountRef.current) return;
 
-  const mount = mountRef.current;
-  const addElement = <T extends HTMLElement>(
-    tag: keyof HTMLElementTagNameMap,
-    props: Record<string, any>,
-    parent: HTMLElement = document.body
-  ): T => {
-    const el = Object.assign(document.createElement(tag), props) as T;
-    parent.appendChild(el);
-    return el;
-  };
+    const mount = mountRef.current;
+    const addElement = <T extends HTMLElement>(
+      tag: keyof HTMLElementTagNameMap,
+      props: Record<string, any>,
+      parent: HTMLElement = document.body
+    ): T => {
+      const el = Object.assign(document.createElement(tag), props) as T;
+      parent.appendChild(el);
+      return el;
+    };
 
-  videoRef.current = addElement<HTMLVideoElement>("video", { playsinline: true, muted: true, controls: false, className: "hidden" }, mount);
-  canvasRef.current = addElement<HTMLCanvasElement>("canvas", { className: "absolute inset-0 w-full h-full object-cover z-[10]" }, mount);
-  controlButtonRef.current = addElement<HTMLButtonElement>("button", { id: "controlButton", textContent: "Start Camera", className: "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300" });
-  controlButtonRef.current?.addEventListener("click", handleButtonClick);
-  uploadButtonRef.current = addElement<HTMLButtonElement>("button", { id: "uploadButton", textContent: "Upload Image", className: "fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300" });
-  uploadButtonRef.current?.addEventListener("click", () => fileInputRef.current?.click());
-  saveButtonRef.current = addElement<HTMLButtonElement>("button", { id: "saveButton", textContent: "Save Image", className: "fixed bottom-16 right-5 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden" });
-  saveButtonRef.current?.addEventListener("click", saveImage);
-  redoButtonRef.current = addElement<HTMLButtonElement>("button", { id: "redoButton", className: "fixed bottom-12 right-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
-  redoButtonRef.current?.appendChild(addElement("img", { src: "/images/retryButtonImg.png", alt: "Redo Selection", className: "h-6 w-6" }));
-  redoButtonRef.current?.addEventListener("click", handleRedoSelection);
-  addWindowButtonRef.current = addElement<HTMLButtonElement>("button", { id: "addWindowButton", textContent: "Add Blind", className: "fixed bottom-12 left-5 py-2 px-4 text-md bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden" });
-  addWindowButtonRef.current?.addEventListener("click", addAnotherWindow);
+    videoRef.current = addElement<HTMLVideoElement>("video", { playsinline: true, muted: true, controls: false, className: "hidden" }, mount);
+    canvasRef.current = addElement<HTMLCanvasElement>("canvas", { className: "absolute inset-0 w-full h-full object-cover z-[10]" }, mount);
+    controlButtonRef.current = addElement<HTMLButtonElement>("button", { id: "controlButton", textContent: "Start Camera", className: "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300" });
+    controlButtonRef.current?.addEventListener("click", handleButtonClick);
+    uploadButtonRef.current = addElement<HTMLButtonElement>("button", { id: "uploadButton", textContent: "Upload Image", className: "fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300" });
+    uploadButtonRef.current?.addEventListener("click", () => fileInputRef.current?.click());
+    saveButtonRef.current = addElement<HTMLButtonElement>("button", { id: "saveButton", textContent: "Save Image", className: "fixed bottom-16 right-5 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden" });
+    saveButtonRef.current?.addEventListener("click", saveImage);
+    redoButtonRef.current = addElement<HTMLButtonElement>("button", { id: "redoButton", className: "fixed bottom-12 right-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
+    redoButtonRef.current?.appendChild(addElement("img", { src: "/images/retryButtonImg.png", alt: "Redo Selection", className: "h-6 w-6" }));
+    redoButtonRef.current?.addEventListener("click", handleRedoSelection);
+    addWindowButtonRef.current = addElement<HTMLButtonElement>("button", { id: "addWindowButton", textContent: "Add Blind", className: "fixed bottom-12 left-5 py-2 px-4 text-md bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden" });
+    addWindowButtonRef.current?.addEventListener("click", addAnotherWindow);
 
-  // Updated Play Forward Button
-  playForwardButtonRef.current = addElement<HTMLButtonElement>("button", {
-    id: "playForwardButton",
-    className: "fixed bottom-28 left-10 md:left-[calc(20%+48px)] md:bottom-20 py-2 px-4 text-lg bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden",
-  });
-  playForwardButtonRef.current.appendChild(
-    addElement("img", {
-      src: "/images/rolldown.png",
-      alt: "Play Forward",
-      className: "w-6 h-6 pointer-events-none select-none",
-      draggable: false,
-    })
-  );
+    // Updated Play Forward Button
+    playForwardButtonRef.current = addElement<HTMLButtonElement>("button", {
+      id: "playForwardButton",
+      className: "fixed bottom-28 left-10 md:left-[calc(20%+48px)] md:bottom-20 py-2 px-4 text-lg bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden",
+    });
+    playForwardButtonRef.current.appendChild(
+      addElement("img", {
+        src: "/images/rolldown.png",
+        alt: "Play Forward",
+        className: "w-6 h-6 pointer-events-none select-none",
+        draggable: false,
+      })
+    );
 
-  // Updated Play Reverse Button
-  playReverseButtonRef.current = addElement<HTMLButtonElement>("button", {
-    id: "playReverseButton",
-    className: "fixed bottom-12 left-10 md:left-[calc(20%+48px)] md:bottom-8 py-2 px-4 text-lg bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden",
-  });
-  playReverseButtonRef.current.appendChild(
-    addElement("img", {
-      src: "/images/rollup.png",
-      alt: "Play Reverse",
-      className: "w-6 h-6 pointer-events-none select-none",
-      draggable: false,
-    })
-  );
+    // Updated Play Reverse Button
+    playReverseButtonRef.current = addElement<HTMLButtonElement>("button", {
+      id: "playReverseButton",
+      className: "fixed bottom-12 left-10 md:left-[calc(20%+48px)] md:bottom-8 py-2 px-4 text-lg bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden",
+    });
+    playReverseButtonRef.current.appendChild(
+      addElement("img", {
+        src: "/images/rollup.png",
+        alt: "Play Reverse",
+        className: "w-6 h-6 pointer-events-none select-none",
+        draggable: false,
+      })
+    );
 
-  addElement("button", { id: "backButton", innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>', className: "absolute top-5 left-5 p-2 bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300" }).addEventListener("click", () => window.location.href = "/");
-  levelIndicatorRef.current = addElement<HTMLDivElement>("div", { className: "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-2 bg-red-500 rounded-full z-[100] hidden", style: { transition: "background-color 0.3s ease, border 0.3s ease" } }, mount);
-  const mobileOverlayRef = addElement<HTMLDivElement>("div", { id: "mobileOverlay", className: "fixed inset-0 z-[35] pointer-events-none hidden md:hidden" }, mount);
+    addElement("button", { id: "backButton", innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>', className: "absolute top-5 left-5 p-2 bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300" }).addEventListener("click", () => window.location.href = "/");
+    levelIndicatorRef.current = addElement<HTMLDivElement>("div", { className: "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-2 bg-red-500 rounded-full z-[100] hidden", style: { transition: "background-color 0.3s ease, border 0.3s ease" } }, mount);
+    const mobileOverlayRef = addElement<HTMLDivElement>("div", { id: "mobileOverlay", className: "fixed inset-0 z-[35] pointer-events-none hidden md:hidden" }, mount);
 
-  return () => {
-    [videoRef, canvasRef, levelIndicatorRef].forEach((ref) => ref.current && mount.removeChild(ref.current));
-    [controlButtonRef, uploadButtonRef, saveButtonRef, redoButtonRef, addWindowButtonRef, playForwardButtonRef, playReverseButtonRef].forEach((ref) => ref.current && document.body.removeChild(ref.current));
-    mobileOverlayRef && mount.removeChild(mobileOverlayRef);
-  };
-}, []);
+    return () => {
+      [videoRef, canvasRef, levelIndicatorRef].forEach((ref) => ref.current && mount.removeChild(ref.current));
+      [controlButtonRef, uploadButtonRef, saveButtonRef, redoButtonRef, addWindowButtonRef, playForwardButtonRef, playReverseButtonRef].forEach((ref) => ref.current && document.body.removeChild(ref.current));
+      mobileOverlayRef && mount.removeChild(mobileOverlayRef);
+    };
+  }, []);
 
   // Animation Control Handlers
   const handlePlayForward = (e: Event) => {
@@ -496,7 +497,8 @@ useEffect(() => {
     initSelectionBox();
     if (controlButtonRef.current) {
       controlButtonRef.current.textContent = "Submit";
-      controlButtonRef.current.classList.remove("hidden");
+      // Keep the button hidden initially; it will be shown after the selection box is drawn
+      controlButtonRef.current.classList.add("hidden");
     }
     levelIndicatorRef.current?.classList.add("hidden");
     window.removeEventListener("deviceorientation", handleDeviceOrientation);
@@ -515,7 +517,10 @@ useEffect(() => {
       cleanupCameraStream();
       loadTextureAndCreatePlane(imageData, window.innerWidth, window.innerHeight);
       initSelectionBox();
-      controlButtonRef.current!.textContent = "Submit";
+      if (controlButtonRef.current) {
+        controlButtonRef.current.textContent = "Submit";
+        controlButtonRef.current.classList.add("hidden"); // Keep the button hidden initially
+      }
       uploadButtonRef.current?.style.setProperty("display", "none");
       redoButtonRef.current?.classList.remove("hidden");
       completeCurrentProcess();
@@ -544,37 +549,66 @@ useEffect(() => {
 
   const initSelectionBox = () => {
     if (isSelectionBoxUsed || !mountRef.current || selectionBoxRef.current) return;
+
+    // Initialize the selection box div
     selectionBoxRef.current = Object.assign(document.createElement("div"), {
       className: "absolute border-2 border-dashed border-[#2F3526] bg-[#2F3526] bg-opacity-20 pointer-events-auto",
       style: { zIndex: "25", transition: "none" },
     });
     mountRef.current.appendChild(selectionBoxRef.current);
-  
+
     // Create instruction div with black background and white text
     const instructionDiv = document.createElement("div");
-    instructionDiv.className = "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-90 p-4 rounded shadow-md z-[100] pointer-events-none flex flex-col items-center";
-  
+    instructionDiv.className = "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-90 p-4 rounded shadow-md z-[100] pointer-events-auto flex flex-col items-center";
+
     const gif = document.createElement("img");
     gif.src = "/images/drag.gif"; // Adjust path as needed
     gif.alt = "How to draw selection box";
     gif.className = "w-48 h-auto rounded";
     instructionDiv.appendChild(gif);
-  
+
     const instructionText = document.createElement("span");
     instructionText.textContent = "Draw a box over the window to place the blind";
-    instructionText.className = "mt-2 text-white"; // White text with margin-top
+    instructionText.className = "mt-2 text-white text-center";
     instructionDiv.appendChild(instructionText);
-  
-    mountRef.current.appendChild(instructionDiv);
-  
-    let startX = 0, startY = 0, isDragging = false;
-  
-    const startSelection = (e: MouseEvent | Touch) => {
-      if (isSelectionBoxUsed) return;
-      // Destroy instruction div as soon as drawing starts
+
+    // Create close button (below the text, styled in purple, text only)
+    const closeButton = document.createElement("button");
+    closeButton.className = "mt-3 py-2 px-4 bg-purple-900 text-white rounded-lg shadow-md hover:bg-purple-800 transition duration-300";
+    closeButton.textContent = "Close";
+
+    // Flag to track if the instruction div is still visible
+    let isInstructionVisible = true;
+
+    // Add event listener for the close button
+    closeButton.addEventListener("click", (e) => {
+      e.stopPropagation(); // Prevent the click from bubbling up to the mountRef
+      console.log("Close button clicked"); // Debug log
       if (instructionDiv && mountRef.current) {
+        console.log("Removing instruction div"); // Debug log
         mountRef.current.removeChild(instructionDiv);
+        isInstructionVisible = false; // Update the flag
+        // Re-attach event listeners to ensure drawing can start
+        attachEventListeners();
+      } else {
+        console.error("Instruction div or mountRef.current is not available");
       }
+    });
+
+    // Also handle touch events for the close button to prevent touch propagation
+    closeButton.addEventListener("touchstart", (e) => {
+      e.stopPropagation(); // Prevent the touch from bubbling up to the mountRef
+    });
+
+    instructionDiv.appendChild(closeButton);
+    mountRef.current.appendChild(instructionDiv);
+
+    let startX = 0, startY = 0, isDragging = false;
+
+    const startSelection = (e: MouseEvent | Touch) => {
+      // Only start selection if the instruction div is not visible
+      if (isInstructionVisible || isSelectionBoxUsed) return;
+      console.log("Starting selection"); // Debug log
       const rect = mountRef.current!.getBoundingClientRect();
       startX = e.clientX - rect.left;
       startY = e.clientY - rect.top;
@@ -583,7 +617,7 @@ useEffect(() => {
         isDragging = true;
       }
     };
-  
+
     const updateSelection = (e: MouseEvent | Touch) => {
       if (!isDragging || !selectionBoxRef.current) return;
       const rect = mountRef.current!.getBoundingClientRect();
@@ -600,17 +634,23 @@ useEffect(() => {
         }
       });
     };
-  
+
     const endSelection = (e: MouseEvent | Touch) => {
       if (!isDragging || !selectionBoxRef.current) return;
+      console.log("Ending selection"); // Debug log
       selectionBoxRef.current.style.display = "none";
       isDragging = false;
       const rect = mountRef.current!.getBoundingClientRect();
       createDefaultModel(startX, startY, e.clientX - rect.left, e.clientY - rect.top);
       setIsSelectionBoxUsed(true);
+      setIsSelectionBoxDrawn(true); // Update the state to indicate the selection box is drawn
+      // Show the Submit button now that the selection box is drawn
+      if (controlButtonRef.current) {
+        controlButtonRef.current.classList.remove("hidden");
+      }
       cleanupSelectionBox();
     };
-  
+
     const handlers = {
       mousedown: (e: MouseEvent) => { if (e.button === 0) startSelection(e); },
       mousemove: (e: MouseEvent) => updateSelection(e),
@@ -619,12 +659,18 @@ useEffect(() => {
       touchmove: (e: TouchEvent) => updateSelection(e.touches[0]),
       touchend: (e: TouchEvent) => endSelection(e.changedTouches[0]),
     };
-  
-    Object.entries(handlers).forEach(([event, handler]) =>
-      mountRef.current!.addEventListener(event, handler as EventListener, { passive: false })
-    );
-  
+
+    // Function to attach event listeners
+    const attachEventListeners = () => {
+      console.log("Attaching event listeners"); // Debug log
+      Object.entries(handlers).forEach(([event, handler]) =>
+        mountRef.current!.addEventListener(event, handler as EventListener, { passive: false })
+      );
+    };
+
+    // Function to remove event listeners
     const cleanupSelectionBox = () => {
+      console.log("Cleaning up selection box"); // Debug log
       Object.entries(handlers).forEach(([event, handler]) =>
         mountRef.current?.removeEventListener(event, handler as EventListener)
       );
@@ -633,6 +679,8 @@ useEffect(() => {
         selectionBoxRef.current = null;
       }
     };
+
+    // Do not attach event listeners initially; wait for the close button to be pressed
   };
 
   const createDefaultModel = async (startX: number, startY: number, endX: number, endY: number) => {
@@ -1350,6 +1398,10 @@ useEffect(() => {
   const handleRedoSelection = async () => {
     await cleanupCurrentModel();
     setIsSelectionBoxUsed(false);
+    setIsSelectionBoxDrawn(false); // Reset the selection box drawn state
+    if (controlButtonRef.current) {
+      controlButtonRef.current.classList.add("hidden"); // Hide the Submit button when redoing selection
+    }
     setNewProcess("redo", "Draw a new box on the image to place the 3D model.");
   };
 
@@ -1373,225 +1425,224 @@ useEffect(() => {
     levelIndicatorRef.current.style.border = isLevel ? "2px solid black" : "none";
   };
 
-
-// Render
-return (
-  <div
-    className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto"
-    style={{
-      fontFamily: "Poppins, sans-serif",
-      background: !capturedImage && !isCustomizerView ? "url('/images/unsplashMain.jpeg') center/cover no-repeat" : "#FFFFFF",
-      touchAction: isCustomizerView ? "pan-y" : "auto",
-    }}
-  >
+  // Render
+  return (
     <div
-      ref={mountRef}
-      className="relative w-full h-auto min-h-screen"
+      className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto"
       style={{
-        zIndex: isCustomizerView ? 0 : 20,
+        fontFamily: "Poppins, sans-serif",
+        background: !capturedImage && !isCustomizerView ? "url('/images/unsplashMain.jpeg') center/cover no-repeat" : "#FFFFFF",
         touchAction: isCustomizerView ? "pan-y" : "auto",
       }}
-    />
-    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60]">
-      <img src="/images/baelogoN.png" alt="Logo" className="w-24 h-24 object-contain" />
+    >
+      <div
+        ref={mountRef}
+        className="relative w-full h-auto min-h-screen"
+        style={{
+          zIndex: isCustomizerView ? 0 : 20,
+          touchAction: isCustomizerView ? "pan-y" : "auto",
+        }}
+      />
+      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60]">
+        <img src="/images/baelogoN.png" alt="Logo" className="w-24 h-24 object-contain" />
+      </div>
+      {instruction && (
+        <div className="fixed top-32 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 p-2 rounded shadow-md z-[100] text-brown-800 text-lg">
+          {instruction}
+        </div>
+      )}
+      {isLoading && (
+        <div className="fixed inset-0 flex items-center justify-center z-[50] bg-black bg-opacity-50">
+          <div className="text-white text-lg">Loading...</div>
+        </div>
+      )}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          completeCurrentProcess();
+          handleImageUpload(file);
+        }}
+      />
+      {showBlindMenu && isCustomizerView && (
+        <>
+          {/* Mobile Layout (Unchanged) */}
+          <div
+            className="md:hidden relative max-w-7xl mx-auto p-4 flex flex-col items-start justify-center gap-4 overflow-y-auto"
+            style={{
+              zIndex: 30,
+              pointerEvents: "auto",
+              touchAction: "pan-y",
+              marginTop: "20px",
+            }}
+          >
+            <div className="w-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
+              <h3 className="bg-gray-100 p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
+                Select Type of Blind
+              </h3>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
+                {BLIND_TYPES.map(({ type, buttonImage }) => (
+                  <div
+                    key={type}
+                    className="flex flex-col items-center text-center cursor-pointer px-[5px]"
+                    onClick={() => selectBlindType(type)}
+                    onTouchEnd={() => selectBlindType(type)}
+                  >
+                    <img
+                      src={buttonImage}
+                      alt={`${type} Blind`}
+                      className="w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
+                    />
+                    <div className="mt-1 text-gray-700 text-[11px]">
+                      {type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="w-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
+              <div className="p-2 bg-gray-100 rounded shadow">
+                <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
+                <div className="grid grid-cols-2 gap-2 mx-5 text-[13px]">
+                  {["solid", "pattern", "solar", "kids", "natural"].map((filter) => (
+                    <label key={filter} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        value={filter}
+                        checked={filters.includes(filter)}
+                        onChange={handleFilterChange}
+                        className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer"
+                      />
+                      {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-col flex-1 max-h-[400px] bg-white">
+                <h3 className="bg-gray-100 pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
+                  Available Patterns
+                </h3>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
+                  {filteredPatterns.map((pattern, index) => (
+                    <div
+                      key={index}
+                      className="flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
+                      onClick={() => selectPattern(pattern.patternUrl)}
+                      onTouchEnd={() => selectPattern(pattern.patternUrl)}
+                    >
+                      <img
+                        src={pattern.image}
+                        alt={pattern.name}
+                        className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
+                      />
+                      <div className="flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
+                        <span className="truncate">{pattern.name}</span>
+                        <span>{pattern.price}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop Layout */}
+          <div className="hidden md:flex fixed inset-0 pointer-events-none z-[30]">
+            {/* Left Panel - Blind Types */}
+            <div
+              className="pointer-events-auto w-1/6 bg-white bg-opacity-100 shadow-lg rounded flex flex-col"
+              style={{
+                height: "calc(100vh - 64px)",
+                marginTop: "42px",
+                marginLeft: "32px",
+              }}
+            >
+              <h3 className="bg-gray-100 p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
+                Select Type of Blind
+              </h3>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
+                {BLIND_TYPES.map(({ type, buttonImage }) => (
+                  <div
+                    key={type}
+                    className="flex flex-col items-center text-center cursor-pointer px-[5px]"
+                    onClick={() => selectBlindType(type)}
+                    onTouchEnd={() => selectBlindType(type)}
+                  >
+                    <img
+                      src={buttonImage}
+                      alt={`${type} Blind`}
+                      className="w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
+                    />
+                    <div className="mt-1 text-gray-700 text-[11px]">
+                      {type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Panel - Filters and Patterns */}
+            <div
+              className="pointer-events-auto w-1/5 bg-white bg-opacity-100 shadow-lg rounded flex flex-col"
+              style={{
+                height: "calc(100vh - 64px)",
+                marginTop: "42px",
+                marginLeft: "auto",
+                marginRight: "32px",
+              }}
+            >
+              <div className="p-2 bg-gray-100 rounded shadow">
+                <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
+                <div className="grid grid-cols-2 gap-2 mx-5 text-[13px]">
+                  {["solid", "pattern", "solar", "kids", "natural"].map((filter) => (
+                    <label key={filter} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        value={filter}
+                        checked={filters.includes(filter)}
+                        onChange={handleFilterChange}
+                        className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer"
+                      />
+                      {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-col flex-1 max-h-[600px]">
+                <h3 className="bg-gray-100 pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
+                  Available Patterns
+                </h3>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
+                  {filteredPatterns.map((pattern, index) => (
+                    <div
+                      key={index}
+                      className="flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
+                      onClick={() => selectPattern(pattern.patternUrl)}
+                      onTouchEnd={() => selectPattern(pattern.patternUrl)}
+                    >
+                      <img
+                        src={pattern.image}
+                        alt={pattern.name}
+                        className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
+                      />
+                      <div className="flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
+                        <span className="truncate">{pattern.name}</span>
+                        <span>{pattern.price}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
-    {instruction && (
-      <div className="fixed top-32 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 p-2 rounded shadow-md z-[100] text-brown-800 text-lg">
-        {instruction}
-      </div>
-    )}
-    {isLoading && (
-      <div className="fixed inset-0 flex items-center justify-center z-[50] bg-black bg-opacity-50">
-        <div className="text-white text-lg">Loading...</div>
-      </div>
-    )}
-    <input
-      type="file"
-      ref={fileInputRef}
-      accept="image/*"
-      className="hidden"
-      onChange={(e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        completeCurrentProcess();
-        handleImageUpload(file);
-      }}
-    />
-    {showBlindMenu && isCustomizerView && (
-      <>
-        {/* Mobile Layout (Unchanged) */}
-        <div
-          className="md:hidden relative max-w-7xl mx-auto p-4 flex flex-col items-start justify-center gap-4 overflow-y-auto"
-          style={{
-            zIndex: 30,
-            pointerEvents: "auto",
-            touchAction: "pan-y",
-            marginTop: "20px",
-          }}
-        >
-          <div className="w-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
-            <h3 className="bg-gray-100 p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
-              Select Type of Blind
-            </h3>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
-              {BLIND_TYPES.map(({ type, buttonImage }) => (
-                <div
-                  key={type}
-                  className="flex flex-col items-center text-center cursor-pointer px-[5px]"
-                  onClick={() => selectBlindType(type)}
-                  onTouchEnd={() => selectBlindType(type)}
-                >
-                  <img
-                    src={buttonImage}
-                    alt={`${type} Blind`}
-                    className="w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
-                  />
-                  <div className="mt-1 text-gray-700 text-[11px]">
-                    {type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="w-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
-            <div className="p-2 bg-gray-100 rounded shadow">
-              <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
-              <div className="grid grid-cols-2 gap-2 mx-5 text-[13px]">
-                {["solid", "pattern", "solar", "kids", "natural"].map((filter) => (
-                  <label key={filter} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      value={filter}
-                      checked={filters.includes(filter)}
-                      onChange={handleFilterChange}
-                      className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer"
-                    />
-                    {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="flex flex-col flex-1 max-h-[400px] bg-white">
-              <h3 className="bg-gray-100 pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
-                Available Patterns
-              </h3>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
-                {filteredPatterns.map((pattern, index) => (
-                  <div
-                    key={index}
-                    className="flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
-                    onClick={() => selectPattern(pattern.patternUrl)}
-                    onTouchEnd={() => selectPattern(pattern.patternUrl)}
-                  >
-                    <img
-                      src={pattern.image}
-                      alt={pattern.name}
-                      className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
-                    />
-                    <div className="flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
-                      <span className="truncate">{pattern.name}</span>
-                      <span>{pattern.price}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Desktop Layout */}
-        <div className="hidden md:flex fixed inset-0 pointer-events-none z-[30]">
-          {/* Left Panel - Blind Types */}
-          <div
-            className="pointer-events-auto w-1/6 bg-white bg-opacity-100 shadow-lg rounded flex flex-col" // Reduced from w-1/4 to w-1/5
-            style={{
-              height: "calc(100vh - 64px)",
-              marginTop: "42px", // Already adjusted to move closer to top
-              marginLeft: "32px",
-            }}
-          >
-            <h3 className="bg-gray-100 p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
-              Select Type of Blind
-            </h3>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
-              {BLIND_TYPES.map(({ type, buttonImage }) => (
-                <div
-                  key={type}
-                  className="flex flex-col items-center text-center cursor-pointer px-[5px]"
-                  onClick={() => selectBlindType(type)}
-                  onTouchEnd={() => selectBlindType(type)}
-                >
-                  <img
-                    src={buttonImage}
-                    alt={`${type} Blind`}
-                    className="w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
-                  />
-                  <div className="mt-1 text-gray-700 text-[11px]">
-                    {type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right Panel - Filters and Patterns */}
-          <div
-            className="pointer-events-auto w-1/5 bg-white bg-opacity-100 shadow-lg rounded flex flex-col"
-            style={{
-              height: "calc(100vh - 64px)",
-              marginTop: "42px", // Already adjusted to move closer to top
-              marginLeft: "auto",
-              marginRight: "32px",
-            }}
-          >
-            <div className="p-2 bg-gray-100 rounded shadow">
-              <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
-              <div className="grid grid-cols-2 gap-2 mx-5 text-[13px]">
-                {["solid", "pattern", "solar", "kids", "natural"].map((filter) => (
-                  <label key={filter} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      value={filter}
-                      checked={filters.includes(filter)}
-                      onChange={handleFilterChange}
-                      className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer"
-                    />
-                    {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div className="flex flex-col flex-1 max-h-[600px]">
-              <h3 className="bg-gray-100 pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
-                Available Patterns
-              </h3>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
-                {filteredPatterns.map((pattern, index) => (
-                  <div
-                    key={index}
-                    className="flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
-                    onClick={() => selectPattern(pattern.patternUrl)}
-                    onTouchEnd={() => selectPattern(pattern.patternUrl)}
-                  >
-                    <img
-                      src={pattern.image}
-                      alt={pattern.name}
-                      className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
-                    />
-                    <div className="flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
-                      <span className="truncate">{pattern.name}</span>
-                      <span>{pattern.price}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </>
-    )}
-  </div>
-);
+  );
 };
 
 export default FilterPageUI;
