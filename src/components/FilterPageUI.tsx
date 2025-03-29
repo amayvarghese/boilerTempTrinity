@@ -559,7 +559,7 @@ const FilterPageUI: React.FC = () => {
 
     // Create instruction div with black background and white text
     const instructionDiv = document.createElement("div");
-    instructionDiv.className = "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-90 p-4 rounded shadow-md z-[100] pointer-events-auto flex flex-col items-center";
+    instructionDiv.className = "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-50 p-4 rounded shadow-md z-[100] pointer-events-auto flex flex-col items-center";
 
     const gif = document.createElement("img");
     gif.src = "/images/drag.gif"; // Adjust path as needed
@@ -1484,18 +1484,21 @@ const FilterPageUI: React.FC = () => {
               <h3 className="bg-gray-100 p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
                 Select Type of Blind
               </h3>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
                 {BLIND_TYPES.map(({ type, buttonImage }) => (
                   <div
                     key={type}
-                    className="flex flex-col items-center text-center cursor-pointer px-[5px]"
-                    onClick={() => selectBlindType(type)}
-                    onTouchEnd={() => selectBlindType(type)}
+                    className="flex flex-col items-center text-center px-[5px]"
                   >
                     <img
                       src={buttonImage}
                       alt={`${type} Blind`}
-                      className="w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
+                      className="w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover cursor-pointer"
+                      onClick={() => selectBlindType(type)}
+                      onTouchEnd={(e) => {
+                        e.preventDefault(); // Prevent default touch behavior
+                        selectBlindType(type);
+                      }}
                     />
                     <div className="mt-1 text-gray-700 text-[11px]">
                       {type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}
@@ -1530,14 +1533,17 @@ const FilterPageUI: React.FC = () => {
                   {filteredPatterns.map((pattern, index) => (
                     <div
                       key={index}
-                      className="flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
-                      onClick={() => selectPattern(pattern.patternUrl)}
-                      onTouchEnd={() => selectPattern(pattern.patternUrl)}
+                      className="flex flex-col items-center text-center px-[5px]"
                     >
                       <img
                         src={pattern.image}
                         alt={pattern.name}
-                        className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
+                        className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover cursor-pointer"
+                        onClick={() => selectPattern(pattern.patternUrl)}
+                        onTouchEnd={(e) => {
+                          e.preventDefault(); // Prevent default touch behavior
+                          selectPattern(pattern.patternUrl);
+                        }}
                       />
                       <div className="flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
                         <span className="truncate">{pattern.name}</span>
@@ -1564,7 +1570,7 @@ const FilterPageUI: React.FC = () => {
               <h3 className="bg-gray-100 p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
                 Select Type of Blind
               </h3>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
                 {BLIND_TYPES.map(({ type, buttonImage }) => (
                   <div
                     key={type}
