@@ -43,7 +43,7 @@ const MenuScript: React.FC = () => {
             <img
               src="/images/baeLogoLong.png"
               alt="Logo"
-              className="py-2 w-35 h-14 sm:w-20 sm:h-20 object-contain mx-auto"
+              className="py-2 w-40 h-20 md:w-48 md:h-24 lg:w-42 lg:h-20 object-contain mx-auto"
               onError={(e) => {
                 console.error("Logo failed to load");
                 (e.target as HTMLImageElement).src =
@@ -58,38 +58,43 @@ const MenuScript: React.FC = () => {
           </div>
 
           {/* Larger Buttons */}
-          <div className="relative flex flex-col gap-4 sm:gap-6 w-full">
-            <button
-              className="flex items-center py-5 sm:py-10 px-4 sm:px-10 bg-black text-white text-lg sm:text-lg font-light rounded-xl shadow-md hover:bg-purple-900 focus:outline-none focus:ring-2 focus:ring-green-400 transition duration-300 w-full font-poppins"
-              onClick={handleButton1Click}
-            >
+          <button
+            className="flex items-center justify-start gap-4 py-5 sm:py-10 px-4 sm:px-10 mb-4 bg-[#cbaa51] text-white text-lg sm:text-lg font-light rounded-xl shadow-md hover:bg-[#e0c373] focus:outline-none focus:ring-2 focus:ring-green-400 transition duration-300 w-full font-poppins"
+            onClick={handleButton1Click}
+          >
+            <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16">
               <img
                 src="/images/blindVirtual.png"
                 alt="Virtual Room Icon"
-                className="w-8 h-8 sm:w-12 sm:h-12 mr-2 sm:mr-4 object-contain"
+                className="w-8 h-8 sm:w-12 sm:h-12 object-contain"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src =
                     "https://via.placeholder.com/32?text=Icon+1";
                 }}
               />
-              <span className="text-left">Sample Room</span>
-            </button>
-            <button
-              className="flex items-center py-5 sm:py-10 px-4 sm:px-10 bg-black text-white text-lg sm:text-lg font-light rounded-xl shadow-md hover:bg-purple-900 focus:outline-none focus:ring-2 focus:ring-green-400 transition duration-300 w-full font-poppins"
-              onClick={handleButton2Click}
-            >
+            </div>
+            <span className="text-center">Sample Room</span>
+          </button>
+
+          <button
+            className="flex items-center justify-start gap-4 py-5 sm:py-10 px-4 sm:px-10 mb-4 bg-[#cbaa51] text-white text-lg sm:text-lg font-light rounded-xl shadow-md hover:bg-[#e0c373] focus:outline-none focus:ring-2 focus:ring-green-400 transition duration-300 w-full font-poppins"
+            onClick={handleButton2Click}
+          >
+            <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16">
               <img
-                src="/images/room.png"
+                src="/images/roomInWhit.png"
                 alt="Own Room Icon"
-                className="w-8 h-8 sm:w-12 sm:h-12 mr-2 sm:mr-4 object-contain"
+                className="w-8 h-8 sm:w-12 sm:h-12 object-contain"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src =
                     "https://via.placeholder.com/32?text=Icon+2";
                 }}
               />
-              <span className="text-left">Room In My House</span>
-            </button>
-          </div>
+            </div>
+            <span className="text-center">Room In My House</span>
+          </button>
+
+
 
           {/* Application name and version */}
           <div className="px-2 py-2 flex justify-between items-center mt-2">

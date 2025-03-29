@@ -11,10 +11,12 @@ type BlindType = {
   modelUrl: string;
   meshNameFabric?: string;
   meshNameWood?: string;
+  normalWood?: string;       // New optional parameter for wood normal map
+  normalFabric?: string;     // New optional parameter for fabric normal map
   rotation: Vector3D;
   baseScale: Vector3D;
   basePosition: Vector3D;
-  animationName?: string; // Optional animation parameter
+  animationName?: string;
 };
 type Pattern = {
   name: string;
@@ -36,7 +38,7 @@ const BLIND_TYPES: BlindType[] = [
   { type: "classicRoman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/animated/classicRomanAnim.glb", meshNameFabric: "Cloth", meshNameWood: "Cube", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: -45, y: -25, z: 10 } },
   { type: "roller", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/3d/animated/rollerBlindAnim.glb", meshNameFabric: "ROLLER_SHADES", meshNameWood: "Cube", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2.1, z: 1 }, basePosition: { x: -45.5, y: -30, z: 5 } },
   { type: "roman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/animated/romanBlindAnim.glb", meshNameFabric: "polySurface1", meshNameWood: "polySurface3", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
-  { type: "Sheet Blind", buttonImage: "/images/blindTypes/sheetBlindIcon.png", modelUrl: "/3d/animated/SheetBlindAnim.glb", meshNameFabric: "Cloth", meshNameWood: "Rod", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 2 }, basePosition: { x: -45, y: -28, z: 10 }, animationName: "ClothAction" },
+  { type: "Sheet Blind", buttonImage: "/images/blindTypes/sheetBlindIcon.png", modelUrl: "/3d/animated/SheetBlindAnim.glb", meshNameFabric: "Cloth", meshNameWood: "Rod", normalFabric:"/3d/normals/newClothTex.jpeg",rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 2 }, basePosition: { x: -45, y: -28, z: 10 }, animationName: "ClothAction" },
   { type: "PlantationShutter", buttonImage: "/images/blindTypes/plantationShutterIcon.png", modelUrl: "/3d/animated/plantationShutterAnim.glb", meshNameWood: "PLANTATION__SHUTTER", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2, z: 1 }, basePosition: { x: -46, y: -27, z: 5 } },
   { type: "VerticalBlind", buttonImage: "/images/blindTypes/verticalSheetBlindIcon.png", modelUrl: "/3d/animated/verticalBlindAnim.glb", meshNameWood: "Wood", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.45, y: 2.1, z: 1 }, basePosition: { x: -45, y: -28, z: 5 } },
   { type: "zebraBlinds", buttonImage: "/images/blindTypes/zebraBlindIcon.png", modelUrl: "/3d/animated/zebraBlindAnim.glb", meshNameWood: "Cube", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
@@ -239,22 +241,22 @@ const FilterPageUI: React.FC = () => {
 
     videoRef.current = addElement<HTMLVideoElement>("video", { playsinline: true, muted: true, controls: false, className: "hidden" }, mount);
     canvasRef.current = addElement<HTMLCanvasElement>("canvas", { className: "absolute inset-0 w-full h-full object-cover z-[10]" }, mount);
-    controlButtonRef.current = addElement<HTMLButtonElement>("button", { id: "controlButton", textContent: "Start Camera", className: "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300" });
+    controlButtonRef.current = addElement<HTMLButtonElement>("button", { id: "controlButton", textContent: "Start Camera", className: "fixed bottom-12 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#cbaa51] text-white rounded-lg shadow-md hover:bg-[#e0c373] z-[100] transition duration-300" });
     controlButtonRef.current?.addEventListener("click", handleButtonClick);
-    uploadButtonRef.current = addElement<HTMLButtonElement>("button", { id: "uploadButton", textContent: "Upload Image", className: "fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300" });
+    uploadButtonRef.current = addElement<HTMLButtonElement>("button", { id: "uploadButton", textContent: "Upload Image", className: "fixed bottom-28 left-1/2 transform -translate-x-1/2 py-3 px-6 text-lg bg-[#cbaa51] text-white rounded-lg shadow-md hover:bg-[#e0c373] z-[100] transition duration-300" });
     uploadButtonRef.current?.addEventListener("click", () => fileInputRef.current?.click());
-    saveButtonRef.current = addElement<HTMLButtonElement>("button", { id: "saveButton", textContent: "Save Image", className: "fixed bottom-16 right-5 py-3 px-6 text-lg bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden" });
+    saveButtonRef.current = addElement<HTMLButtonElement>("button", { id: "saveButton", textContent: "Save Image", className: "fixed bottom-16 right-5 py-3 px-6 text-lg bg-[#cbaa51] text-white rounded-lg shadow-md hover:bg-[#e0c373] z-[100] transition duration-300 hidden" });
     saveButtonRef.current?.addEventListener("click", saveImage);
-    redoButtonRef.current = addElement<HTMLButtonElement>("button", { id: "redoButton", className: "fixed bottom-12 right-5 p-2 bg-[#2F3526] text-white rounded-full shadow-md hover:bg-[#3F4536] z-[100] transition duration-300 hidden" });
+    redoButtonRef.current = addElement<HTMLButtonElement>("button", { id: "redoButton", className: "fixed bottom-12 right-5 p-2 bg-[#cbaa51] text-white rounded-full shadow-md hover:bg-[#e0c373] z-[100] transition duration-300 hidden" });
     redoButtonRef.current?.appendChild(addElement("img", { src: "/images/retryButtonImg.png", alt: "Redo Selection", className: "h-6 w-6" }));
     redoButtonRef.current?.addEventListener("click", handleRedoSelection);
-    addWindowButtonRef.current = addElement<HTMLButtonElement>("button", { id: "addWindowButton", textContent: "Add Blind", className: "fixed bottom-12 left-5 py-2 px-4 text-md bg-black text-white rounded-lg shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden" });
+    addWindowButtonRef.current = addElement<HTMLButtonElement>("button", { id: "addWindowButton", textContent: "Add Blind", className: "fixed bottom-12 left-5 py-2 px-4 text-md bg-[#cbaa51] text-white rounded-lg shadow-md hover:bg-[#e0c373] z-[100] transition duration-300 hidden" });
     addWindowButtonRef.current?.addEventListener("click", addAnotherWindow);
 
     // Updated Play Forward Button
     playForwardButtonRef.current = addElement<HTMLButtonElement>("button", {
       id: "playForwardButton",
-      className: "fixed bottom-28 left-10 md:left-[calc(20%+48px)] md:bottom-20 py-2 px-4 text-lg bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden",
+      className: "fixed bottom-28 left-10 md:left-[calc(20%+48px)] md:bottom-20 py-2 px-4 text-lg bg-[#cbaa51] text-white rounded-full shadow-md hover:bg-[#e0c373] z-[100] transition duration-300 hidden",
     });
     playForwardButtonRef.current.appendChild(
       addElement("img", {
@@ -268,7 +270,7 @@ const FilterPageUI: React.FC = () => {
     // Updated Play Reverse Button
     playReverseButtonRef.current = addElement<HTMLButtonElement>("button", {
       id: "playReverseButton",
-      className: "fixed bottom-12 left-10 md:left-[calc(20%+48px)] md:bottom-8 py-2 px-4 text-lg bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300 hidden",
+      className: "fixed bottom-12 left-10 md:left-[calc(20%+48px)] md:bottom-8 py-2 px-4 text-lg bg-[#cbaa51] text-white rounded-full shadow-md hover:bg-[#e0c373] z-[100] transition duration-300 hidden",
     });
     playReverseButtonRef.current.appendChild(
       addElement("img", {
@@ -279,7 +281,7 @@ const FilterPageUI: React.FC = () => {
       })
     );
 
-    addElement("button", { id: "backButton", innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>', className: "absolute top-5 left-5 p-2 bg-black text-white rounded-full shadow-md hover:bg-purple-900 z-[100] transition duration-300" }).addEventListener("click", () => window.location.href = "/");
+    addElement("button", { id: "backButton", innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>', className: "absolute top-5 left-5 p-2 bg-[#cbaa51] text-white rounded-full shadow-md hover:bg-[#e0c373] z-[100] transition duration-300" }).addEventListener("click", () => window.location.href = "/");
     levelIndicatorRef.current = addElement<HTMLDivElement>("div", { className: "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-2 bg-red-500 rounded-full z-[100] hidden", style: { transition: "background-color 0.3s ease, border 0.3s ease" } }, mount);
     const mobileOverlayRef = addElement<HTMLDivElement>("div", { id: "mobileOverlay", className: "fixed inset-0 z-[35] pointer-events-none hidden md:hidden" }, mount);
 
@@ -574,7 +576,7 @@ const FilterPageUI: React.FC = () => {
 
     // Create close button (below the text, styled in purple, text only)
     const closeButton = document.createElement("button");
-    closeButton.className = "mt-3 py-2 px-4 bg-purple-900 text-white rounded-lg shadow-md hover:bg-purple-800 transition duration-300";
+    closeButton.className = "mt-3 py-2 px-4 bg-[#cbaa51] text-white rounded-lg shadow-md hover:bg-[#e0c373] transition duration-300";
     closeButton.textContent = "Close";
 
     // Flag to track if the instruction div is still visible
@@ -1155,22 +1157,35 @@ const FilterPageUI: React.FC = () => {
   const applyTextureToModel = (model: THREE.Group, patternUrl: string, blindType: BlindType) => {
     if (!model) return;
     const textureLoader = new THREE.TextureLoader();
-    const applyMaterial = (textureUrl: string, normalUrl: string | null, repeat: number, normalScale: number, roughness: number, metalness: number, meshName?: string) => {
+  
+    const applyMaterial = (
+      textureUrl: string, 
+      normalUrl: string | null, 
+      repeat: number, 
+      normalScale: number, 
+      roughness: number, 
+      metalness: number, 
+      meshName?: string
+    ) => {
       const texture = textureLoader.load(textureUrl, undefined, undefined, (_) => console.error(`Texture load failed: ${textureUrl}`));
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
       texture.repeat.set(repeat, repeat);
       texture.colorSpace = THREE.SRGBColorSpace;
+  
       const materialProps: THREE.MeshStandardMaterialParameters = {
         map: texture,
         roughness,
         metalness,
       };
+  
       if (normalUrl) {
         materialProps.normalMap = textureLoader.load(normalUrl, undefined, undefined, (_) => console.error(`Normal map load failed: ${normalUrl}`));
         materialProps.normalScale = new THREE.Vector2(normalScale, normalScale);
       }
+  
       const material = new THREE.MeshStandardMaterial(materialProps);
       let applied = false;
+  
       model.traverse((child) => {
         if (isMesh(child) && (!meshName || child.name === meshName)) {
           if (Array.isArray(child.material)) {
@@ -1184,13 +1199,23 @@ const FilterPageUI: React.FC = () => {
           applied = true;
         }
       });
+  
       if (!applied) console.warn(`No meshes found for ${meshName || 'all'} in model`);
     };
-
-    if (!blindType.meshNameFabric && !blindType.meshNameWood) applyMaterial(patternUrl, null, 8, 0, 0.5, 0.1);
-    else {
-      if (blindType.meshNameFabric) applyMaterial(patternUrl, "/3d/normals/clothTex.jpg", 6, .5, 0.3, 0.1, blindType.meshNameFabric);
-      if (blindType.meshNameWood) applyMaterial("/materials/iron.png", "/3d/normals/wood.jpg", 1, 0.5, .3, 0.1, blindType.meshNameWood);
+  
+    if (!blindType.meshNameFabric && !blindType.meshNameWood) {
+      applyMaterial(patternUrl, null, 8, 0, 0.5, 0.1);
+    } else {
+      if (blindType.meshNameFabric) {
+        // Use normalFabric if provided, otherwise fall back to default
+        const fabricNormal = blindType.normalFabric || "/3d/normals/clothTex.jpg";
+        applyMaterial(patternUrl, fabricNormal, 6, 0.5, 0.3, 0.1, blindType.meshNameFabric);
+      }
+      if (blindType.meshNameWood) {
+        // Use normalWood if provided, otherwise fall back to default
+        const woodNormal = blindType.normalWood || "/3d/normals/wood.jpg";
+        applyMaterial("/materials/iron.png", woodNormal, 1, 0.5, 0.3, 0.1, blindType.meshNameWood);
+      }
     }
     renderScene();
   };
@@ -1431,7 +1456,7 @@ const FilterPageUI: React.FC = () => {
       className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto"
       style={{
         fontFamily: "Poppins, sans-serif",
-        background: !capturedImage && !isCustomizerView ? "url('/images/unsplashMain.jpeg') center/cover no-repeat" : "#FFFFFF",
+        background: !capturedImage && !isCustomizerView ? "url('/images/pic-2.jpg') center/cover no-repeat" : "#FFFFFF",
         touchAction: isCustomizerView ? "pan-y" : "auto",
       }}
     >
