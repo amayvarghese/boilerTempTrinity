@@ -9,10 +9,10 @@ type BlindType = {
   type: string;
   buttonImage: string;
   modelUrl: string;
-  meshNameFabric?: string;
-  meshNameWood?: string;
-  normalWood?: string;       // New optional parameter for wood normal map
-  normalFabric?: string;     // New optional parameter for fabric normal map
+  meshNameFabric?: string[];
+  meshNameWood?: string[];
+  normalWood?: string;
+  normalFabric?: string;
   rotation: Vector3D;
   baseScale: Vector3D;
   basePosition: Vector3D;
@@ -35,37 +35,41 @@ type SelectionBoxParams = {
 type InitialModelParams = { scale: THREE.Vector3; position: THREE.Vector3 };
 
 const BLIND_TYPES: BlindType[] = [
-  { type: "classicRoman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/animated/classicRomanAnim.glb", meshNameFabric: "Cloth", meshNameWood: "Cube", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: -45, y: -25, z: 10 } },
-  { type: "roller", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/3d/animated/rollerBlindAnim.glb", meshNameFabric: "ROLLER_SHADES", meshNameWood: "Cube", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2.1, z: 1 }, basePosition: { x: -45.5, y: -30, z: 5 } },
-  { type: "roman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/animated/romanBlindAnim.glb", meshNameFabric: "polySurface1", meshNameWood: "polySurface3", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
-  { type: "Sheet Blind", buttonImage: "/images/blindTypes/sheetBlindIcon.png", modelUrl: "/3d/animated/SheetBlindAnim.glb", meshNameFabric: "Cloth", meshNameWood: "Rod", normalFabric:"/3d/normals/newClothTex.jpeg",rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 2 }, basePosition: { x: -45, y: -28, z: 10 }, animationName: "ClothAction" },
-  { type: "PlantationShutter", buttonImage: "/images/blindTypes/plantationShutterIcon.png", modelUrl: "/3d/animated/plantationShutterAnim.glb", meshNameWood: "PLANTATION__SHUTTER", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2, z: 1 }, basePosition: { x: -46, y: -27, z: 5 } },
-  { type: "VerticalBlind", buttonImage: "/images/blindTypes/verticalSheetBlindIcon.png", modelUrl: "/3d/animated/verticalBlindAnim.glb", meshNameWood: "Wood", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.45, y: 2.1, z: 1 }, basePosition: { x: -45, y: -28, z: 5 } },
-  { type: "zebraBlinds", buttonImage: "/images/blindTypes/zebraBlindIcon.png", modelUrl: "/3d/animated/zebraBlindAnim.glb", meshNameWood: "Cube", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
+  { type: "classicRoman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/animated/classicRomanAnim.glb", meshNameFabric: ["Cloth"], meshNameWood: ["Cube"], rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 3 }, basePosition: { x: -45, y: -25, z: 10 } },
+  { type: "roller", buttonImage: "/images/blindTypes/rollerBlindIcon.png", modelUrl: "/3d/animated/rollerBlindAnim.glb", meshNameFabric: ["ROLLER_SHADES"], meshNameWood: ["Cube"], rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2.1, z: 1 }, basePosition: { x: -45.5, y: -30, z: 5 } },
+  { type: "roman", buttonImage: "/images/blindTypes/romanBlindIcon.png", modelUrl: "/3d/animated/romanBlindAnim.glb", meshNameFabric: ["polySurface1"], meshNameWood: ["polySurface3"], rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
+  { type: "Sheet Blind", buttonImage: "/images/blindTypes/sheetBlindIcon.png", modelUrl: "/3d/animated/SheetBlindAnim.glb", meshNameFabric: ["Cloth"], meshNameWood: ["Rod"], normalFabric:"/3d/normals/newClothTex.jpeg",rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 2 }, basePosition: { x: -45, y: -28, z: 10 }, animationName: "ClothAction" },
+  { type: "PlantationShutter", buttonImage: "/images/blindTypes/plantationShutterIcon.png", modelUrl: "/3d/animated/plantationShutterAnim.glb",meshNameFabric: ["polySurface1", "polySurface2", "polySurface3","polySurface4","polySurface5","polySurface6","polySurface7","polySurface8","polySurface9","polySurface10","polySurface11","polySurface12","polySurface13","polySurface14","polySurface15","polySurface16","polySurface17","polySurface18","polySurface19","polySurface20","polySurface21","polySurface22",
+    "polySurface23","polySurface24","polySurface25","polySurface26","polySurface27","polySurface28","polySurface29","polySurface30","polySurface31","polySurface32","polySurface33","polySurface34","polySurface35","polySurface36","polySurface37","polySurface38","polySurface39","polySurface40","polySurface41","polySurface42","polySurface43","polySurface44","polySurface45","polySurface46","polySurface47","polySurface48","polySurface49","polySurface50"
+    ,"polySurface51","polySurface52","polySurface53","polySurface54","polySurface55","polySurface56","polySurface57","polySurface58","polySurface59","polySurface60","polySurface61","polySurface62","polySurface63","polySurface64","polySurface65","polySurface66","polySurface67","polySurface68","polySurface69","polySurface70","polySurface71","polySurface72","polySurface73","polySurface74","polySurface75","polySurface76","polySurface77","polySurface78",
+    "polySurface79","polySurface80","polySurface81","polySurface82","polySurface83","polySurface84","polySurface85","polySurface86","polySurface87","polySurface88","polySurface89","polySurface90","polySurface91","polySurface92"], normalFabric:"/3d/normals/plantationShutterNormal.png", rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.5, y: 2, z: 1 }, basePosition: { x: -46, y: -27, z: 5 } },
+  { type: "VerticalBlind", buttonImage: "/images/blindTypes/verticalSheetBlindIcon.png", modelUrl: "/3d/animated/verticalBlindAnim.glb", meshNameWood:["Wood"], rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.45, y: 2.1, z: 1 }, basePosition: { x: -45, y: -28, z: 5 } },
+  { type: "zebraBlinds", buttonImage: "/images/blindTypes/zebraBlindIcon.png", modelUrl: "/3d/animated/zebraBlindAnim.glb", meshNameWood: ["Cube"], rotation: { x: 0, y: 0, z: 0 }, baseScale: { x: 1.55, y: 2, z: 1 }, basePosition: { x: -45, y: -20, z: 5 } },
 ];
 
 const PATTERNS: Pattern[] = [
-  { name: "Beige", image: "/materials/beige.png", price: "$10", filterTags: ["solid"], patternUrl: "/materials/beige.png" },
-  { name: "Blanche", image: "/materials/Blanche.png", price: "$67", filterTags: ["pattern"], patternUrl: "/materials/Blanche.png" },
-  { name: "Cerrulean", image: "/materials/cerulean.png", price: "$10", filterTags: ["pattern"], patternUrl: "/materials/cerulean.png" },
-  { name: "Chestnut", image: "/materials/chestnut.png", price: "$100", filterTags: ["kids", "pattern"], patternUrl: "/materials/chestnut.png" },
-  { name: "Driftwood", image: "/materials/driftwood.png", price: "$100", filterTags: ["pattern"], patternUrl: "/materials/driftwood.png" },
-  { name: "Driftwood Sand", image: "/materials/driftwoodsand.png", price: "$100", filterTags: ["pattern"], patternUrl: "/materials/driftwoodsand.png" },
-  { name: "Iron", image: "/materials/iron.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/iron.png" },
-  { name: "Ivory", image: "/materials/ivory.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/ivory.png" },
-  { name: "Kaki", image: "/materials/kaki.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/kaki.png" },
-  { name: "Mocha", image: "/materials/mocha.png", price: "$45", filterTags: ["pattern", "natural"], patternUrl: "/materials/mocha.png" },
-  { name: "Noir", image: "/materials/noir.png", price: "$150", filterTags: ["pattern", "natural"], patternUrl: "/materials/noir.png" },
-  { name: "Oatmeal", image: "/materials/oatmeal.png", price: "$150", filterTags: ["natural", "pattern"], patternUrl: "/materials/oatmeal.png" },
-  { name: "Slate", image: "/materials/slate.png", price: "$100", filterTags: ["pattern"], patternUrl: "/materials/slate.png" },
-  { name: "Silver", image: "/materials/SolarSilver.png", price: "$100", filterTags: ["solid", "solar"], patternUrl: "/materials/SolarSilver.png" },
-  { name: "Steel", image: "/materials/steel.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/steel.png" },
-  { name: "Taupe", image: "/materials/taupe.png", price: "$45", filterTags: ["pattern"], patternUrl: "/materials/taupe.png" },
-  { name: "Taupe Solar", image: "/materials/taupeSolar.png", price: "$100", filterTags: ["solar"], patternUrl: "/materials/taupeSolar.png" },
-  { name: "Tea Leaves Brown", image: "/materials/tealeaves_brown.png", price: "$150", filterTags: ["pattern"], patternUrl: "/materials/tealeaves_brown.png" },
-  { name: "Tea Leaves White", image: "/materials/tealeaves_white.png", price: "$150", filterTags: ["patterned"], patternUrl: "/materials/tealeaves_white.png" },
-  { name: "Toast", image: "/materials/toast.png", price: "$45", filterTags: ["pattern"], patternUrl: "/materials/toast.png" },
-  { name: "White", image: "/materials/white.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/white.png" },
+  { name: "Beige", image: "/materials/beige.png", price: "$10", filterTags: ["roman"], patternUrl: "/materials/beige.png" },
+  { name: "Blanche", image: "/materials/Blanche.png", price: "$67", filterTags: ["classicRoman"], patternUrl: "/materials/Blanche.png" },
+  { name: "Cerrulean", image: "/materials/cerulean.png", price: "$10", filterTags: ["sheet Blind"], patternUrl: "/materials/cerulean.png" },
+  { name: "Chestnut", image: "/materials/chestnut.png", price: "$100", filterTags: ["sheet Blind", "roller"], patternUrl: "/materials/chestnut.png" },
+  { name: "Driftwood", image: "/materials/driftwood.png", price: "$100", filterTags: ["roller"], patternUrl: "/materials/driftwood.png" },
+  { name: "Driftwood Sand", image: "/materials/driftwoodsand.png", price: "$100", filterTags: ["roller"], patternUrl: "/materials/driftwoodsand.png" },
+  { name: "Iron", image: "/materials/iron.png", price: "$30", filterTags: ["roman"], patternUrl: "/materials/iron.png" },
+  { name: "Ivory", image: "/materials/ivory.png", price: "$30", filterTags: ["classicRoman"], patternUrl: "/materials/ivory.png" },
+  { name: "Kaki", image: "/materials/kaki.png", price: "$30", filterTags: ["vertical"], patternUrl: "/materials/kaki.png" },
+  { name: "Mocha", image: "/materials/mocha.png", price: "$45", filterTags: ["vertical"], patternUrl: "/materials/mocha.png" },
+  { name: "Noir", image: "/materials/noir.png", price: "$150", filterTags: ["sheet Blind", "vertical"], patternUrl: "/materials/noir.png" },
+  { name: "Oatmeal", image: "/materials/oatmeal.png", price: "$150", filterTags: ["roller", "sheet"], patternUrl: "/materials/oatmeal.png" },
+  { name: "Slate", image: "/materials/slate.png", price: "$100", filterTags: ["sheet Blind"], patternUrl: "/materials/slate.png" },
+  { name: "Silver", image: "/materials/SolarSilver.png", price: "$100", filterTags: ["sheet Blind", "classicRoman"], patternUrl: "/materials/SolarSilver.png" },
+  { name: "Steel", image: "/materials/steel.png", price: "$30", filterTags: ["zebra"], patternUrl: "/materials/steel.png" },
+  { name: "Taupe", image: "/materials/taupe.png", price: "$45", filterTags: ["zebra"], patternUrl: "/materials/taupe.png" },
+  { name: "Taupe Solar", image: "/materials/taupeSolar.png", price: "$100", filterTags: ["zebra"], patternUrl: "/materials/taupeSolar.png" },
+  { name: "Tea Leaves Brown", image: "/materials/tealeaves_brown.png", price: "$150", filterTags: ["zebra"], patternUrl: "/materials/tealeaves_brown.png" },
+  { name: "Tea Leaves White", image: "/materials/tealeaves_white.png", price: "$150", filterTags: ["zebra"], patternUrl: "/materials/tealeaves_white.png" },
+  { name: "Toast", image: "/materials/toast.png", price: "$45", filterTags: ["zebra", "roman"], patternUrl: "/materials/toast.png" },
+  { name: "White", image: "/materials/white.png", price: "$30", filterTags: ["plantationShutter", "roller"], patternUrl: "/materials/white.png" },
+  { name: "Wood", image: "/materials/wood.png", price: "$30", filterTags: ["plantationShutter"], patternUrl: "/materials/wood.png" },
 ];
 
 // Utility Functions
@@ -87,7 +91,8 @@ const FilterPageUI: React.FC = () => {
     completed: false,
   });
   const [isSelectionBoxUsed, setIsSelectionBoxUsed] = useState(false);
-  const [isSelectionBoxDrawn, setIsSelectionBoxDrawn] = useState(false); // New state to track if selection box is drawn
+  const [isSelectionBoxDrawn, setIsSelectionBoxDrawn] = useState(false);
+  const [openSection, setOpenSection] = useState<string | null>(null); // New state for sidebar sections
 
   const sceneRef = useRef<THREE.Scene>(new THREE.Scene());
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -116,9 +121,13 @@ const FilterPageUI: React.FC = () => {
   const draggingModelRef = useRef<THREE.Group | null>(null);
   const overlayImage = useRef<HTMLImageElement | null>(null);
 
-  const filteredPatterns = PATTERNS.filter(
-    (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
-  );
+  const filteredPatterns = PATTERNS.filter((pattern) => {
+    const matchesBlindType = selectedBlindType
+      ? pattern.filterTags.some((tag) => tag.toLowerCase() === selectedBlindType.toLowerCase())
+      : true; // If no blind type selected, include all patterns
+    const matchesFilters = filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag));
+    return matchesBlindType && matchesFilters;
+  });
   const instruction = activeProcess && typeof activeProcess.completed === "boolean"
     ? (!activeProcess.completed ? activeProcess.instruction : "")
     : "";
@@ -128,21 +137,18 @@ const FilterPageUI: React.FC = () => {
   const completeCurrentProcess = () =>
     setActiveProcess((prev) => ({ ...prev, completed: true }));
 
-  // Debug initial state
   useEffect(() => {
     console.log("Initial capturedImage:", capturedImage);
     console.log("Initial isCustomizerView:", isCustomizerView);
     localStorage.removeItem("capturedImage");
   }, []);
 
-  // Preload Overlay Image Once
   useEffect(() => {
     const img = new Image();
     img.src = "/images/overlayFilterUpdate.png";
     img.onload = () => (overlayImage.current = img);
   }, []);
 
-  // Three.js Initialization and Cleanup
   useEffect(() => {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
@@ -169,7 +175,7 @@ const FilterPageUI: React.FC = () => {
     secondaryLight.position.set(-5, 5, -5);
     sceneRef.current.add(secondaryLight);
 
-    animate(); // Start animation loop
+    animate();
 
     const handleResize = () => {
       const { innerWidth: width, innerHeight: height } = window;
@@ -187,14 +193,11 @@ const FilterPageUI: React.FC = () => {
       window.removeEventListener("resize", handleResize);
       cleanupThreeJs();
       modelsRef.current.forEach(modelData => {
-        if (modelData.mixer) {
-          modelData.mixer.stopAllAction();
-        }
+        if (modelData.mixer) modelData.mixer.stopAllAction();
       });
     };
   }, []);
 
-  // Preload Models
   useEffect(() => {
     const preloadModels = async () => {
       setIsLoading(true);
@@ -224,7 +227,6 @@ const FilterPageUI: React.FC = () => {
     preloadModels();
   }, []);
 
-  // UI Elements Setup (Updated Animation Buttons)
   useEffect(() => {
     if (!mountRef.current) return;
 
@@ -248,37 +250,25 @@ const FilterPageUI: React.FC = () => {
     saveButtonRef.current = addElement<HTMLButtonElement>("button", { id: "saveButton", textContent: "Save Image", className: "fixed bottom-16 right-5 py-3 px-6 text-lg bg-[#cbaa51] text-white rounded-lg shadow-md hover:bg-[#e0c373] z-[100] transition duration-300 hidden" });
     saveButtonRef.current?.addEventListener("click", saveImage);
     redoButtonRef.current = addElement<HTMLButtonElement>("button", { id: "redoButton", className: "fixed bottom-12 right-5 p-2 bg-[#cbaa51] text-white rounded-full shadow-md hover:bg-[#e0c373] z-[100] transition duration-300 hidden" });
-    redoButtonRef.current?.appendChild(addElement("img", { src: "/images/retryButtonImg.png", alt: "Redo Selection", className: "h-6 w-6" }));
+    redoButtonRef.current?.appendChild(addElement("img", { src: "/images/refreshWhite.png", alt: "Redo Selection", className: "h-6 w-6" }));
     redoButtonRef.current?.addEventListener("click", handleRedoSelection);
-    addWindowButtonRef.current = addElement<HTMLButtonElement>("button", { id: "addWindowButton", textContent: "Add Blind", className: "fixed bottom-12 left-5 py-2 px-4 text-md bg-[#cbaa51] text-white rounded-lg shadow-md hover:bg-[#e0c373] z-[100] transition duration-300 hidden" });
+    addWindowButtonRef.current = addElement<HTMLButtonElement>("button", { id: "addWindowButton", textContent: "Add Blind", className: "fixed bottom-12 left-5 py-3 px-4 text-sm text-center bg-[#cbaa51] text-white rounded-lg shadow-md hover:bg-[#e0c373] z-[100] transition duration-300 hidden" });
     addWindowButtonRef.current?.addEventListener("click", addAnotherWindow);
 
-    // Updated Play Forward Button
     playForwardButtonRef.current = addElement<HTMLButtonElement>("button", {
       id: "playForwardButton",
       className: "fixed bottom-28 left-10 md:left-[calc(20%+48px)] md:bottom-20 py-2 px-4 text-lg bg-[#cbaa51] text-white rounded-full shadow-md hover:bg-[#e0c373] z-[100] transition duration-300 hidden",
     });
     playForwardButtonRef.current.appendChild(
-      addElement("img", {
-        src: "/images/rolldown.png",
-        alt: "Play Forward",
-        className: "w-6 h-6 pointer-events-none select-none",
-        draggable: false,
-      })
+      addElement("img", { src: "/images/rollDF.png", alt: "Play Forward", className: "w-6 h-6 pointer-events-none select-none", draggable: false })
     );
 
-    // Updated Play Reverse Button
     playReverseButtonRef.current = addElement<HTMLButtonElement>("button", {
       id: "playReverseButton",
       className: "fixed bottom-12 left-10 md:left-[calc(20%+48px)] md:bottom-8 py-2 px-4 text-lg bg-[#cbaa51] text-white rounded-full shadow-md hover:bg-[#e0c373] z-[100] transition duration-300 hidden",
     });
     playReverseButtonRef.current.appendChild(
-      addElement("img", {
-        src: "/images/rollup.png",
-        alt: "Play Reverse",
-        className: "w-6 h-6 pointer-events-none select-none",
-        draggable: false,
-      })
+      addElement("img", { src: "/images/rollDownF.png", alt: "Play Reverse", className: "w-6 h-6 pointer-events-none select-none", draggable: false })
     );
 
     addElement("button", { id: "backButton", innerHTML: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>', className: "absolute top-5 left-5 p-2 bg-[#cbaa51] text-white rounded-full shadow-md hover:bg-[#e0c373] z-[100] transition duration-300" }).addEventListener("click", () => window.location.href = "/");
@@ -292,16 +282,13 @@ const FilterPageUI: React.FC = () => {
     };
   }, []);
 
-  // Animation Control Handlers
   const handlePlayForward = (e: Event) => {
     e.preventDefault();
     modelsRef.current.forEach((modelData) => {
       if (modelData.action) {
         modelData.action.timeScale = 1;
         modelData.action.paused = false;
-        if (!modelData.action.isRunning()) {
-          modelData.action.reset().play();
-        }
+        if (!modelData.action.isRunning()) modelData.action.reset().play();
         console.log(`Playing forward: ${modelData.action.getClip().name}`);
       }
     });
@@ -313,9 +300,7 @@ const FilterPageUI: React.FC = () => {
       if (modelData.action) {
         modelData.action.timeScale = -1;
         modelData.action.paused = false;
-        if (!modelData.action.isRunning()) {
-          modelData.action.reset().play();
-        }
+        if (!modelData.action.isRunning()) modelData.action.reset().play();
         console.log(`Playing reverse: ${modelData.action.getClip().name}`);
       }
     });
@@ -331,7 +316,6 @@ const FilterPageUI: React.FC = () => {
     });
   };
 
-  // Setup Animation Button Events (Updated)
   useEffect(() => {
     const forwardBtn = playForwardButtonRef.current;
     const reverseBtn = playReverseButtonRef.current;
@@ -499,7 +483,6 @@ const FilterPageUI: React.FC = () => {
     initSelectionBox();
     if (controlButtonRef.current) {
       controlButtonRef.current.textContent = "Submit";
-      // Keep the button hidden initially; it will be shown after the selection box is drawn
       controlButtonRef.current.classList.add("hidden");
     }
     levelIndicatorRef.current?.classList.add("hidden");
@@ -521,7 +504,7 @@ const FilterPageUI: React.FC = () => {
       initSelectionBox();
       if (controlButtonRef.current) {
         controlButtonRef.current.textContent = "Submit";
-        controlButtonRef.current.classList.add("hidden"); // Keep the button hidden initially
+        controlButtonRef.current.classList.add("hidden");
       }
       uploadButtonRef.current?.style.setProperty("display", "none");
       redoButtonRef.current?.classList.remove("hidden");
@@ -552,19 +535,17 @@ const FilterPageUI: React.FC = () => {
   const initSelectionBox = () => {
     if (isSelectionBoxUsed || !mountRef.current || selectionBoxRef.current) return;
 
-    // Initialize the selection box div
     selectionBoxRef.current = Object.assign(document.createElement("div"), {
       className: "absolute border-2 border-dashed border-[#2F3526] bg-[#2F3526] bg-opacity-20 pointer-events-auto",
       style: { zIndex: "25", transition: "none" },
     });
     mountRef.current.appendChild(selectionBoxRef.current);
 
-    // Create instruction div with black background and white text
     const instructionDiv = document.createElement("div");
     instructionDiv.className = "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-50 p-4 rounded shadow-md z-[100] pointer-events-auto flex flex-col items-center";
 
     const gif = document.createElement("img");
-    gif.src = "/images/drag.gif"; // Adjust path as needed
+    gif.src = "/images/drag.gif";
     gif.alt = "How to draw selection box";
     gif.className = "w-48 h-auto rounded";
     instructionDiv.appendChild(gif);
@@ -574,33 +555,26 @@ const FilterPageUI: React.FC = () => {
     instructionText.className = "mt-2 text-white text-center";
     instructionDiv.appendChild(instructionText);
 
-    // Create close button (below the text, styled in purple, text only)
     const closeButton = document.createElement("button");
     closeButton.className = "mt-3 py-2 px-4 bg-[#cbaa51] text-white rounded-lg shadow-md hover:bg-[#e0c373] transition duration-300";
     closeButton.textContent = "Close";
 
-    // Flag to track if the instruction div is still visible
     let isInstructionVisible = true;
 
-    // Add event listener for the close button
     closeButton.addEventListener("click", (e) => {
-      e.stopPropagation(); // Prevent the click from bubbling up to the mountRef
-      console.log("Close button clicked"); // Debug log
+      e.stopPropagation();
+      console.log("Close button clicked");
       if (instructionDiv && mountRef.current) {
-        console.log("Removing instruction div"); // Debug log
+        console.log("Removing instruction div");
         mountRef.current.removeChild(instructionDiv);
-        isInstructionVisible = false; // Update the flag
-        // Re-attach event listeners to ensure drawing can start
+        isInstructionVisible = false;
         attachEventListeners();
       } else {
         console.error("Instruction div or mountRef.current is not available");
       }
     });
 
-    // Also handle touch events for the close button to prevent touch propagation
-    closeButton.addEventListener("touchstart", (e) => {
-      e.stopPropagation(); // Prevent the touch from bubbling up to the mountRef
-    });
+    closeButton.addEventListener("touchstart", (e) => e.stopPropagation());
 
     instructionDiv.appendChild(closeButton);
     mountRef.current.appendChild(instructionDiv);
@@ -608,9 +582,8 @@ const FilterPageUI: React.FC = () => {
     let startX = 0, startY = 0, isDragging = false;
 
     const startSelection = (e: MouseEvent | Touch) => {
-      // Only start selection if the instruction div is not visible
       if (isInstructionVisible || isSelectionBoxUsed) return;
-      console.log("Starting selection"); // Debug log
+      console.log("Starting selection");
       const rect = mountRef.current!.getBoundingClientRect();
       startX = e.clientX - rect.left;
       startY = e.clientY - rect.top;
@@ -639,17 +612,14 @@ const FilterPageUI: React.FC = () => {
 
     const endSelection = (e: MouseEvent | Touch) => {
       if (!isDragging || !selectionBoxRef.current) return;
-      console.log("Ending selection"); // Debug log
+      console.log("Ending selection");
       selectionBoxRef.current.style.display = "none";
       isDragging = false;
       const rect = mountRef.current!.getBoundingClientRect();
       createDefaultModel(startX, startY, e.clientX - rect.left, e.clientY - rect.top);
       setIsSelectionBoxUsed(true);
-      setIsSelectionBoxDrawn(true); // Update the state to indicate the selection box is drawn
-      // Show the Submit button now that the selection box is drawn
-      if (controlButtonRef.current) {
-        controlButtonRef.current.classList.remove("hidden");
-      }
+      setIsSelectionBoxDrawn(true);
+      if (controlButtonRef.current) controlButtonRef.current.classList.remove("hidden");
       cleanupSelectionBox();
     };
 
@@ -662,17 +632,15 @@ const FilterPageUI: React.FC = () => {
       touchend: (e: TouchEvent) => endSelection(e.changedTouches[0]),
     };
 
-    // Function to attach event listeners
     const attachEventListeners = () => {
-      console.log("Attaching event listeners"); // Debug log
+      console.log("Attaching event listeners");
       Object.entries(handlers).forEach(([event, handler]) =>
         mountRef.current!.addEventListener(event, handler as EventListener, { passive: false })
       );
     };
 
-    // Function to remove event listeners
     const cleanupSelectionBox = () => {
-      console.log("Cleaning up selection box"); // Debug log
+      console.log("Cleaning up selection box");
       Object.entries(handlers).forEach(([event, handler]) =>
         mountRef.current?.removeEventListener(event, handler as EventListener)
       );
@@ -681,8 +649,6 @@ const FilterPageUI: React.FC = () => {
         selectionBoxRef.current = null;
       }
     };
-
-    // Do not attach event listeners initially; wait for the close button to be pressed
   };
 
   const createDefaultModel = async (startX: number, startY: number, endX: number, endY: number) => {
@@ -787,11 +753,12 @@ const FilterPageUI: React.FC = () => {
 
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
+    let clickOffset = new THREE.Vector3();
 
     const findParentModel = (object: THREE.Object3D): THREE.Group | null => {
       let current: THREE.Object3D | null = object;
       while (current) {
-        const model = modelsRef.current.find(m => m.model === current);
+        const model = modelsRef.current.find((m) => m.model === current);
         if (model) return model.model;
         current = current.parent;
       }
@@ -803,28 +770,35 @@ const FilterPageUI: React.FC = () => {
       mouse.x = ((e.clientX - mountRef.current!.getBoundingClientRect().left) / mountRef.current!.offsetWidth) * 2 - 1;
       mouse.y = -((e.clientY - mountRef.current!.getBoundingClientRect().top) / mountRef.current!.offsetHeight) * 2 + 1;
       raycaster.setFromCamera(mouse, cameraRef.current!);
-      const intersects = raycaster.intersectObjects(modelsRef.current.map(m => m.model), true);
+      const intersects = raycaster.intersectObjects(modelsRef.current.map((m) => m.model), true);
       if (intersects.length > 0) {
         const intersected = intersects[0].object;
         const model = findParentModel(intersected);
         if (model && model.userData.isDraggable) {
           draggingModelRef.current = model;
+          const clickWorldPos = intersects[0].point;
+          clickOffset.copy(model.position).sub(clickWorldPos);
+          console.log("Mouse down: Model selected at", clickWorldPos, "Offset:", clickOffset);
         }
       }
     };
 
     const onMouseMove = (e: MouseEvent) => {
       if (!draggingModelRef.current || !cameraRef.current) return;
-      const worldPos = screenToWorld(
-        e.clientX - mountRef.current!.getBoundingClientRect().left,
-        e.clientY - mountRef.current!.getBoundingClientRect().top,
-        0.1
-      );
-      draggingModelRef.current.position.set(worldPos.x, worldPos.y, 0.1);
-      renderScene();
+      mouse.x = ((e.clientX - mountRef.current!.getBoundingClientRect().left) / mountRef.current!.offsetWidth) * 2 - 1;
+      mouse.y = -((e.clientY - mountRef.current!.getBoundingClientRect().top) / mountRef.current!.offsetHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, cameraRef.current!);
+      const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.1);
+      const intersectPoint = new THREE.Vector3();
+      if (raycaster.ray.intersectPlane(plane, intersectPoint)) {
+        draggingModelRef.current.position.copy(intersectPoint.add(clickOffset));
+        console.log("Mouse move: Dragging to", intersectPoint);
+        renderScene();
+      }
     };
 
     const onMouseUp = () => {
+      console.log("Mouse up: Dragging stopped");
       draggingModelRef.current = null;
     };
 
@@ -834,29 +808,37 @@ const FilterPageUI: React.FC = () => {
       mouse.x = ((touch.clientX - mountRef.current!.getBoundingClientRect().left) / mountRef.current!.offsetWidth) * 2 - 1;
       mouse.y = -((touch.clientY - mountRef.current!.getBoundingClientRect().top) / mountRef.current!.offsetHeight) * 2 + 1;
       raycaster.setFromCamera(mouse, cameraRef.current!);
-      const intersects = raycaster.intersectObjects(modelsRef.current.map(m => m.model), true);
+      const intersects = raycaster.intersectObjects(modelsRef.current.map((m) => m.model), true);
       if (intersects.length > 0) {
         const intersected = intersects[0].object;
         const model = findParentModel(intersected);
         if (model && model.userData.isDraggable) {
           draggingModelRef.current = model;
+          const touchWorldPos = intersects[0].point;
+          clickOffset.copy(model.position).sub(touchWorldPos);
+          console.log("Touch start: Model selected at", touchWorldPos, "Offset:", clickOffset);
         }
       }
     };
 
     const onTouchMove = (e: TouchEvent) => {
       if (!draggingModelRef.current || !cameraRef.current) return;
+      e.preventDefault();
       const touch = e.touches[0];
-      const worldPos = screenToWorld(
-        touch.clientX - mountRef.current!.getBoundingClientRect().left,
-        touch.clientY - mountRef.current!.getBoundingClientRect().top,
-        0.1
-      );
-      draggingModelRef.current.position.set(worldPos.x, worldPos.y, 0.1);
-      renderScene();
+      mouse.x = ((touch.clientX - mountRef.current!.getBoundingClientRect().left) / mountRef.current!.offsetWidth) * 2 - 1;
+      mouse.y = -((touch.clientY - mountRef.current!.getBoundingClientRect().top) / mountRef.current!.offsetHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, cameraRef.current!);
+      const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.1);
+      const intersectPoint = new THREE.Vector3();
+      if (raycaster.ray.intersectPlane(plane, intersectPoint)) {
+        draggingModelRef.current.position.copy(intersectPoint.add(clickOffset));
+        console.log("Touch move: Dragging to", intersectPoint);
+        renderScene();
+      }
     };
 
     const onTouchEnd = () => {
+      console.log("Touch end: Dragging stopped");
       draggingModelRef.current = null;
     };
 
@@ -881,9 +863,7 @@ const FilterPageUI: React.FC = () => {
   useEffect(() => {
     if (capturedImage && !isSelectionBoxUsed) initSelectionBox();
     const cleanupDragging = setupDragging();
-    return () => {
-      cleanupDragging?.();
-    };
+    return () => cleanupDragging?.();
   }, [capturedImage, isSelectionBoxUsed, modelsRef.current.length, isSubmitted]);
 
   const selectBlindType = async (type: string) => {
@@ -895,69 +875,87 @@ const FilterPageUI: React.FC = () => {
     isProcessingRef.current = true;
     setIsLoading(true);
     setSelectedBlindType(type);
-
+  
     const blindType = BLIND_TYPES.find((b) => b.type === type);
-    if (!blindType || !selectionBoxParamsRef.current || !initialModelParamsRef.current) return;
-
+    if (!blindType || !selectionBoxParamsRef.current || !initialModelParamsRef.current) {
+      isProcessingRef.current = false;
+      setIsLoading(false);
+      return;
+    }
+  
+    // Get the first available pattern for this blind type
+    const availablePatterns = PATTERNS.filter((pattern) =>
+      pattern.filterTags.some((tag) => tag.toLowerCase() === type.toLowerCase())
+    );
+    const initialPattern = availablePatterns.length > 0 ? availablePatterns[0].patternUrl : "/materials/mocha.png"; // Fallback if no patterns match
+    setSelectedPattern(initialPattern); // Set the initial pattern in state
+  
     const currentModels = modelsRef.current.map(({ model }) => ({
       position: model.position.clone(),
       isDraggable: model.userData.isDraggable || false,
     }));
-
+  
     await cleanupCurrentModel();
-
+  
     let modelData = preloadedModelsRef.current.get(blindType.modelUrl);
     if (!modelData) {
       modelData = await loadModel(blindType.modelUrl);
       preloadedModelsRef.current.set(blindType.modelUrl, modelData);
     }
-
+  
     const updatedModels: ModelData[] = [];
     currentModels.forEach(({ position, isDraggable }) => {
       const newModel = modelData.model.clone();
       const newMixer = new THREE.AnimationMixer(newModel);
       const newModelData = { model: newModel, gltf: modelData.gltf, mixer: newMixer };
-
+  
       newModel.position.copy(position);
-      if (initialModelParamsRef.current) {
-        newModel.scale.copy(initialModelParamsRef.current.scale);
-      }
+      if (initialModelParamsRef.current) newModel.scale.copy(initialModelParamsRef.current.scale);
       newModel.rotation.set(blindType.rotation.x, blindType.rotation.y, blindType.rotation.z);
       newModel.userData.isDraggable = isDraggable;
-      applyTextureToModel(newModel, selectedPattern || "/materials/mocha.png", blindType);
-
+      applyTextureToModel(newModel, initialPattern, blindType); // Apply the initial pattern
+  
       sceneRef.current.add(newModel);
       updatedModels.push(newModelData);
-
+  
       playModelAnimation(newModelData, blindType.animationName);
       fadeInModel(newModel);
     });
-
+  
     if (updatedModels.length === 0) {
       const newModel = modelData.model.clone();
       const newMixer = new THREE.AnimationMixer(newModel);
       const newModelData = { model: newModel, gltf: modelData.gltf, mixer: newMixer };
-
+  
       if (initialModelParamsRef.current) {
         newModel.scale.copy(initialModelParamsRef.current.scale);
         newModel.position.copy(initialModelParamsRef.current.position);
       }
       newModel.rotation.set(blindType.rotation.x, blindType.rotation.y, blindType.rotation.z);
-      applyTextureToModel(newModel, selectedPattern || "/materials/beige.png", blindType);
+      applyTextureToModel(newModel, initialPattern, blindType); // Apply the initial pattern
       sceneRef.current.add(newModel);
       updatedModels.push(newModelData);
-
+  
       playModelAnimation(newModelData, blindType.animationName);
       fadeInModel(newModel);
     }
-
+  
     modelsRef.current = updatedModels;
     if (!isCustomizerView) addWindowButtonRef.current?.classList.remove("hidden");
-
+  
     renderScene();
     isProcessingRef.current = false;
     setIsLoading(false);
     completeCurrentProcess();
+  
+    // Process any queued changes
+    if (changeQueueRef.current.length > 0) {
+      const nextChange = changeQueueRef.current.shift();
+      if (nextChange) {
+        if (nextChange.type === "blind") selectBlindType(nextChange.value);
+        else if (nextChange.type === "pattern") selectPattern(nextChange.value);
+      }
+    }
   };
 
   const selectPattern = async (patternUrl: string) => {
@@ -1058,9 +1056,7 @@ const FilterPageUI: React.FC = () => {
       ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
 
       const finalDataUrl = canvas.toDataURL("image/png");
-      if (!finalDataUrl || finalDataUrl === "data:,") {
-        throw new Error("Final data URL is empty");
-      }
+      if (!finalDataUrl || finalDataUrl === "data:,") throw new Error("Final data URL is empty");
 
       const blob = await (await fetch(finalDataUrl)).blob();
       const file = new File([blob], "custom_blind_image.png", { type: "image/png" });
@@ -1134,9 +1130,7 @@ const FilterPageUI: React.FC = () => {
 
   const cleanupCameraStream = () => {
     cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
+    if (videoRef.current) videoRef.current.srcObject = null;
     if (canvasRef.current) {
       const ctx = canvasRef.current.getContext("2d");
       if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
@@ -1157,37 +1151,37 @@ const FilterPageUI: React.FC = () => {
   const applyTextureToModel = (model: THREE.Group, patternUrl: string, blindType: BlindType) => {
     if (!model) return;
     const textureLoader = new THREE.TextureLoader();
-  
+
     const applyMaterial = (
-      textureUrl: string, 
-      normalUrl: string | null, 
-      repeat: number, 
-      normalScale: number, 
-      roughness: number, 
-      metalness: number, 
-      meshName?: string
+      textureUrl: string,
+      normalUrl: string | null,
+      repeat: number,
+      normalScale: number,
+      roughness: number,
+      metalness: number,
+      meshNames?: string[] // Updated to handle array of mesh names
     ) => {
       const texture = textureLoader.load(textureUrl, undefined, undefined, (_) => console.error(`Texture load failed: ${textureUrl}`));
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
       texture.repeat.set(repeat, repeat);
       texture.colorSpace = THREE.SRGBColorSpace;
-  
+
       const materialProps: THREE.MeshStandardMaterialParameters = {
         map: texture,
         roughness,
         metalness,
       };
-  
+
       if (normalUrl) {
         materialProps.normalMap = textureLoader.load(normalUrl, undefined, undefined, (_) => console.error(`Normal map load failed: ${normalUrl}`));
         materialProps.normalScale = new THREE.Vector2(normalScale, normalScale);
       }
-  
+
       const material = new THREE.MeshStandardMaterial(materialProps);
       let applied = false;
-  
+
       model.traverse((child) => {
-        if (isMesh(child) && (!meshName || child.name === meshName)) {
+        if (isMesh(child) && (!meshNames || meshNames.includes(child.name))) { // Check if child.name is in meshNames array
           if (Array.isArray(child.material)) {
             child.material.forEach((mat) => mat.dispose());
             child.material = material;
@@ -1199,22 +1193,20 @@ const FilterPageUI: React.FC = () => {
           applied = true;
         }
       });
-  
-      if (!applied) console.warn(`No meshes found for ${meshName || 'all'} in model`);
+
+      if (!applied) console.warn(`No meshes found for ${meshNames?.join(", ") || 'all'} in model`);
     };
-  
+
     if (!blindType.meshNameFabric && !blindType.meshNameWood) {
       applyMaterial(patternUrl, null, 8, 0, 0.5, 0.1);
     } else {
       if (blindType.meshNameFabric) {
-        // Use normalFabric if provided, otherwise fall back to default
         const fabricNormal = blindType.normalFabric || "/3d/normals/clothTex.jpg";
         applyMaterial(patternUrl, fabricNormal, 6, 0.5, 0.3, 0.1, blindType.meshNameFabric);
       }
       if (blindType.meshNameWood) {
-        // Use normalWood if provided, otherwise fall back to default
         const woodNormal = blindType.normalWood || "/3d/normals/wood.jpg";
-        applyMaterial("/materials/iron.png", woodNormal, 1, 0.5, 0.3, 0.1, blindType.meshNameWood);
+        applyMaterial("/materials/white.png", woodNormal, 1, 0.5, 0.3, 0.1, blindType.meshNameWood);
       }
     }
     renderScene();
@@ -1255,9 +1247,7 @@ const FilterPageUI: React.FC = () => {
         };
         requestAnimationFrame(fadeOut);
       });
-      if (modelData.mixer) {
-        modelData.mixer.stopAllAction();
-      }
+      if (modelData.mixer) modelData.mixer.stopAllAction();
       sceneRef.current.remove(modelData.model);
     }));
     modelsRef.current = [];
@@ -1271,13 +1261,8 @@ const FilterPageUI: React.FC = () => {
       (gltf) => {
         const mixer = new THREE.AnimationMixer(gltf.scene);
         const modelData = { model: gltf.scene, gltf, mixer };
-
         console.log(`Loaded model ${modelUrl}:`);
-        console.log('Available animations:', gltf.animations.map(a => ({
-          name: a.name,
-          duration: a.duration
-        })));
-
+        console.log('Available animations:', gltf.animations.map(a => ({ name: a.name, duration: a.duration })));
         resolve(modelData);
       },
       undefined,
@@ -1298,8 +1283,7 @@ const FilterPageUI: React.FC = () => {
       animationClip = animations.find(a => a.name.toLowerCase() === animationName.toLowerCase());
       console.log(`Attempting to prepare specified animation: ${animationName}`);
       if (!animationClip) {
-        console.warn(`Animation "${animationName}" not found. Available animations:`, 
-          animations.map(a => a.name));
+        console.warn(`Animation "${animationName}" not found. Available animations:`, animations.map(a => a.name));
         animationClip = animations[0];
       }
     } else {
@@ -1320,18 +1304,14 @@ const FilterPageUI: React.FC = () => {
   };
 
   const renderScene = () => {
-    if (rendererRef.current && cameraRef.current) {
-      rendererRef.current.render(sceneRef.current, cameraRef.current);
-    }
+    if (rendererRef.current && cameraRef.current) rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
   const animate = () => {
     requestAnimationFrame(animate);
     const delta = 1/60;
     modelsRef.current.forEach(modelData => {
-      if (modelData.mixer) {
-        modelData.mixer.update(delta);
-      }
+      if (modelData.mixer) modelData.mixer.update(delta);
     });
     renderScene();
   };
@@ -1378,8 +1358,8 @@ const FilterPageUI: React.FC = () => {
 
         const aspect = width / height;
         const imgAspect = texture.image.width / texture.image.height;
-        const [planeWidth, planeHeight] = imgAspect > aspect 
-          ? [width / 100, (width / 100) / imgAspect] 
+        const [planeWidth, planeHeight] = imgAspect > aspect
+          ? [width / 100, (width / 100) / imgAspect]
           : [(height / 100) * imgAspect, height / 100];
         backgroundPlaneRef.current.geometry.dispose();
         backgroundPlaneRef.current.geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
@@ -1423,10 +1403,8 @@ const FilterPageUI: React.FC = () => {
   const handleRedoSelection = async () => {
     await cleanupCurrentModel();
     setIsSelectionBoxUsed(false);
-    setIsSelectionBoxDrawn(false); // Reset the selection box drawn state
-    if (controlButtonRef.current) {
-      controlButtonRef.current.classList.add("hidden"); // Hide the Submit button when redoing selection
-    }
+    setIsSelectionBoxDrawn(false);
+    if (controlButtonRef.current) controlButtonRef.current.classList.add("hidden");
     setNewProcess("redo", "Draw a new box on the image to place the 3D model.");
   };
 
@@ -1450,230 +1428,260 @@ const FilterPageUI: React.FC = () => {
     levelIndicatorRef.current.style.border = isLevel ? "2px solid black" : "none";
   };
 
-  // Render
-  return (
+  const toggleSection = (section: string) => {
+    setOpenSection(openSection === section ? null : section);
+  };
+// ... (rest of the imports, types, constants, and logic remain unchanged)
+
+// Inside the FilterPageUI component, after all hooks and logic:
+return (
+  <div
+    className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto"
+    style={{
+      fontFamily: "Poppins, sans-serif",
+      background: !capturedImage && !isCustomizerView ? "url('/images/pic-2.jpg') center/cover no-repeat" : "#FFFFFF",
+      touchAction: isCustomizerView ? "pan-y" : "auto",
+    }}
+  >
+    {/* Add the CSS styles */}
+    <style>{`
+      .menu-section {
+        background: linear-gradient(135deg, #ffffff, #f9fafb);
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        margin-bottom: 16px;
+        padding: 16px;
+      }
+      .menu-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 12px;
+        border-bottom: 2px solid #cbaa51;
+        padding-bottom: 4px;
+      }
+      .patterns-scroll-container {
+        max-height: 300px; /* Fixed height for mobile scroll */
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        scrollbar-width: thin; /* Firefox */
+        scrollbar-color: #cbaa51 #f9fafb; /* Firefox */
+      }
+      .patterns-scroll-container::-webkit-scrollbar {
+        width: 8px; /* Chrome, Safari */
+      }
+      .patterns-scroll-container::-webkit-scrollbar-thumb {
+        background-color: #cbaa51;
+        border-radius: 4px;
+      }
+      .patterns-scroll-container::-webkit-scrollbar-track {
+        background: #f9fafb;
+      }
+      @media (min-width: 768px) {
+        .patterns-scroll-container {
+          max-height: none; /* Remove height restriction on desktop */
+          overflow-y: visible;
+        }
+      }
+    `}</style>
+
     <div
-      className="relative w-screen h-auto min-h-screen overflow-x-hidden overflow-y-auto"
+      ref={mountRef}
+      className="relative w-full h-auto min-h-screen"
       style={{
-        fontFamily: "Poppins, sans-serif",
-        background: !capturedImage && !isCustomizerView ? "url('/images/pic-2.jpg') center/cover no-repeat" : "#FFFFFF",
+        zIndex: isCustomizerView ? 0 : 20,
         touchAction: isCustomizerView ? "pan-y" : "auto",
       }}
-    >
-      <div
-        ref={mountRef}
-        className="relative w-full h-auto min-h-screen"
-        style={{
-          zIndex: isCustomizerView ? 0 : 20,
-          touchAction: isCustomizerView ? "pan-y" : "auto",
-        }}
-      />
-      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60]">
-        <img src="/images/baelogoN.png" alt="Logo" className="w-24 h-24 object-contain" />
-      </div>
-      {instruction && (
-        <div className="fixed top-32 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 p-2 rounded shadow-md z-[100] text-brown-800 text-lg">
-          {instruction}
-        </div>
-      )}
-      {isLoading && (
-        <div className="fixed inset-0 flex items-center justify-center z-[50] bg-black bg-opacity-50">
-          <div className="text-white text-lg">Loading...</div>
-        </div>
-      )}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          completeCurrentProcess();
-          handleImageUpload(file);
-        }}
-      />
-      {showBlindMenu && isCustomizerView && (
-        <>
-          {/* Mobile Layout (Unchanged) */}
-          <div
-            className="md:hidden relative max-w-7xl mx-auto p-4 flex flex-col items-start justify-center gap-4 overflow-y-auto"
-            style={{
-              zIndex: 30,
-              pointerEvents: "auto",
-              touchAction: "pan-y",
-              marginTop: "20px",
-            }}
-          >
-            <div className="w-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
-              <h3 className="bg-gray-100 p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
-                Select Type of Blind
-              </h3>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
-                {BLIND_TYPES.map(({ type, buttonImage }) => (
-                  <div
-                    key={type}
-                    className="flex flex-col items-center text-center px-[5px]"
-                  >
-                    <img
-                      src={buttonImage}
-                      alt={`${type} Blind`}
-                      className="w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover cursor-pointer"
-                      onClick={() => selectBlindType(type)}
-                      onTouchEnd={(e) => {
-                        e.preventDefault(); // Prevent default touch behavior
-                        selectBlindType(type);
-                      }}
-                    />
-                    <div className="mt-1 text-gray-700 text-[11px]">
-                      {type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="w-full bg-white bg-opacity-90 shadow-lg rounded flex flex-col">
-              <div className="p-2 bg-gray-100 rounded shadow">
-                <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
-                <div className="grid grid-cols-2 gap-2 mx-5 text-[13px]">
-                  {["solid", "pattern", "solar", "kids", "natural"].map((filter) => (
-                    <label key={filter} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        value={filter}
-                        checked={filters.includes(filter)}
-                        onChange={handleFilterChange}
-                        className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer"
-                      />
-                      {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="flex flex-col flex-1 max-h-[400px] bg-white">
-                <h3 className="bg-gray-100 pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
-                  Available Patterns
-                </h3>
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
-                  {filteredPatterns.map((pattern, index) => (
-                    <div
-                      key={index}
-                      className="flex flex-col items-center text-center px-[5px]"
-                    >
-                      <img
-                        src={pattern.image}
-                        alt={pattern.name}
-                        className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover cursor-pointer"
-                        onClick={() => selectPattern(pattern.patternUrl)}
-                        onTouchEnd={(e) => {
-                          e.preventDefault(); // Prevent default touch behavior
-                          selectPattern(pattern.patternUrl);
-                        }}
-                      />
-                      <div className="flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
-                        <span className="truncate">{pattern.name}</span>
-                        <span>{pattern.price}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Desktop Layout */}
-          <div className="hidden md:flex fixed inset-0 pointer-events-none z-[30]">
-            {/* Left Panel - Blind Types */}
-            <div
-              className="pointer-events-auto w-1/6 bg-white bg-opacity-100 shadow-lg rounded flex flex-col"
-              style={{
-                height: "calc(100vh - 64px)",
-                marginTop: "42px",
-                marginLeft: "32px",
-              }}
-            >
-              <h3 className="bg-gray-100 p-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
-                Select Type of Blind
-              </h3>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
-                {BLIND_TYPES.map(({ type, buttonImage }) => (
-                  <div
-                    key={type}
-                    className="flex flex-col items-center text-center cursor-pointer px-[5px]"
-                    onClick={() => selectBlindType(type)}
-                    onTouchEnd={() => selectBlindType(type)}
-                  >
-                    <img
-                      src={buttonImage}
-                      alt={`${type} Blind`}
-                      className="w-14 h-14 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
-                    />
-                    <div className="mt-1 text-gray-700 text-[11px]">
-                      {type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Right Panel - Filters and Patterns */}
-            <div
-              className="pointer-events-auto w-1/5 bg-white bg-opacity-100 shadow-lg rounded flex flex-col"
-              style={{
-                height: "calc(100vh - 64px)",
-                marginTop: "42px",
-                marginLeft: "auto",
-                marginRight: "32px",
-              }}
-            >
-              <div className="p-2 bg-gray-100 rounded shadow">
-                <h3 className="mb-2 text-sm text-gray-700 text-left h-12 flex items-center">Filter Options</h3>
-                <div className="grid grid-cols-2 gap-2 mx-5 text-[13px]">
-                  {["solid", "pattern", "solar", "kids", "natural"].map((filter) => (
-                    <label key={filter} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        value={filter}
-                        checked={filters.includes(filter)}
-                        onChange={handleFilterChange}
-                        className="w-4 h-4 border-2 border-gray-400 rounded-sm checked:bg-black checked:border-black focus:outline-none cursor-pointer"
-                      />
-                      {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="flex flex-col flex-1 max-h-[600px]">
-                <h3 className="bg-gray-100 pt-[10px] pb-2 px-2 text-left text-sm text-gray-700 shadow h-12 flex items-center">
-                  Available Patterns
-                </h3>
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2 mx-5 my-5 overflow-y-auto flex-1">
-                  {filteredPatterns.map((pattern, index) => (
-                    <div
-                      key={index}
-                      className="flex flex-col items-center text-center cursor-pointer px-[5px] hover:bg-gray-200 transition"
-                      onClick={() => selectPattern(pattern.patternUrl)}
-                      onTouchEnd={() => selectPattern(pattern.patternUrl)}
-                    >
-                      <img
-                        src={pattern.image}
-                        alt={pattern.name}
-                        className="w-12 h-12 rounded shadow-md hover:scale-105 hover:shadow-lg transition object-cover"
-                      />
-                      <div className="flex justify-between w-full mt-0.5 text-gray-700 text-[11px]">
-                        <span className="truncate">{pattern.name}</span>
-                        <span>{pattern.price}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+    />
+    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60]">
+      <img src="/images/baelogoN.png" alt="Logo" className="w-24 h-24 object-contain" />
     </div>
-  );
-};
+    {instruction && (
+      <div className="fixed top-32 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 p-2 rounded shadow-md z-[100] text-brown-800 text-lg">
+        {instruction}
+      </div>
+    )}
+    {isLoading && (
+      <div className="fixed inset-0 flex items-center justify-center z-[50] bg-black bg-opacity-50">
+        <div className="text-white text-lg">Loading...</div>
+      </div>
+    )}
+    <input
+      type="file"
+      ref={fileInputRef}
+      accept="image/*"
+      className="hidden"
+      onChange={(e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        completeCurrentProcess();
+        handleImageUpload(file);
+      }}
+    />
+    {showBlindMenu && isCustomizerView && (
+      <>
+        {/* Mobile Layout */}
+        <div
+          className="md:hidden w-full px-4 space-y-6"
+          style={{
+            zIndex: 30,
+            pointerEvents: "auto",
+            touchAction: "pan-y",
+            marginTop: "20px",
+          }}
+        >
+          {/* Select Blind Type */}
+          <div className="menu-section">
+            <h3 className="menu-title">Select Blind Type</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {BLIND_TYPES.map(({ type, buttonImage }) => (
+                <div key={type} className="flex flex-col items-center">
+                  <button
+                    onClick={() => selectBlindType(type)}
+                    className={`p-2 rounded-lg transition-all duration-300 transform hover:scale-105 ${
+                      selectedBlindType === type
+                        ? "bg-gradient-to-r from-[#cbaa51] to-[#e0c373] text-white shadow-md"
+                        : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
+                    }`}
+                  >
+                    <img src={buttonImage} alt={type} className="w-12 h-12 object-contain" />
+                  </button>
+                  <span className="mt-2 text-xs text-center text-gray-600 font-medium">
+                    {type.charAt(0).toUpperCase() + type.slice(1).replace(/([A-Z])/g, " $1").trim()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-export default FilterPageUI;
+          {/* Available Patterns with Scroll */}
+          <div className="menu-section">
+            <h3 className="menu-title">Available Patterns</h3>
+            <div className="patterns-scroll-container">
+              <div className="grid grid-cols-2 gap-4">
+                {filteredPatterns.length > 0 ? (
+                  filteredPatterns.map(({ name, image, price, patternUrl }) => (
+                    <div key={name} className="flex flex-col items-center">
+                      <button
+                        onClick={() => selectPattern(patternUrl)}
+                        className={`p-2 rounded-lg transition-all duration-300 transform hover:scale-105 ${
+                          selectedPattern === patternUrl
+                            ? "bg-gradient-to-r from-[#cbaa51] to-[#e0c373] text-white shadow-md"
+                            : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
+                        }`}
+                      >
+                        <img src={image} alt={name} className="w-12 h-12 object-contain rounded" />
+                      </button>
+                      <div className="mt-2 text-center">
+                        <span className="text-xs text-gray-600 font-medium block">{name}</span>
+                        <span className="text-xs text-gray-500 font-light">{price}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-2 text-center text-gray-500">No patterns available for this blind type</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Layout */}
+        <div className="hidden md:block fixed top-0 left-0 w-1/5 min-h-screen bg-white shadow-2xl z-[40] overflow-hidden border-r border-gray-200">
+          <div className="flex flex-col min-h-screen pt-16 px-6 pb-6 bg-gradient-to-b from-white to-gray-50">
+            <div className="mb-8 flex-shrink-0">
+              <h2 className="text-2xl font-bold text-gray-900 tracking-tight bg-gradient-to-r from-[#cbaa51] to-[#e0c373] bg-clip-text text-transparent">
+                Customize Blinds
+              </h2>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-6">
+              <div className="relative">
+                <button
+                  onClick={() => toggleSection("blindType")}
+                  className="w-full text-left p-4 bg-gray-100 rounded-xl shadow-md flex justify-between items-center text-gray-800 hover:bg-gray-200 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#cbaa51]/50 border border-gray-200"
+                >
+                  <span className="font-semibold text-base">Select Blind Type</span>
+                  <svg
+                    className={`w-6 h-6 transform transition-transform duration-300 ${openSection === "blindType" ? "rotate-180" : ""} text-[#cbaa51]`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {openSection === "blindType" && (
+                  <div className="mt-3 grid grid-cols-2 gap-4 p-4 bg-white rounded-xl shadow-lg border border-gray-100 max-h-[calc(100vh-200px)] overflow-y-auto animate-fadeIn">
+                    {BLIND_TYPES.map(({ type, buttonImage }) => (
+                      <div key={type} className="flex flex-col items-center">
+                        <button
+                          onClick={() => selectBlindType(type)}
+                          className={`p-3 rounded-lg transition-all duration-300 transform hover:scale-105 ${
+                            selectedBlindType === type
+                              ? "bg-gradient-to-r from-[#cbaa51] to-[#e0c373] text-white shadow-lg"
+                              : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
+                          }`}
+                        >
+                          <img src={buttonImage} alt={type} className="w-16 h-16 object-contain" />
+                        </button>
+                        <span className="mt-2 text-xs text-center text-gray-600 font-medium">{type}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => toggleSection("patterns")}
+                  className="w-full text-left p-4 bg-gray-100 rounded-xl shadow-md flex justify-between items-center text-gray-800 hover:bg-gray-200 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#cbaa51]/50 border border-gray-200"
+                >
+                  <span className="font-semibold text-base">Available Patterns</span>
+                  <svg
+                    className={`w-6 h-6 transform transition-transform duration-300 ${openSection === "patterns" ? "rotate-180" : ""} text-[#cbaa51]`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {openSection === "patterns" && (
+                  <div className="mt-3 grid grid-cols-2 gap-4 p-4 bg-white rounded-xl shadow-lg border border-gray-100 max-h-[calc(100vh-200px)] overflow-y-auto animate-fadeIn">
+                    {filteredPatterns.length > 0 ? (
+                      filteredPatterns.map(({ name, image, price, patternUrl }) => (
+                        <div key={name} className="flex flex-col items-center">
+                          <button
+                            onClick={() => selectPattern(patternUrl)}
+                            className={`p-3 rounded-lg transition-all duration-300 transform hover:scale-105 ${
+                              selectedPattern === patternUrl
+                                ? "bg-gradient-to-r from-[#cbaa51] to-[#e0c373] text-white shadow-lg"
+                                : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
+                            }`}
+                          >
+                            <img src={image} alt={name} className="w-16 h-16 object-contain" />
+                          </button>
+                          <span className="mt-2 text-xs text-center text-gray-600 font-medium">{name}</span>
+                          <span className="text-xs text-gray-500 font-light">{price}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-2 text-center text-gray-500">No patterns available for this blind type</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="hidden md:block md:ml-[20%] w-[80%] h-full" />
+      </>
+    )}
+  </div>
+);
+                };
+                
+                export default FilterPageUI;
