@@ -27,7 +27,12 @@ type Pattern = {
   filterTags: string[];
   patternUrl: string;
 };
-type ModelData = { model: THREE.Group; gltf?: any };
+type ModelData = {
+  model: THREE.Group;
+  gltf?: any;
+  mixer?: THREE.AnimationMixer; // Add mixer for animation control
+  action?: THREE.AnimationAction; // Add action for animation playback
+};
 
 const BLIND_TYPES: BlindType[] = [
   {
