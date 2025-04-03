@@ -9,8 +9,8 @@ type BlindType = {
   type: string;
   buttonImage: string;
   modelUrl: string;
-  meshNameFabric?: string[];
-  meshNameWood?: string[];
+  meshNameFabric?: string;
+  meshNameWood?: string;
   normalFabric?: string; // Added for fabric normal map
   normalWood?: string;   // Added for wood normal map
   instances: ModelInstanceConfig[];
@@ -27,7 +27,7 @@ type Pattern = {
   filterTags: string[];
   patternUrl: string;
 };
-type ModelData = { model: THREE.Group; gltf?: any };
+type ModelData = { model: THREE.Group; gltf?: any; mixer?: THREE.AnimationMixer; action?: THREE.AnimationAction };
 
 const BLIND_TYPES: BlindType[] = [
   {
@@ -35,105 +35,110 @@ const BLIND_TYPES: BlindType[] = [
     buttonImage: "/images/blindTypes/romanBlindIcon.png",
     modelUrl: "/3d/animated/classicRomanAnim.glb",
     instances: [
-      { position: { x: -45, y: -30, z: 10 }, scale: { x: 1.45, y: 2.25, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
-      
+      { position: { x: -45, y: -55, z: 10 }, scale: { x: 1.45, y: 2.75, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
+      { position: { x: 27.5, y: -55, z: 10 }, scale: { x: 1.45, y: 2.75, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
+      { position: { x: 100, y: -55, z: 10 }, scale: { x: 1.45, y: 2.75, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
     ],
   },
   {
     type: "roller",
     buttonImage: "/images/blindTypes/rollerBlindIcon.png",
     modelUrl: "/3d/animated/rollerBlindAnim.glb",
-    meshNameFabric: ["ROLLER_SHADES"],
-    meshNameWood: ["Cube"],
+    meshNameFabric: "ROLLER_SHADES",
+    meshNameWood: "Cube",
     instances: [
-      { position: { x: -45, y: -30, z: 10 }, scale: { x: 1.45, y: 2.25, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
-      
+      { position: { x: -45, y: -55, z: 10 }, scale: { x: 1.45, y: 2.8, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
+      { position: { x: 27.5, y: -55, z: 10 }, scale: { x: 1.45, y: 2.8, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
+      { position: { x: 100, y: -55, z: 10 }, scale: { x: 1.45, y: 2.8, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
     ],
   },
   {
     type: "roman",
     buttonImage: "/images/blindTypes/romanBlindIcon.png",
     modelUrl: "/3d/animated/romanBlindAnim.glb",
-    meshNameFabric: ["polySurface1"],
-    meshNameWood: ["polySurface3"],
+    meshNameFabric: "polySurface1",
+    meshNameWood: "polySurface3",
     instances: [
-      { position: { x: -45, y: -30, z: 10 }, scale: { x: 1.45, y: 2.25, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
-     
+      { position: { x: -45, y: -55, z: 10 }, scale: { x: 1.45, y: 2.85, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
+      { position: { x: 27.5, y: -55, z: 10 }, scale: { x: 1.45, y: 2.85, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
+      { position: { x: 100, y: -55, z: 10 }, scale: { x: 1.45, y: 2.85, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
     ],
   },
   {
     type: "Sheet Blind",
     buttonImage: "/images/blindTypes/sheetBlindIcon.png",
     modelUrl: "/3d/animated/SheetBlindAnim.glb",
-    meshNameFabric: ["Cloth"],
-    meshNameWood: ["Rod"],
+    meshNameFabric: "Cloth",
+    meshNameWood: "Rod",
     instances: [
-      { position: { x: -45, y: -30, z: 15 }, scale: { x: 1.45, y: 2.25, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
-      
+      { position: { x: -45, y: -55, z: 15 }, scale: { x: 1.45, y: 2.75, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
+      { position: { x: 27.5, y: -55, z: 15 }, scale: { x: 1.45, y: 2.75, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
+      { position: { x: 100, y: -55, z: 15 }, scale: { x: 1.45, y: 2.75, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
     ],
   },
   {
     type: "PlantationShutter",
     buttonImage: "/images/blindTypes/plantationShutterIcon.png",
-    modelUrl: "/3d/animated/plantationShutterAnim.glb",
-    meshNameFabric: ["polySurface1", "polySurface2", "polySurface3","polySurface4","polySurface5","polySurface6","polySurface7","polySurface8","polySurface9","polySurface10","polySurface11","polySurface12","polySurface13","polySurface14","polySurface15","polySurface16","polySurface17","polySurface18","polySurface19","polySurface20","polySurface21","polySurface22",
-      "polySurface23","polySurface24","polySurface25","polySurface26","polySurface27","polySurface28","polySurface29","polySurface30","polySurface31","polySurface32","polySurface33","polySurface34","polySurface35","polySurface36","polySurface37","polySurface38","polySurface39","polySurface40","polySurface41","polySurface42","polySurface43","polySurface44","polySurface45","polySurface46","polySurface47","polySurface48","polySurface49","polySurface50"
-      ,"polySurface51","polySurface52","polySurface53","polySurface54","polySurface55","polySurface56","polySurface57","polySurface58","polySurface59","polySurface60","polySurface61","polySurface62","polySurface63","polySurface64","polySurface65","polySurface66","polySurface67","polySurface68","polySurface69","polySurface70","polySurface71","polySurface72","polySurface73","polySurface74","polySurface75","polySurface76","polySurface77","polySurface78",
-      "polySurface79","polySurface80","polySurface81","polySurface82","polySurface83","polySurface84","polySurface85","polySurface86","polySurface87","polySurface88","polySurface89","polySurface90","polySurface91","polySurface92"],
-    normalFabric:"/3d/normals/plantationShutterNormal.png",
+    modelUrl: "/3d/PLANTATION__SHUTTER.glb",
+    meshNameWood: "Wood",
     instances: [
-      { position: { x: -46, y: -30, z: 5 }, scale: { x: 1.5, y: 2.25, z: 1 }, rotation: { x: 0, y: 0, z: 0 } },
-      
+      { position: { x: -46, y: -55, z: 5 }, scale: { x: 150, y: 190, z: 1 }, rotation: { x: 0, y: 0, z: 0 } },
+      { position: { x: 27, y: -55, z: 5 }, scale: { x: 150, y: 190, z: 1 }, rotation: { x: 0, y: 0, z: 0 } },
+      { position: { x: 100, y: -55, z: 5 }, scale: { x: 150, y: 190, z: 1 }, rotation: { x: 0, y: 0, z: 0 } },
     ],
   },
   {
     type: "VerticalSheet",
     buttonImage: "/images/blindTypes/verticalSheetBlindIcon.png",
     modelUrl: "/3d/VerticalSheet.glb",
-    meshNameWood: ["Wood"],
+    meshNameWood: "Wood",
     instances: [
-      { position: { x: -45, y: -30, z: 10 }, scale: { x: 1.45, y: 2.25, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
-      
+      { position: { x: -45, y: -55, z: 10 }, scale: { x: 1.45, y: 2.75, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
+      { position: { x: 27.5, y: -55, z: 10 }, scale: { x: 1.45, y: 2.75, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
+      { position: { x: 100, y: -55, z: 10 }, scale: { x: 1.45, y: 2.75, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
     ],
   },
   {
     type: "zebraBlinds",
     buttonImage: "/images/blindTypes/zebraBlindIcon.png",
     modelUrl: "/3d/animated/zebraBlindAnim.glb",
-    meshNameWood: ["zebra_blinds"],
+    meshNameWood: "zebra_blinds",
     instances: [
-      { position: { x: -45, y: -30, z: 10 }, scale: { x: 1.45, y: 2.25, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
-      
+      { position: { x: -45, y: -55, z: 10 }, scale: { x: 1.45, y: 2.75, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
+      { position: { x: 27.5, y: -55, z: 10 }, scale: { x: 1.45, y: 2.75, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
+      { position: { x: 100, y: -55, z: 10 }, scale: { x: 1.45, y: 2.75, z: 2 }, rotation: { x: 0, y: 0, z: 0 } },
     ],
   },
 ];
 
 const PATTERNS: Pattern[] = [
-  { name: "Beige", image: "/materials/beige.png", price: "$10", filterTags: ["roman"], patternUrl: "/materials/beige.png" },
-  { name: "Blanche", image: "/materials/Blanche.png", price: "$67", filterTags: ["classicRoman"], patternUrl: "/materials/Blanche.png" },
-  { name: "Cerrulean", image: "/materials/cerulean.png", price: "$10", filterTags: ["sheet Blind"], patternUrl: "/materials/cerulean.png" },
-  { name: "Chestnut", image: "/materials/chestnut.png", price: "$100", filterTags: ["sheet Blind", "roller"], patternUrl: "/materials/chestnut.png" },
-  { name: "Driftwood", image: "/materials/driftwood.png", price: "$100", filterTags: ["roller"], patternUrl: "/materials/driftwood.png" },
-  { name: "Driftwood Sand", image: "/materials/driftwoodsand.png", price: "$100", filterTags: ["roller"], patternUrl: "/materials/driftwoodsand.png" },
-  { name: "Iron", image: "/materials/iron.png", price: "$30", filterTags: ["roman"], patternUrl: "/materials/iron.png" },
-  { name: "Ivory", image: "/materials/ivory.png", price: "$30", filterTags: ["classicRoman"], patternUrl: "/materials/ivory.png" },
-  { name: "Kaki", image: "/materials/kaki.png", price: "$30", filterTags: ["vertical"], patternUrl: "/materials/kaki.png" },
-  { name: "Mocha", image: "/materials/mocha.png", price: "$45", filterTags: ["vertical"], patternUrl: "/materials/mocha.png" },
-  { name: "Noir", image: "/materials/noir.png", price: "$150", filterTags: ["sheet Blind", "vertical"], patternUrl: "/materials/noir.png" },
-  { name: "Oatmeal", image: "/materials/oatmeal.png", price: "$150", filterTags: ["roller", "sheet"], patternUrl: "/materials/oatmeal.png" },
-  { name: "Slate", image: "/materials/slate.png", price: "$100", filterTags: ["sheet Blind"], patternUrl: "/materials/slate.png" },
-  { name: "Silver", image: "/materials/SolarSilver.png", price: "$100", filterTags: ["sheet Blind", "classicRoman"], patternUrl: "/materials/SolarSilver.png" },
-  { name: "Steel", image: "/materials/steel.png", price: "$30", filterTags: ["zebra"], patternUrl: "/materials/steel.png" },
-  { name: "Taupe", image: "/materials/taupe.png", price: "$45", filterTags: ["zebra"], patternUrl: "/materials/taupe.png" },
-  { name: "Taupe Solar", image: "/materials/taupeSolar.png", price: "$100", filterTags: ["zebra"], patternUrl: "/materials/taupeSolar.png" },
-  { name: "Tea Leaves Brown", image: "/materials/tealeaves_brown.png", price: "$150", filterTags: ["zebra"], patternUrl: "/materials/tealeaves_brown.png" },
-  { name: "Tea Leaves White", image: "/materials/tealeaves_white.png", price: "$150", filterTags: ["zebra"], patternUrl: "/materials/tealeaves_white.png" },
-  { name: "Toast", image: "/materials/toast.png", price: "$45", filterTags: ["zebra", "roman"], patternUrl: "/materials/toast.png" },
-  { name: "White", image: "/materials/white.png", price: "$30", filterTags: ["plantationShutter", "roller"], patternUrl: "/materials/white.png" },
-  { name: "Wood", image: "/materials/wood.png", price: "$30", filterTags: ["plantationShutter"], patternUrl: "/materials/wood.png" },
+  { name: "Beige", image: "/materials/beige.png", price: "$10", filterTags: ["solid"], patternUrl: "/materials/beige.png" },
+  { name: "Blanche", image: "/materials/Blanche.png", price: "$67", filterTags: ["pattern"], patternUrl: "/materials/Blanche.png" },
+  { name: "White", image: "/materials/white.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/white.png" },
+  { name: "Beige", image: "/materials/beige.png", price: "$10", filterTags: ["solid"], patternUrl: "/materials/beige.png" },
+  { name: "Blanche", image: "/materials/Blanche.png", price: "$67", filterTags: ["pattern"], patternUrl: "/materials/Blanche.png" },
+  { name: "Cerrulean", image: "/materials/cerulean.png", price: "$10", filterTags: ["pattern"], patternUrl: "/materials/cerulean.png" },
+  { name: "Chestnut", image: "/materials/chestnut.png", price: "$100", filterTags: ["kids", "pattern"], patternUrl: "/materials/chestnut.png" },
+  { name: "Driftwood", image: "/materials/driftwood.png", price: "$100", filterTags: ["pattern"], patternUrl: "/materials/driftwood.png" },
+  { name: "Driftwood Sand", image: "/materials/driftwoodsand.png", price: "$100", filterTags: ["pattern"], patternUrl: "/materials/driftwoodsand.png" },
+  { name: "Iron", image: "/materials/iron.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/iron.png" },
+  { name: "Ivory", image: "/materials/ivory.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/ivory.png" },
+  { name: "Kaki", image: "/materials/kaki.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/kaki.png" },
+  { name: "Mocha", image: "/materials/mocha.png", price: "$45", filterTags: ["pattern", "natural"], patternUrl: "/materials/mocha.png" },
+  { name: "Noir", image: "/materials/noir.png", price: "$150", filterTags: ["pattern", "natural"], patternUrl: "/materials/noir.png" },
+  { name: "Oatmeal", image: "/materials/oatmeal.png", price: "$150", filterTags: ["natural", "pattern"], patternUrl: "/materials/oatmeal.png" },
+  { name: "Slate", image: "/materials/slate.png", price: "$100", filterTags: ["pattern"], patternUrl: "/materials/slate.png" },
+  { name: "Silver", image: "/materials/SolarSilver.png", price: "$100", filterTags: ["solid", "solar"], patternUrl: "/materials/SolarSilver.png" },
+  { name: "Steel", image: "/materials/steel.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/steel.png" },
+  { name: "Taupe", image: "/materials/taupe.png", price: "$45", filterTags: ["pattern"], patternUrl: "/materials/taupe.png" },
+  { name: "Taupe Solar", image: "/materials/taupeSolar.png", price: "$100", filterTags: ["solar"], patternUrl: "/materials/taupeSolar.png" },
+  { name: "Tea Leaves Brown", image: "/materials/tealeaves_brown.png", price: "$150", filterTags: ["pattern"], patternUrl: "/materials/tealeaves_brown.png" },
+  { name: "Tea Leaves White", image: "/materials/tealeaves_white.png", price: "$150", filterTags: ["patterned"], patternUrl: "/materials/tealeaves_white.png" },
+  { name: "Toast", image: "/materials/toast.png", price: "$45", filterTags: ["pattern"], patternUrl: "/materials/toast.png" },
+  { name: "White", image: "/materials/white.png", price: "$30", filterTags: ["solid"], patternUrl: "/materials/white.png" },
 ];
 
-const BlindCustomizeThreeJs: React.FC = () => {
+const BlindCustomizeThreeJs2: React.FC = () => {
   const [selectedBlindType, setSelectedBlindType] = useState<string | null>(null);
   const [backgroundColor, setBackgroundColor] = useState<string>("#F5F5DC");
   const [selectedPattern, setSelectedPattern] = useState<string | null>(null);
@@ -156,10 +161,8 @@ const BlindCustomizeThreeJs: React.FC = () => {
   const mobileHeightFactor = 0.75;
   const imageAspectRatio = 4 / 3;
 
-  const filteredPatterns = PATTERNS.filter((pattern) =>
-    selectedBlindType
-      ? pattern.filterTags.some((tag) => tag.toLowerCase() === selectedBlindType.toLowerCase())
-      : true // Show all patterns if no blind type is selected
+  const filteredPatterns = PATTERNS.filter(
+    (pattern) => filters.length === 0 || pattern.filterTags.some((tag) => filters.includes(tag))
   );
 
   const isMesh = (object: THREE.Object3D): object is THREE.Mesh =>
@@ -196,6 +199,8 @@ const BlindCustomizeThreeJs: React.FC = () => {
     preloadModels();
   }, []);
 
+
+  // Initialize Three.js scene
   useEffect(() => {
     if (!canvasRef.current || !solidColorLayerRef.current) return;
 
@@ -215,7 +220,7 @@ const BlindCustomizeThreeJs: React.FC = () => {
 
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(
-      "/images/ROOM1.png",
+      "/images/ROOM2.png",
       (texture) => {
         const planeWidth = containerWidth;
         const planeHeight = currentHeight;
@@ -303,7 +308,7 @@ const BlindCustomizeThreeJs: React.FC = () => {
     };
   }, []);
 
-  // Animation control buttons (unchanged for brevity)
+  // Animation control buttons
   useEffect(() => {
     const mount = document.body;
     const addElement = <T extends HTMLElement>(
@@ -421,7 +426,7 @@ const BlindCustomizeThreeJs: React.FC = () => {
     };
   }, [modelRefs.current.length]);
 
-  // Local storage, selectBlindType, handleButtonClick, applyTextureToModel, cleanupModels, renderScene (unchanged)
+  // Local storage handling
   useEffect(() => {
     const savedType = localStorage.getItem("selectedBlindType");
     if (savedType) setSelectedBlindType(savedType);
@@ -441,42 +446,33 @@ const BlindCustomizeThreeJs: React.FC = () => {
     localStorage.setItem("backgroundColor", backgroundColor);
   }, [backgroundColor]);
 
-  const selectBlindType = async (type: string) => {
+  // Select blind type with multiple instances
+const selectBlindType = async (type: string) => {
     if (isLoading) return;
     setIsLoading(true);
     setSelectedBlindType(type);
-  
+
     const blindType = BLIND_TYPES.find((b) => b.type === type);
-    if (!blindType) {
-      setIsLoading(false);
-      return;
-    }
-  
-    // Get the first available pattern for this blind type
-    const availablePatterns = PATTERNS.filter((pattern) =>
-      pattern.filterTags.some((tag) => tag.toLowerCase() === type.toLowerCase())
-    );
-    const initialPattern = availablePatterns.length > 0 ? availablePatterns[0].patternUrl : "/materials/mocha.png"; // Fallback if no patterns match
-    setSelectedPattern(initialPattern); // Set the initial pattern in state
-  
+    if (!blindType) return;
+
     await cleanupModels();
-  
+
     const modelData = preloadedModelsRef.current.get(blindType.modelUrl);
     if (!modelData) {
       console.error(`Model not preloaded for ${type}`);
       setIsLoading(false);
       return;
     }
-  
+
     const isMobile = window.innerWidth < 768;
     const containerWidth = Math.min(window.innerWidth, solidColorLayerRef.current!.getBoundingClientRect().width);
     const scaleFactor = containerWidth / 300;
-  
+
     modelRefs.current = blindType.instances.map((config) => {
       const model = modelData.model.clone();
       const mixer = new THREE.AnimationMixer(model);
       const newModelData: ModelData = { model, gltf: modelData.gltf, mixer };
-  
+
       model.position.set(
         config.position.x * scaleFactor,
         config.position.y * scaleFactor,
@@ -489,8 +485,8 @@ const BlindCustomizeThreeJs: React.FC = () => {
       );
       model.rotation.set(config.rotation.x, config.rotation.y, config.rotation.z);
       sceneRef.current.add(model);
-      applyTextureToModel(model, initialPattern, blindType); // Apply the initial pattern
-  
+      applyTextureToModel(model, selectedPattern || (blindType.meshNameFabric ? "/materials/mocha.png" : "/materials/beige.png"), blindType);
+
       if (modelData.gltf?.animations?.length) {
         const animationClip = modelData.gltf.animations[0];
         if (animationClip) {
@@ -501,10 +497,10 @@ const BlindCustomizeThreeJs: React.FC = () => {
           newModelData.action = action;
         }
       }
-  
+
       return newModelData;
     });
-  
+
     renderScene();
     setIsLoading(false);
   };
@@ -521,12 +517,12 @@ const BlindCustomizeThreeJs: React.FC = () => {
     const textureLoader = new THREE.TextureLoader();
     const applyMaterial = (
       textureUrl: string,
-      normalUrl: string | null,
+      normalUrl: string | null, // Updated to handle normal maps
       repeat: number,
       normalScale: number,
       roughness: number,
       metalness: number,
-      meshNames?: string[] // Updated to handle array of mesh names
+      meshName?: string
     ) => {
       const texture = textureLoader.load(
         textureUrl,
@@ -534,7 +530,7 @@ const BlindCustomizeThreeJs: React.FC = () => {
           tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
           tex.repeat.set(repeat, repeat);
           tex.colorSpace = THREE.SRGBColorSpace;
-  
+
           const materialProps: THREE.MeshStandardMaterialParameters = {
             map: tex,
             roughness,
@@ -545,11 +541,11 @@ const BlindCustomizeThreeJs: React.FC = () => {
             materialProps.normalMap = normalTexture;
             materialProps.normalScale = new THREE.Vector2(normalScale, normalScale);
           }
-  
+
           const material = new THREE.MeshStandardMaterial(materialProps);
           let applied = false;
           model.traverse((child) => {
-            if (isMesh(child) && (!meshNames || meshNames.includes(child.name))) { // Check array of mesh names
+            if (isMesh(child) && (!meshName || child.name === meshName)) {
               if (Array.isArray(child.material)) {
                 child.material.forEach((mat) => mat.dispose());
                 child.material = material;
@@ -561,37 +557,37 @@ const BlindCustomizeThreeJs: React.FC = () => {
               applied = true;
             }
           });
-          if (!applied) console.warn(`No meshes found for ${meshNames?.join(", ") || "all"} in model`);
+          if (!applied) console.warn(`No meshes found for ${meshName || "all"} in model`);
           renderScene();
         },
         undefined,
         (err) => console.error(`Texture load failed: ${textureUrl}`, err)
       );
     };
-  
+
     if (!blindType.meshNameFabric && !blindType.meshNameWood) {
       applyMaterial(patternUrl, null, 8, 0, 0.5, 0.1);
     } else {
       if (blindType.meshNameFabric) {
         applyMaterial(
           patternUrl,
-          blindType.normalFabric || "/3d/normals/clothTex.jpg",
+          blindType.normalFabric || "/3d/normals/clothTex.jpg", // Use specified normalFabric or default
           8,
           1,
           0.3,
           0.1,
-          blindType.meshNameFabric // Pass array
+          blindType.meshNameFabric
         );
       }
       if (blindType.meshNameWood) {
         applyMaterial(
           "/materials/beige.png",
-          blindType.normalWood || "/3d/normals/wood.jpg",
+          blindType.normalWood || "/3d/normals/wood.jpg", // Use specified normalWood or default
           4,
           0.5,
           1,
           0,
-          blindType.meshNameWood // Pass array
+          blindType.meshNameWood
         );
       }
     }
@@ -669,15 +665,15 @@ const BlindCustomizeThreeJs: React.FC = () => {
           padding-bottom: 4px;
         }
         .patterns-scroll-container {
-          max-height: 300px; /* Fixed height for mobile scroll */
+          max-height: 300px;
           overflow-y: auto;
           overflow-x: hidden;
-          -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-          scrollbar-width: thin; /* Firefox */
-          scrollbar-color: #cbaa51 #f9fafb; /* Firefox */
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+          scrollbar-color: #cbaa51 #f9fafb;
         }
         .patterns-scroll-container::-webkit-scrollbar {
-          width: 8px; /* Chrome, Safari */
+          width: 8px;
         }
         .patterns-scroll-container::-webkit-scrollbar-thumb {
           background-color: #cbaa51;
@@ -688,15 +684,22 @@ const BlindCustomizeThreeJs: React.FC = () => {
         }
         @media (min-width: 768px) {
           .patterns-scroll-container {
-            max-height: none; /* Remove height restriction on desktop */
+            max-height: none;
             overflow-y: visible;
           }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
       `}</style>
       <div className="full-screen-container text-black" style={{ fontFamily: "Poppins, sans-serif" }}>
         <div className="container max-w-7xl mx-auto py-6">
           <section className="roman-shades flex flex-col md:flex-row items-start justify-center gap-4">
-            {/* Desktop Layout (unchanged) */}
+            {/* Desktop Layout */}
             <div className="hidden md:block fixed top-0 left-0 w-1/5 min-h-screen bg-white shadow-2xl z-[40] overflow-hidden border-r border-gray-200">
               <div className="flex flex-col min-h-screen pt-16 px-6 pb-6 bg-gradient-to-b from-white to-gray-50">
                 <div className="mb-8 flex-shrink-0">
@@ -706,15 +709,15 @@ const BlindCustomizeThreeJs: React.FC = () => {
                 </div>
                 <div className="flex-1 overflow-y-auto space-y-6">
                   <div className="relative">
-                    {/* <button onClick={() => toggleSection("filters")} className="w-full text-left p-4 bg-gray-100 rounded-xl shadow-md flex justify-between items-center text-gray-800 hover:bg-gray-200 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#cbaa51]/50 border border-gray-200">
+                    <button onClick={() => toggleSection("filters")} className="w-full text-left p-4 bg-gray-100 rounded-xl shadow-md flex justify-between items-center text-gray-800 hover:bg-gray-200 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-[#cbaa51]/50 border border-gray-200">
                       <span className="font-semibold text-base">Filter Options</span>
                       <svg className={`w-6 h-6 transform transition-transform duration-300 ${openSection === "filters" ? "rotate-180" : ""} text-[#cbaa51]`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                       </svg>
-                    </button> */}
+                    </button>
                     {openSection === "filters" && (
                       <div className="mt-3 p-4 bg-white rounded-xl shadow-lg border border-gray-100 max-h-[calc(100vh-200px)] overflow-y-auto animate-fadeIn">
-                        {["plantationShutter", "vertical Blind", "sheet Blind", "roman", "classicRoman", "roller", "sheetBlind"].map((tag) => (
+                        {["solid", "pattern", "kids", "natural", "solar"].map((tag) => (
                           <label key={tag} className="flex items-center space-x-3 text-sm text-gray-700 py-2 hover:bg-gray-50 rounded-md transition-colors duration-200">
                             <input type="checkbox" value={tag} checked={filters.includes(tag)} onChange={handleFilterChange} className="form-checkbox h-5 w-5 text-[#cbaa51] rounded focus:ring-2 focus:ring-[#cbaa51]/50 transition-colors duration-200" />
                             <span className="capitalize font-medium">{tag}</span>
@@ -786,7 +789,7 @@ const BlindCustomizeThreeJs: React.FC = () => {
               {/* Mobile Menus */}
               <div className="md:hidden w-full px-4 space-y-6">
                 {/* Filter Options */}
-                {/* <div className="menu-section">
+                <div className="menu-section">
                   <h3 className="menu-title">Filter Options</h3>
                   <div className="grid grid-cols-2 gap-4">
                     {["solid", "natural", "solar", "pattern", "kids"].map((filter) => (
@@ -802,7 +805,7 @@ const BlindCustomizeThreeJs: React.FC = () => {
                       </label>
                     ))}
                   </div>
-                </div> */}
+                </div>
                 {/* Select Blind Type */}
                 <div className="menu-section">
                   <h3 className="menu-title">Select Blind Type</h3>
@@ -856,4 +859,4 @@ const BlindCustomizeThreeJs: React.FC = () => {
   );
 };
 
-export default BlindCustomizeThreeJs;
+export default BlindCustomizeThreeJs2;
