@@ -605,11 +605,13 @@ const BlindCustomizeThreeJs: React.FC = () => {
       modelRefs.current.forEach((modelData) => {
         modelData.model.traverse((child) => {
           if (isMesh(child)) {
+            // Handle material disposal
             if (Array.isArray(child.material)) {
-              child.material.forEach((mat) => mat.dispose());
+              child.material.forEach((mat: THREE.Material) => mat.dispose());
             } else {
-              child.material.dispose();
+              (child.material as THREE.Material).dispose();
             }
+            // Dispose geometry
             child.geometry.dispose();
           }
         });
