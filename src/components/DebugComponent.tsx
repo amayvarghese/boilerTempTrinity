@@ -30,6 +30,11 @@ type BlindType = {
 };
 
 
+type TexturePattern = {
+  patternUrl: string;
+  uvConfig?: UvConfig;
+};
+
 
 type Pattern = {
   name: string;
@@ -1253,27 +1258,25 @@ const FilterPageUI: React.FC = () => {
     return cameraRef.current.position.clone().add(dir.multiplyScalar(distance));
   };
 
-const applyTextureToModel = (model: THREE.Group, patternUrl: string, blindType: BlindType) => {
-  if (!model) return;
-
-  // Check if this is a custom pattern (data URL) or a predefined pattern
-  const isCustomPattern = patternUrl.startsWith("data:image");
-  const selectedPatternData = isCustomPattern
-    ? { patternUrl, uvConfig: { repeatX: 4, repeatY: -4, offsetX: 0, offsetY: 0 } } // Default UV config for custom patterns
-    : PATTERNS.find((p) => p.patternUrl === patternUrl) || PATTERNS[0];
-
-  // Apply texture using pattern parameters for both fabric and wood meshes
-  if (blindType.meshNameFabric) {
-    applyPatternTextureToModel(model, selectedPatternData, blindType.meshNameFabric);
-  }
-  if (blindType.meshNameWood) {
-    applyPatternTextureToModel(model, selectedPatternData, blindType.meshNameWood);
-  }
-};
+  const applyTextureToModel = (model: THREE.Group, patternUrl: string, blindType: BlindType) => {
+    if (!model) return;
+  
+    const isCustomPattern = patternUrl.startsWith("data:image");
+    const selectedPatternData: TexturePattern = isCustomPattern
+      ? { patternUrl, uvConfig: { repeatX: 4, repeatY: -4, offsetX: 0, offsetY: 0 } }
+      : PATTERNS.find((p) => p.patternUrl === patternUrl) || PATTERNS[0];
+  
+    if (blindType.meshNameFabric) {
+      applyPatternTextureToModel(model, selectedPatternData, blindType.meshNameFabric);
+    }
+    if (blindType.meshNameWood) {
+      applyPatternTextureToModel(model, selectedPatternData, blindType.meshNameWood);
+    }
+  };
 
   const applyPatternTextureToModel = (
     model: THREE.Group,
-    pattern: Pattern,
+    pattern: TexturePattern,
     meshNames: string[] | undefined
   ) => {
     const textureLoader = new THREE.TextureLoader();
