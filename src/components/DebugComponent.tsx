@@ -1048,7 +1048,7 @@ const FilterPageUI: React.FC = () => {
     if (modelsRef.current.length === 0) {
       changeQueueRef.current.push({ type: "pattern", value: patternUrl });
       if (selectionBoxParamsRef.current && initialModelParamsRef.current) await createDefaultModel(
-        selectionBoxParamsRef.current.worldStart.x,
+        selectionBoxParamsRef.current.worldStart.x,  
         selectionBoxParamsRef.current.worldStart.y,
         selectionBoxParamsRef.current.worldEnd.x,
         selectionBoxParamsRef.current.worldEnd.y
