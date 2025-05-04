@@ -713,7 +713,13 @@ const BlindCustomizeThreeJs: React.FC = () => {
             )
           );  
         }
-        child.material.dispose();
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach((m) => m.dispose());
+          } else {
+            child.material.dispose();
+          }
+        }        
         child.material = material;
         child.material.needsUpdate = true;
         applied = true;
