@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import FilterPageUI from "../components/FilterPageUI"; // Adjust the path as needed
 import BlindCustomizeThreeJs from "../components/BlindCustomizeThreeJs"; // Adjust the path as needed
+
 import FilterPageAI from "../components/FilterPageAI"; // Adjust the path as needed
 import BlindCustomizeThreeJs2 from "../Pages/BlindCustomizeThreeJsPage2";
+import DebugComponent from "../components/DebugComponent";
 
 const MenuScript: React.FC = () => {
   const [activeComponent, setActiveComponent] = useState<"none" | "blindCustomize" | "filterPage">("none");
@@ -93,11 +95,11 @@ const MenuScript: React.FC = () => {
 
       {activeComponent === "blindCustomize" ? (
         <div className="w-screen h-screen bg-gray-100 absolute top-0 left-0">
-          <BlindCustomizeThreeJs />
+          <BlindCustomizeThreeJs/>
         </div>
       ) : activeComponent === "filterPage" ? (
         <div className="w-screen h-screen bg-gray-100 absolute top-0 left-0">
-          <FilterPageUI />
+          <DebugComponent/>
         </div>
       ) : null}
     </div>

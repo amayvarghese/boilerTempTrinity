@@ -15,6 +15,14 @@ type BlindType = {
   normalWood?: string;   // Added for wood normal map
   instances: ModelInstanceConfig[];
 };
+type UvConfig = {
+  repeatX: number;
+  repeatY: number;
+  offsetX?: number;
+  offsetY?: number;
+  rotation?: number;
+};
+
 type ModelInstanceConfig = {
   position: Vector3D;
   scale: Vector3D;
@@ -25,7 +33,12 @@ type Pattern = {
   image: string;
   price: string;
   filterTags: string[];
-  patternUrl: string;
+  patternUrl: string; // Base color texture
+  normalUrl?: string; // Optional normal map
+  heightUrl?: string; // Optional height map
+  metallicUrl?: string; // Optional metallic map
+  occlusionUrl?: string; // Optional occlusion map
+  uvConfig?: UvConfig; // Optional UV configuration
 };
 type ModelData = {
   model: THREE.Group;
@@ -114,28 +127,28 @@ const BLIND_TYPES: BlindType[] = [
 ];
 
 const PATTERNS: Pattern[] = [
-  { name: "Beige", image: "/materials/beige.png", price: "$10", filterTags: ["roman"], patternUrl: "/materials/beige.png" },
-  { name: "Blanche", image: "/materials/Blanche.png", price: "$67", filterTags: ["classicRoman"], patternUrl: "/materials/Blanche.png" },
-  { name: "Cerrulean", image: "/materials/cerulean.png", price: "$10", filterTags: ["sheet Blind"], patternUrl: "/materials/cerulean.png" },
-  { name: "Chestnut", image: "/materials/chestnut.png", price: "$100", filterTags: ["sheet Blind", "roller"], patternUrl: "/materials/chestnut.png" },
-  { name: "Driftwood", image: "/materials/driftwood.png", price: "$100", filterTags: ["roller"], patternUrl: "/materials/driftwood.png" },
-  { name: "Driftwood Sand", image: "/materials/driftwoodsand.png", price: "$100", filterTags: ["roller"], patternUrl: "/materials/driftwoodsand.png" },
-  { name: "Iron", image: "/materials/iron.png", price: "$30", filterTags: ["roman"], patternUrl: "/materials/iron.png" },
-  { name: "Ivory", image: "/materials/ivory.png", price: "$30", filterTags: ["classicRoman"], patternUrl: "/materials/ivory.png" },
-  { name: "Kaki", image: "/materials/kaki.png", price: "$30", filterTags: ["vertical"], patternUrl: "/materials/kaki.png" },
-  { name: "Mocha", image: "/materials/mocha.png", price: "$45", filterTags: ["vertical"], patternUrl: "/materials/mocha.png" },
-  { name: "Noir", image: "/materials/noir.png", price: "$150", filterTags: ["sheet Blind", "vertical"], patternUrl: "/materials/noir.png" },
-  { name: "Oatmeal", image: "/materials/oatmeal.png", price: "$150", filterTags: ["roller", "sheet"], patternUrl: "/materials/oatmeal.png" },
-  { name: "Slate", image: "/materials/slate.png", price: "$100", filterTags: ["sheet Blind"], patternUrl: "/materials/slate.png" },
-  { name: "Silver", image: "/materials/SolarSilver.png", price: "$100", filterTags: ["sheet Blind", "classicRoman"], patternUrl: "/materials/SolarSilver.png" },
-  { name: "Steel", image: "/materials/steel.png", price: "$30", filterTags: ["zebra"], patternUrl: "/materials/steel.png" },
-  { name: "Taupe", image: "/materials/taupe.png", price: "$45", filterTags: ["zebra"], patternUrl: "/materials/taupe.png" },
-  { name: "Taupe Solar", image: "/materials/taupeSolar.png", price: "$100", filterTags: ["zebra"], patternUrl: "/materials/taupeSolar.png" },
-  { name: "Tea Leaves Brown", image: "/materials/tealeaves_brown.png", price: "$150", filterTags: ["zebra"], patternUrl: "/materials/tealeaves_brown.png" },
-  { name: "Tea Leaves White", image: "/materials/tealeaves_white.png", price: "$150", filterTags: ["zebra"], patternUrl: "/materials/tealeaves_white.png" },
-  { name: "Toast", image: "/materials/toast.png", price: "$45", filterTags: ["zebra", "roman"], patternUrl: "/materials/toast.png" },
-  { name: "White", image: "/materials/white.png", price: "$30", filterTags: ["plantationShutter", "roller"], patternUrl: "/materials/white.png" },
-  { name: "Wood", image: "/materials/wood.png", price: "$30", filterTags: ["plantationShutter"], patternUrl: "/materials/wood.png" },
+  { name: "Beige", image: "/materials/beige.png", price: "$10", filterTags: ["roman"], patternUrl: "/materials/beige.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Blanche", image: "/materials/Blanche.png", price: "$67", filterTags: ["classicRoman"], patternUrl: "/materials/Blanche.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Cerrulean", image: "/materials/cerulean.png", price: "$10", filterTags: ["sheet Blind"], patternUrl: "/materials/cerulean.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Chestnut", image: "/materials/chestnut.png", price: "$100", filterTags: ["sheet Blind", "roller"], patternUrl: "/materials/chestnut.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Driftwood", image: "/materials/driftwood.png", price: "$100", filterTags: ["roller"], patternUrl: "/materials/driftwood.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Driftwood Sand", image: "/materials/driftwoodsand.png", price: "$100", filterTags: ["roller"], patternUrl: "/materials/driftwoodsand.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Iron", image: "/materials/iron.png", price: "$30", filterTags: ["roman"], patternUrl: "/materials/iron.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Ivory", image: "/materials/ivory.png", price: "$30", filterTags: ["classicRoman"], patternUrl: "/materials/ivory.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Kaki", image: "/materials/kaki.png", price: "$30", filterTags: ["vertical"], patternUrl: "/materials/kaki.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Mocha", image: "/materials/mocha.png", price: "$45", filterTags: ["vertical"], patternUrl: "/materials/mocha.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Noir", image: "/materials/noir.png", price: "$150", filterTags: ["sheet Blind", "vertical"], patternUrl: "/materials/noir.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Oatmeal", image: "/materials/oatmeal.png", price: "$150", filterTags: ["roller", "sheet"], patternUrl: "/materials/oatmeal.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Slate", image: "/materials/slate.png", price: "$100", filterTags: ["sheet Blind"], patternUrl: "/materials/slate.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Silver", image: "/materials/SolarSilver.png", price: "$100", filterTags: ["sheet Blind", "classicRoman"], patternUrl: "/materials/SolarSilver.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Steel", image: "/materials/steel.png", price: "$30", filterTags: ["zebra"], patternUrl: "/materials/steel.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Taupe", image: "/materials/taupe.png", price: "$45", filterTags: ["zebra"], patternUrl: "/materials/taupe.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Taupe Solar", image: "/materials/taupeSolar.png", price: "$100", filterTags: ["zebra"], patternUrl: "/materials/taupeSolar.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Tea Leaves Brown", image: "/materials/tealeaves_brown.png", price: "$150", filterTags: ["zebra"], patternUrl: "/materials/tealeaves_brown.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Tea Leaves White", image: "/materials/tealeaves_white.png", price: "$150", filterTags: ["zebra"], patternUrl: "/materials/tealeaves_white.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "Toast", image: "/materials/toast.png", price: "$45", filterTags: ["zebra", "roman"], patternUrl: "/materials/toast.png", uvConfig: { repeatX: 6, repeatY: 6, offsetX: 0, offsetY: 0 } },
+  { name: "White", image: "/materials/white.png", price: "$30", filterTags: ["plantationShutter", "roller"], patternUrl: "/materials/plantationWhite.png", uvConfig: { repeatX: 1, repeatY: -1, offsetX: 0, offsetY: 0 } },
+  { name: "Wood", image: "/materials/wood.png", price: "$30", filterTags: ["plantationShutter"], patternUrl: "/materials/plantationShutterWood.png", uvConfig: { repeatX: 1, repeatY: -1, offsetX: 0, offsetY: 0 } },
 ];
 
 const BlindCustomizeThreeJs: React.FC = () => {
@@ -450,38 +463,37 @@ const BlindCustomizeThreeJs: React.FC = () => {
     if (isLoading) return;
     setIsLoading(true);
     setSelectedBlindType(type);
-  
+
     const blindType = BLIND_TYPES.find((b) => b.type === type);
     if (!blindType) {
       setIsLoading(false);
       return;
     }
-  
-    // Get the first available pattern for this blind type
+
     const availablePatterns = PATTERNS.filter((pattern) =>
       pattern.filterTags.some((tag) => tag.toLowerCase() === type.toLowerCase())
     );
-    const initialPattern = availablePatterns.length > 0 ? availablePatterns[0].patternUrl : "/materials/mocha.png"; // Fallback if no patterns match
-    setSelectedPattern(initialPattern); // Set the initial pattern in state
-  
+    const initialPattern = availablePatterns.length > 0 ? availablePatterns[0].patternUrl : "/materials/mocha.png";
+    setSelectedPattern(initialPattern);
+
     await cleanupModels();
-  
+
     const modelData = preloadedModelsRef.current.get(blindType.modelUrl);
     if (!modelData) {
       console.error(`Model not preloaded for ${type}`);
       setIsLoading(false);
       return;
     }
-  
+
     const isMobile = window.innerWidth < 768;
     const containerWidth = Math.min(window.innerWidth, solidColorLayerRef.current!.getBoundingClientRect().width);
     const scaleFactor = containerWidth / 300;
-  
+
     modelRefs.current = blindType.instances.map((config) => {
       const model = modelData.model.clone();
       const mixer = new THREE.AnimationMixer(model);
       const newModelData: ModelData = { model, gltf: modelData.gltf, mixer };
-  
+
       model.position.set(
         config.position.x * scaleFactor,
         config.position.y * scaleFactor,
@@ -494,8 +506,8 @@ const BlindCustomizeThreeJs: React.FC = () => {
       );
       model.rotation.set(config.rotation.x, config.rotation.y, config.rotation.z);
       sceneRef.current.add(model);
-      applyTextureToModel(model, initialPattern, blindType); // Apply the initial pattern
-  
+      applyTextureToModel(model, initialPattern, blindType);
+
       if (modelData.gltf?.animations?.length) {
         const animationClip = modelData.gltf.animations[0];
         if (animationClip) {
@@ -506,10 +518,10 @@ const BlindCustomizeThreeJs: React.FC = () => {
           newModelData.action = action;
         }
       }
-  
+
       return newModelData;
     });
-  
+
     renderScene();
     setIsLoading(false);
   };
@@ -523,6 +535,8 @@ const BlindCustomizeThreeJs: React.FC = () => {
   };
 
   const applyTextureToModel = (model: THREE.Group, patternUrl: string, blindType: BlindType) => {
+    if (!model) return;
+    const selectedPatternData = PATTERNS.find((p) => p.patternUrl === patternUrl) || PATTERNS[0];
     const textureLoader = new THREE.TextureLoader();
     const applyMaterial = (
       textureUrl: string,
@@ -578,26 +592,10 @@ const BlindCustomizeThreeJs: React.FC = () => {
       applyMaterial(patternUrl, null, 8, 0, 0.5, 0.1);
     } else {
       if (blindType.meshNameFabric) {
-        applyMaterial(
-          patternUrl,
-          blindType.normalFabric || "/3d/normals/clothTex.jpg",
-          8,
-          1,
-          0.3,
-          0.1,
-          blindType.meshNameFabric // Pass array
-        );
+        applyPatternTextureToModel(model, selectedPatternData, blindType.meshNameFabric, blindType.normalFabric);
       }
       if (blindType.meshNameWood) {
-        applyMaterial(
-          "/materials/beige.png",
-          blindType.normalWood || "/3d/normals/wood.jpg",
-          4,
-          0.5,
-          1,
-          0,
-          blindType.meshNameWood // Pass array
-        );
+        applyPatternTextureToModel(model, selectedPatternData, blindType.meshNameWood, blindType.normalWood);
       }
     }
   };
@@ -632,6 +630,96 @@ const BlindCustomizeThreeJs: React.FC = () => {
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setFilters((prev) => (e.target.checked ? [...prev, value] : prev.filter((tag) => tag !== value)));
+  };
+
+  const applyPatternTextureToModel = (
+    model: THREE.Group,
+    pattern: Pattern,
+    meshNames: string[] | undefined,
+    normalOverride?: string
+  ) => {
+    const textureLoader = new THREE.TextureLoader();
+
+    const baseTexture = textureLoader.load(
+      pattern.patternUrl,
+      (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(pattern.uvConfig?.repeatX ?? 1, pattern.uvConfig?.repeatY ?? 1);
+        tex.offset.set(pattern.uvConfig?.offsetX ?? 0, pattern.uvConfig?.offsetY ?? 0);
+        if (pattern.uvConfig?.rotation) tex.rotation = pattern.uvConfig.rotation;
+        tex.generateMipmaps = true;
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
+      },
+      undefined,
+      (error) => console.error(`Failed to load base texture: ${pattern.patternUrl}`, error)
+    );
+
+    const materialProps: THREE.MeshStandardMaterialParameters = {
+      map: baseTexture,
+      roughness: 0.7,
+      metalness: 0.0,
+      side: THREE.DoubleSide,
+    };
+
+    // Apply normal map if provided in pattern or overridden by blind type
+    if (pattern.normalUrl || normalOverride) {
+      const normalTexture = textureLoader.load(
+        normalOverride || pattern.normalUrl!,
+        (tex) => {
+          tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+          tex.repeat.set(pattern.uvConfig?.repeatX ?? 1, pattern.uvConfig?.repeatY ?? 1);
+          tex.offset.set(pattern.uvConfig?.offsetX ?? 0, pattern.uvConfig?.offsetY ?? 0);
+          if (pattern.uvConfig?.rotation) tex.rotation = pattern.uvConfig.rotation;
+        }
+      );
+      materialProps.normalMap = normalTexture;
+      materialProps.normalScale = new THREE.Vector2(1, 1);
+    }
+
+    // Add additional maps if provided (optional)
+    if (pattern.heightUrl) {
+      materialProps.displacementMap = textureLoader.load(pattern.heightUrl);
+      materialProps.displacementScale = 0.1;
+    }
+    if (pattern.metallicUrl) {
+      materialProps.metalnessMap = textureLoader.load(pattern.metallicUrl);
+    }
+    if (pattern.occlusionUrl) {
+      materialProps.aoMap = textureLoader.load(pattern.occlusionUrl);
+    }
+
+    const material = new THREE.MeshStandardMaterial(materialProps);
+
+    let applied = false;
+    model.traverse((child) => {
+      if (isMesh(child) && (!meshNames || meshNames.includes(child.name))) {
+        if (!child.geometry.attributes.uv) {
+          console.warn(`Mesh ${child.name} has no UVs. Generating...`);
+          child.geometry.computeBoundingBox();
+          const box = child.geometry.boundingBox!;
+          child.geometry.setAttribute(
+            "uv",
+            new THREE.BufferAttribute(
+              new Float32Array(child.geometry.attributes.position.array.length / 3 * 2).map((_, i) => {
+                const idx = Math.floor(i / 2);
+                const x = child.geometry.attributes.position.getX(idx);
+                const y = child.geometry.attributes.position.getY(idx);
+                return i % 2 === 0 ? (x - box.min.x) / (box.max.x - box.min.x) : (y - box.min.y) / (box.max.y - box.min.y);
+              }),
+              2
+            )
+          );
+        }
+        child.material.dispose();
+        child.material = material;
+        child.material.needsUpdate = true;
+        applied = true;
+      }
+    });
+
+    if (!applied) console.warn(`No meshes found for ${meshNames?.join(", ") || "all"} in model`);
+    renderScene();
   };
 
   const toggleSection = (section: string) => {
