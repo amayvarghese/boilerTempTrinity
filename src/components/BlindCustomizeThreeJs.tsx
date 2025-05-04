@@ -711,7 +711,7 @@ const BlindCustomizeThreeJs: React.FC = () => {
               }),
               2
             )
-          );
+          );  
         }
         child.material.dispose();
         child.material = material;
